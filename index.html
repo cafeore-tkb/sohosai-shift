@@ -57,7 +57,7 @@
         <p>1人が複数日参加する場合は、日付ごとに1行ずつ記入します。見出し行の列名はおおよそ一致していれば読み込めます。</p>
         <div class="table-wrap"><table class="format-table"><thead><tr><th>列名</th><th>書き方</th><th>例</th></tr></thead><tbody>
           <tr><td>氏名</td><td>必須</td><td>山田 太郎</td></tr>
-          <tr><td>ステータス</td><td>未合格／1年目合格／2年目合格／上級生（上級生以外はドリッパーの「下級生」扱い）</td><td>2年目合格</td></tr>
+          <tr><td>ステータス</td><td>未合格／1年目合格／2年目合格／上級生（未合格の人はアイス × 扱い）</td><td>2年目合格</td></tr>
           <tr><td>所属店舗</td><td>本店／2号店／くれあ。複数は区切って記入</td><td>本店, くれあ</td></tr>
           <tr><td>アイス</td><td>○（1杯・2杯とも）／1杯のみ／2杯のみ／×（アイス不可）。ホットは全員できる前提です。旧形式（1杯ホット, 2杯アイス …の列挙）も読めます</td><td>1杯のみ</td></tr>
           <tr><td>車の有無</td><td>あり／なし（前日準備の買い出しは車ありの人だけ）</td><td>あり</td></tr>
@@ -82,8 +82,8 @@
     <section class="panel" data-view="rules">
       <div class="section-title"><div><h3>役職ごとの担当条件</h3><p class="sub">各役職を担当するのに必要な最低ステータスを設定します。</p></div></div>
       <div class="ladder"><span>未合格</span>＜<span>1年目合格</span>＜<span>2年目合格</span>＜<span>上級生</span></div>
-      <details class="help"><summary>ドリッパー枠のルール</summary><p>「ドリッパー上級生」は上級生のみ。「ドリッパー（下級生＋上級生）」は、上級生以外を下級生として 2〜3人 入れます。</p></details>
-      <div class="table-wrap"><table class="rule-table"><thead><tr><th>店舗</th><th>ロール</th><th>担当に必要な最低ステータス</th></tr></thead><tbody id="roleRuleEditor"></tbody></table></div>
+      <details class="help"><summary>番目ごとの条件（当日の配置）</summary><p>2人以上の役職は、1人目・2人目…の番目ごとに最低ステータスを設定できます（役職の条件と厳しいほうが使われます）。ドリッパーは 1st〜6th で、初期値は 1st・6th が上級生です。シフト表・印刷の列はこの番目どおりなので、そのまま当日の配置表として使えます。<br>ステータスが未合格の人は、アイスが自動で × になります。</p></details>
+      <div class="table-wrap"><table class="rule-table"><thead><tr><th>店舗</th><th>ロール</th><th>担当に必要な最低ステータス</th><th>番目ごと（本番の当日配置）</th></tr></thead><tbody id="roleRuleEditor"></tbody></table></div>
     </section>
 
     <section id="shiftPanel" class="panel" data-view="shift">
@@ -93,7 +93,7 @@
       <div id="shiftGridEmpty" class="empty">アンケート回答CSVを読み込んでください。</div>
       <div id="shiftGridWrap" class="shift-grid-wrap hidden"></div>
       <details class="help"><summary>操作ヘルプ</summary><ul>
-        <li>役職別では、行が30分ごとの時間、列が役職の各番目（ドリッパー1〜6、リベロ1〜3 など）で、1セルに1人です。斜線は不要な時間で、押すと必要人数を設定できます。</li>
+        <li>役職別では、行が30分ごとの時間、列が役職の各番目（ドリッパー1st〜6th、リベロ1〜3 など）で、1セルに1人です。斜線は不要な時間で、押すと必要人数を設定できます。</li>
         <li>枠をクリックすると担当者を選べます。「空いている人」と「別の枠で勤務中の人」に分かれ、名前で絞り込めます（↑↓で選んでEnter）。「長さ」は標準1時間（この枠と次の枠）で、30分〜最大に変えられます。</li>
         <li>名前をドラッグすると、別の枠へ移動・入れ替えできます（1時間のまとまりはまとめて移動。スマホ・タブレットは長押ししてからドラッグ）。表の端に近づけると自動でスクロールします。</li>
         <li>割当や移動のあとに出る「元に戻す」（または ⌘Z／Ctrl+Z）で、直前の操作を取り消せます。</li>
