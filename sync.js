@@ -1,6 +1,6 @@
 // 共同編集（Firebase Firestore によるリアルタイム同期）
 // firebase-config.js に設定があり、URL が #room=XXXX のときだけ有効になる。設定がなければ従来どおりオフラインで動く。
-// 閲覧・編集：共有リンクを持ち Google ログインした人。CSVの読み込み（勤務可能時間の置き換え）と管理者の変更：管理者のみ。
+// 閲覧・編集（勤務可能表の修正を含む）：共有リンクを持ち Google ログインした人。CSVの読み込み（勤務可能時間の置き換え）と管理者の変更：管理者のみ。
 (()=>{
 const FB_VERSION='12.19.0';
 const SHARED_MAPS=['assignments','slotTypes','slotCounts','slotBlanks','settings','roleRequirements','memberStatuses','memberStores','memberWants','memberDislikes','memberDrips','memberCars'];
@@ -19,6 +19,9 @@ function sharedNow(){const o={availability:JSON.stringify(state.availability)};f
 function normalize(data){const o={availability:typeof data.availability==='string'?data.availability:'[]'};for(const k of SHARED_MAPS)o[k]=data[k]&&typeof data[k]==='object'?data[k]:{};return o;}
 // cur と base の差分を [[パス], 値（undefined は削除）] の配列で返す
 function diff(cur,base){const out=[];if(cur.availability!==base.availability)out.push([['availability'],cur.availability]);for(const k of SHARED_MAPS){const a=cur[k],b=base[k]||{};for(const key of Object.keys(a))if(!(key in b)||!same(a[key],b[key]))out.push([[k,key],a[key]]);for(const key of Object.keys(b))if(!(key in a))out.push([[k,key],undefined]);}return out;}
+
+// 勤務可能時間は1つの文字列で同期するため、自分と相手が同時に変えたときは「人×日」ごとに3方向マージする（自分が変えた人・日は自分の内容を残す）
+function mergeAvailability(local,base,remote){const group=s=>{const g={};for(const a of JSON.parse(s||'[]'))(g[`${a.name}|${a.date}`]??=[]).push(a);return g;};const L=group(local),B=group(base),R=group(remote),out=[];for(const k of new Set([...Object.keys(L),...Object.keys(B),...Object.keys(R)]))out.push(...((same(L[k],B[k])?R[k]:L[k])||[]));return out;}
 
 function randomId(n=24){const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',buf=crypto.getRandomValues(new Uint8Array(n));return [...buf].map(b=>chars[b%chars.length]).join('');}
 const roomUrl=()=>`${location.origin}${location.pathname}#room=${roomId}`;
@@ -82,9 +85,9 @@ function applyRemote(data){
   const remote=normalize(data),local=sharedNow(),changes=diff(remote,synced);
   if(!changes.length)return;
   for(const [path,v] of changes){
+    if(path.length===1){state.availability=local.availability===synced.availability?JSON.parse(v||'[]'):mergeAvailability(local.availability,synced.availability,v);continue;}
     // まだ送っていない自分の変更がある項目は、自分の変更を優先（このあと送信される）
     if(!same(getPath(local,path),getPath(synced,path)))continue;
-    if(path.length===1){state.availability=JSON.parse(v||'[]');continue;}
     const [k,key]=path;
     if(v===undefined)delete state[k][key];else state[k][key]=clone(v);
     if(k==='slotCounts'){const sl=state.slots.find(s=>s.id===key);if(sl)sl.count=v===undefined?defaultCount(sl.date,sl.store,sl.role):v;}
@@ -163,7 +166,7 @@ function refreshDialog(force){
   if(user===undefined){body.innerHTML='<p>読み込み中…</p>';startAuth();return;}
   const account=user?`<p class="share-account">ログイン中：<b>${esc(user.email)}</b><button class="link-button" id="shareSignOut">ログアウト</button></p>`:'';
   if(!user){body.innerHTML=`<p>${roomId?'この共同編集に参加するには':'共同編集を使うには'}、Google アカウントでログインしてください。</p><div class="dialog-actions"><button class="quiet" data-close>閉じる</button><button id="shareSignIn" class="primary">Google でログイン</button></div>`;$('#shareSignIn').onclick=()=>fb.signIn().catch(err=>{if(err.code!=='auth/popup-closed-by-user')alert(`ログインできませんでした：${err.message}`);});return;}
-  if(!roomId){body.innerHTML=`${account}<p>いま開いているシフトをクラウドに保存し、共同編集用のリンクを作ります。リンクを開いてログインした人と、同じシフトをリアルタイムに編集できます。</p><ul class="share-notes"><li>リンクを持っていて Google ログインした人は、誰でも閲覧・編集できます。シフト担当者にだけ共有してください。</li><li>CSVの読み込みは管理者だけができます。始めたあなたが管理者になり、あとから追加できます。</li></ul><div class="dialog-actions"><button class="quiet" data-close>キャンセル</button><button id="shareStartBtn" class="primary">共同編集を始める</button></div>`;$('#shareStartBtn').onclick=startRoom;}
+  if(!roomId){body.innerHTML=`${account}<p>いま開いているシフトをクラウドに保存し、共同編集用のリンクを作ります。リンクを開いてログインした人と、同じシフトをリアルタイムに編集できます。</p><ul class="share-notes"><li>リンクを持っていて Google ログインした人は、誰でも閲覧・編集できます。シフト担当者にだけ共有してください。</li><li>勤務可能表（アンケートの回答）は参加者全員が修正できます。CSVの読み込み（回答の丸ごと置き換え）は管理者だけができ、始めたあなたが管理者になります（あとから追加できます）。</li></ul><div class="dialog-actions"><button class="quiet" data-close>キャンセル</button><button id="shareStartBtn" class="primary">共同編集を始める</button></div>`;$('#shareStartBtn').onclick=startRoom;}
   else{
     const admin=isAdmin(),when=meta.updatedAt?meta.updatedAt.toLocaleString('ja-JP'):'';
     body.innerHTML=`${account}<p>このリンクを共有すると、同じシフトを一緒に編集できます。</p><div class="share-link"><input id="shareUrl" readonly value="${esc(roomUrl())}"><button id="shareCopyBtn" class="primary">コピー</button></div>
