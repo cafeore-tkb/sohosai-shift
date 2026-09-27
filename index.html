@@ -87,7 +87,7 @@
 
     <section id="shiftPanel" class="panel" data-view="shift">
       <div class="section-title"><div><h3>シフト割当</h3></div><div class="actions"><button id="fullscreenBtn" class="quiet">⛶ 全画面</button><button id="countsBtn" class="quiet">必要人数を設定</button><button id="auditBtn" class="quiet">勤務状況チェック<span id="auditBadge" class="audit-count hidden"></span></button><button id="clearBtn" class="quiet danger">割当をクリア</button><button id="autoBtn" class="primary">✦ 自動割当</button></div></div>
-      <div class="grid-toolbar"><div id="gridDates" class="seg"></div><div id="gridStores" class="chips"></div><div class="view-opts"><label class="toggle"><input type="checkbox" id="fullNameToggle">フルネーム</label></div></div>
+      <div class="grid-toolbar"><div id="gridDates" class="seg"></div><div id="gridStores" class="chips"></div><div class="view-opts"><div id="gridModes" class="mode-toggle" role="group" aria-label="表示の切り替え"><button type="button" data-grid-mode="role" class="on">役職別</button><button type="button" data-grid-mode="person">個人別</button></div><label class="toggle"><input type="checkbox" id="fullNameToggle">フルネーム</label></div></div>
       <div class="legend"><span><i class="lg lg-empty"></i>未割当</span><span><i class="lg lg-blank"></i>ブランク（入れない）</span><span><i class="lg lg-conflict"></i>同じ時間に重複</span><span><i class="lg lg-dislike"></i>苦手な役職</span><span>★ やりたい役職</span><span>⚠ 別の枠で勤務中</span><span><i class="lg lg-hot">1H</i><i class="lg lg-ice">2I</i>ドリップ（1杯ホット／2杯アイス）</span><span>名前をクリックで変更・ドラッグで移動</span><span id="gridLegend" class="legend-note"></span></div>
       <div id="shiftGridEmpty" class="empty">アンケート回答CSVを読み込んでください。</div>
       <div id="shiftGridWrap" class="shift-grid-wrap hidden"></div>
