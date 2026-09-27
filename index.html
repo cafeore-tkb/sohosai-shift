@@ -88,13 +88,13 @@
     <section id="shiftPanel" class="panel" data-view="shift">
       <div class="section-title"><div><h3>シフト割当</h3></div><div class="actions"><button id="fullscreenBtn" class="quiet">⛶ 全画面</button><button id="countsBtn" class="quiet">必要人数を設定</button><button id="auditBtn" class="quiet">勤務状況チェック<span id="auditBadge" class="audit-count hidden"></span></button><button id="clearBtn" class="quiet danger">割当をクリア</button><button id="autoBtn" class="primary">✦ 自動割当</button></div></div>
       <div class="grid-toolbar"><div id="gridDates" class="seg"></div><div id="gridStores" class="chips"></div><div class="view-opts"><label class="toggle"><input type="checkbox" id="fullNameToggle">フルネーム</label></div></div>
-      <div class="legend"><span><i class="lg lg-empty"></i>未割当</span><span><i class="lg lg-conflict"></i>同じ時間に重複</span><span><i class="lg lg-dislike"></i>苦手な役職</span><span>★ やりたい役職</span><span>⚠ 別の枠で勤務中</span><span><i class="lg lg-hot">1H</i><i class="lg lg-ice">2I</i>ドリップ（1杯ホット／2杯アイス）</span><span>名前をクリックで変更・ドラッグで移動</span><span id="gridLegend" class="legend-note"></span></div>
+      <div class="legend"><span><i class="lg lg-empty"></i>未割当</span><span><i class="lg lg-blank"></i>ブランク（入れない）</span><span><i class="lg lg-conflict"></i>同じ時間に重複</span><span><i class="lg lg-dislike"></i>苦手な役職</span><span>★ やりたい役職</span><span>⚠ 別の枠で勤務中</span><span><i class="lg lg-hot">1H</i><i class="lg lg-ice">2I</i>ドリップ（1杯ホット／2杯アイス）</span><span>名前をクリックで変更・ドラッグで移動</span><span id="gridLegend" class="legend-note"></span></div>
       <div id="shiftGridEmpty" class="empty">アンケート回答CSVを読み込んでください。</div>
       <div id="shiftGridWrap" class="shift-grid-wrap hidden"></div>
       <details class="help"><summary>操作ヘルプ</summary><ul>
         <li>各セル右上の <b>3/5</b> は「割当済み／必要人数」です。この数字か「必要人数を設定」を押すと、右側のパネルで必要人数を変更できます。</li><li>名前は姓だけを表示しています（同じ姓の人は名の1文字目まで）。マウスを重ねるとフルネームと勤務時間が出ます。「フルネーム」をオンにすると全員フルネームで表示します。</li>
         <li>各ドロップダウンには、その時間・店舗・役職の条件を満たすメンバーだけが表示されます（（ ）内はその日の勤務時間）。</li>
-        <li>枠をクリックすると担当者を選べます。「空いている人」と「別の枠で勤務中の人」に分かれ、名前で絞り込めます（↑↓で選んでEnter）。「続けて」で 2〜4時間／最大 を選ぶと、同じ役職の次の時間帯にもまとめて割り当てます（空き・条件・重複がある時間で止まります）。</li><li>名前をドラッグすると、別の枠へ移動・入れ替えできます（スマホ・タブレットは長押ししてからドラッグ）。表の端に近づけると自動でスクロールします。</li><li>割当や移動のあとに出る「元に戻す」（または ⌘Z／Ctrl+Z）で、直前の操作を取り消せます。</li>
+        <li>枠をクリックすると担当者を選べます。「空いている人」と「別の枠で勤務中の人」に分かれ、名前で絞り込めます（↑↓で選んでEnter）。「続けて」で 2〜4時間／最大 を選ぶと、同じ役職の次の時間帯にもまとめて割り当てます（空き・条件・重複がある時間で止まります）。</li><li>名前をドラッグすると、別の枠へ移動・入れ替えできます（スマホ・タブレットは長押ししてからドラッグ）。表の端に近づけると自動でスクロールします。</li><li>人を入れないと決めた枠は、枠をクリック →「ブランクにする」で、未割当と区別できます（未割当の数に入らず、自動割当でも埋めません）。</li><li>割当や移動のあとに出る「元に戻す」（または ⌘Z／Ctrl+Z）で、直前の操作を取り消せます。</li>
         <li>条件を変更しても、条件に合わなくなった割当だけが外れます。</li>
       </ul></details>
     </section>

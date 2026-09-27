@@ -3,7 +3,7 @@
 // 閲覧・編集：共有リンクを持ち Google ログインした人。CSVの読み込み（勤務可能時間の置き換え）と管理者の変更：管理者のみ。
 (()=>{
 const FB_VERSION='12.19.0';
-const SHARED_MAPS=['assignments','slotTypes','slotCounts','roleRequirements','memberStatuses','memberStores','memberWants','memberDislikes','memberDrips','memberCars'];
+const SHARED_MAPS=['assignments','slotTypes','slotCounts','slotBlanks','roleRequirements','memberStatuses','memberStores','memberWants','memberDislikes','memberDrips','memberCars'];
 const WHOLE_MAP_THRESHOLD=200;// 1つのマップでこれ以上の変更があれば、項目ごとではなくマップごと送る
 const config=window.FIREBASE_CONFIG;
 const enabled=!!(config&&config.apiKey&&config.projectId);

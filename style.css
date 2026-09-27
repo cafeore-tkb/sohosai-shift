@@ -116,3 +116,4 @@ button.fill{border:0;cursor:pointer;font-family:inherit}button.fill:hover{outlin
 .shift-grid.timeline .row-head.store-clean span{color:#be185d}
 .chip.store-clean::before{background:#db2777}
 .store-chip.store-clean{background:#fce7f3;color:#be185d}
+.pick-blank{border:1px solid #cbd5e1;background:repeating-linear-gradient(135deg,#f1f5f9 0 5px,#e2e8f0 5px 10px);color:#64748b;font-size:11px;font-weight:650}.lg.lg-blank{background:repeating-linear-gradient(135deg,#f1f5f9 0 3px,#cbd5e1 3px 6px);border:1px solid #cbd5e1}
