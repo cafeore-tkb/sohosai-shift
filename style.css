@@ -117,3 +117,9 @@ button.fill{border:0;cursor:pointer;font-family:inherit}button.fill:hover{outlin
 .chip.store-clean::before{background:#db2777}
 .store-chip.store-clean{background:#fce7f3;color:#be185d}
 .pick-blank{border:1px solid #cbd5e1;background:repeating-linear-gradient(135deg,#f1f5f9 0 5px,#e2e8f0 5px 10px);color:#64748b;font-size:11px;font-weight:650}.lg.lg-blank{background:repeating-linear-gradient(135deg,#f1f5f9 0 3px,#cbd5e1 3px 6px);border:1px solid #cbd5e1}
+.day-block-title{position:sticky;left:0;display:inline-block;margin:14px 0 6px;padding:5px 12px;border-radius:6px;background:var(--navy);color:#fff;font-weight:750;font-size:14px}.day-block-title:first-child{margin-top:4px}
+/* 配色を絞る：通常の状態は無彩色、数が少なく注意が必要なもの（未割当・重複・苦手・ドリップの制限）だけ色を付ける */
+.shift-grid tbody td[class*=store-]{border-top:2px solid #e2e8f0}.shift-grid td[class*=store-] .grid-cell{background:#fff}
+.fill-full{background:#f1f5f9;color:#94a3b8}.shift-grid td.cell-full .grid-cell{box-shadow:none}
+.type-pick.hot,.type-pick.ice,.lg.lg-hot,.lg.lg-ice{background:#f8fafc;color:#475569;border-color:#cbd5e1}
+.drip-mark.all{color:#94a3b8}.pick-label i,.pk-name i.want{color:#94a3b8}
