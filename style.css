@@ -134,3 +134,22 @@ button.fill{border:0;cursor:pointer;font-family:inherit}button.fill:hover{outlin
 /* 個人別の表 */
 .pm{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:11.5px}.pm th,.pm td{border-right:1px solid var(--line);border-bottom:1px solid #eef2f7;padding:3px 4px;text-align:center;white-space:nowrap}.pm thead th{position:relative;z-index:3;transform:translateY(var(--head-y,0px));background:#f8fafc;color:var(--navy);min-width:58px;padding:6px 4px;border-bottom:1px solid var(--line)}.pm thead small{display:block;font-weight:500;color:var(--muted);font-size:10.5px}.pm .pm-corner,.pm tbody th{position:sticky;left:0;z-index:2;background:#fff;color:#475569;font-size:12px;min-width:56px}.pm .pm-corner{z-index:4}.pm tbody th small{color:#94a3b8;font-weight:500}.pm tr.hour>*{border-top:2px solid #cbd5e1}.pm td{height:22px}.pm td.on{background:#e0e7ff;color:#1e293b;font-weight:700;cursor:pointer}.pm td.on:hover{outline:2px solid var(--blue);outline-offset:-2px}.pm td.brk{color:#64748b;cursor:pointer}.pm td.conflict{background:#fee2e2;color:#b91c1c;font-weight:700;cursor:pointer}.pm td.na{background:repeating-linear-gradient(135deg,#fff 0 4px,#f1f5f9 4px 8px)}
 #shiftPanel[data-grid-mode=person] .legend>span:not(#gridLegend){display:none}
+/* 勤務可能表の編集 */
+.avail-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:10px;font-size:12.5px;color:var(--muted)}.avail-tools form{display:flex;gap:6px}.avail-tools input{width:230px}
+.availability-table.editable td[data-av-h]{cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:none}.availability-table.editable td[data-av-h]:hover{outline:2px solid #93c5fd;outline-offset:-2px}
+.availability-table td.hour{border-left:1px solid #cbd5e1}.availability-table thead small{color:#94a3b8;font-weight:500}
+.availability-table td.as{background:#e0e7ff;color:#3730a3}.availability-table td.painted.to-yes{background:#bbf7d0;color:#15803d}.availability-table td.painted.to-no{background:#fecaca;color:#b91c1c}
+.shift-grid .car{display:block;margin-top:2px;font-size:10px;font-weight:600;color:#94a3b8}.shift-grid .car.zero{color:var(--red);font-weight:750}
+.wants-missing{margin:10px 0 14px;padding:10px 12px;border:1px solid #fed7aa;background:#fff7ed;border-radius:8px;font-size:12.5px}.wants-missing strong{display:block;color:#9a3412;margin-bottom:4px}.wants-missing ul{margin:0;padding:0;list-style:none}.wants-missing li{display:flex;gap:8px;padding:2px 0}.wants-missing li b{min-width:6.5em;color:var(--navy)}.wants-missing li span{color:#475569}
+/* 1セル1人の表（役職の各番目を列に） */
+.shift-grid.split col.slot-col{width:92px}.shift-grid.split col.time-col{width:56px}
+.shift-grid.split td{padding:3px 4px;vertical-align:middle;height:32px;border-top:0}.shift-grid.split td .slot{width:100%}
+.shift-grid.split tbody tr.half>td{border-top:0}.shift-grid.split tbody tr.hour>*{border-top:2px solid #cbd5e1}
+.shift-grid.split tbody th{padding:4px 8px;vertical-align:middle}
+.shift-grid.split td.na{background:repeating-linear-gradient(135deg,#fff 0 5px,#f1f5f9 5px 10px);cursor:pointer}.shift-grid.split td.na:hover{background:#eff6ff}
+.shift-grid.split .gstart{border-left:2px solid #cbd5e1}
+.shift-grid.split thead th.num{font-size:11.5px;color:#475569;font-weight:700;padding:3px 2px}.shift-grid.split thead th.num small{display:block;font-size:9.5px;color:#94a3b8;font-weight:600}
+.shift-grid .pick select{position:absolute;inset:0;opacity:0;width:100%;height:100%;min-width:0;padding:0;border:0;cursor:pointer;font-size:13px}
+.shift-grid .slot .pick{height:26px;font-size:12.5px;cursor:pointer;text-align:left;font-family:inherit;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}.shift-grid .slot .type-pick{height:26px}.shift-grid .slot.has-person .pick{cursor:grab}.shift-grid .pick.pk-open{outline:2px solid var(--blue);outline-offset:0}
+.shift-grid.split tbody th{padding:2px 6px;line-height:1.15}.shift-grid.split .car{font-size:9.5px;margin-top:1px}.shift-grid.split td{height:30px;padding:2px 3px}
+.shift-grid.split thead th[colspan]{text-align:left;padding-left:10px}.shift-grid.split col.slot-col{width:100px}

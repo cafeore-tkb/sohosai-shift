@@ -97,7 +97,7 @@ function applyRemote(data){
 function busy(){
   const el=document.activeElement;
   if(el&&/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)&&!/^(checkbox|radio|file)$/.test(el.type)&&!el.closest('dialog'))return true;
-  return !!movingKey||document.body.classList.contains('dragging')||document.body.classList.contains('picking');
+  return !!movingKey||document.body.classList.contains('dragging')||document.body.classList.contains('picking')||document.body.classList.contains('painting');
 }
 function renderWhenIdle(){if(busy()){pendingRender=true;return;}pendingRender=false;render();}
 const flush=()=>setTimeout(()=>{if(pendingRender&&!busy()){pendingRender=false;render();}},0);
