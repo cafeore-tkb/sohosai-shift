@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 共同編集の部屋（1部屋＝1ドキュメント）。
+    // ・部屋IDを知っていて（＝共有リンクを持っていて）Google ログインした人は、閲覧・編集できる。
+    // ・勤務可能時間（availability＝CSVの中身）と管理者リスト（admins）を変えられるのは管理者だけ。
+    // ・作成者（owner）は変更できず、常に管理者に含まれる。
+    // ・一覧取得（list）を禁止しているので、IDを知らない人は部屋を探せない。
+    match /rooms/{roomId} {
+      function signedIn() {
+        return request.auth != null && request.auth.token.email != null && request.auth.token.email_verified == true;
+      }
+      function me() {
+        return request.auth.token.email.lower();
+      }
+      function isAdmin() {
+        return me() in resource.data.admins;
+      }
+
+      allow get: if signedIn();
+
+      allow create: if signedIn()
+        && roomId.matches('^[A-Za-z0-9]{24,}$')
+        && request.resource.data.owner == me()
+        && request.resource.data.admins == [me()]
+        && request.resource.data.updatedBy == request.auth.token.email;
+
+      allow update: if signedIn()
+        && request.resource.data.owner == resource.data.owner
+        && request.resource.data.owner in request.resource.data.admins
+        && request.resource.data.updatedBy == request.auth.token.email
+        && (isAdmin() || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['availability', 'admins']));
+
+      allow list, delete: if false;
+    }
+  }
+}

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shift Maker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div><span class="mark">S</span><h1>Shift Maker</h1><span id="modeBadge" class="offline">オフライン対応</span></div>
+    <div class="actions">
+      <button id="shareBtn" class="secondary">👥 共同編集</button>
+      <button id="printExportBtn" class="secondary">🖨 印刷ビュー</button>
+      <button id="exportBtn" class="primary">CSVを書き出す</button>
+    </div>
+  </header>
+  <nav class="tabbar" aria-label="画面の切り替え">
+    <div class="tabbar-inner">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="import"><b>1</b>読み込み</button>
+        <button class="tab" role="tab" data-tab="availability"><b>2</b>勤務可能表</button>
+        <button class="tab" role="tab" data-tab="members"><b>3</b>メンバー<span id="memberTabCount" class="tab-count hidden"></span></button>
+        <button class="tab" role="tab" data-tab="rules"><b>4</b>役職ルール</button>
+        <button class="tab" role="tab" data-tab="shift"><b>5</b>シフト割当<span id="shiftTabCount" class="tab-count warn hidden"></span></button>
+      </div>
+      <div class="summary">
+        <div><span>スタッフ</span><strong id="staffCount">0</strong></div>
+        <div><span>必要枠</span><strong id="slotCount">0</strong></div>
+        <div><span>割当済み</span><strong id="filledCount">0</strong></div>
+        <div id="openStat"><span>未割当</span><strong id="openCount">0</strong></div>
+        <div id="conflictStat"><span>重複</span><strong id="conflictCount">0</strong></div>
+        <div class="fill-meter" title="充足率"><div class="meter"><i id="fillBar"></i></div><strong id="fillRate">0%</strong></div>
+      </div>
+    </div>
+  </nav>
+  <main>
+    <section class="panel import-panel" data-view="import">
+      <div class="section-title"><div><h3>アンケート回答を読み込む</h3><p class="sub">氏名・ステータス・所属店舗・対応ドリップ・車の有無・役職の希望・勤務可能時間をCSVから読み込みます。</p></div></div>
+      <div class="import-grid">
+        <div>
+          <label class="dropzone" for="csvInput"><input id="csvInput" type="file" accept=".csv,text/csv" /><span class="upload-icon">↑</span><strong>CSVファイルを選択</strong><small>またはここにドラッグ＆ドロップ</small></label>
+          <div id="importLock" class="notice lock-notice hidden"></div>
+          <div id="importStatus" class="notice hidden"></div>
+        </div>
+        <div class="try-card">
+          <strong>まずは試してみる</strong>
+          <p>サンプルデータで操作感を確認できます。</p>
+          <button id="sampleBtn" class="primary">50名サンプルを読み込む</button>
+          <button id="sampleDataBtn" class="quiet">サンプルCSVをダウンロード</button>
+          <button id="templateBtn" class="quiet">テンプレートをダウンロード</button>
+        </div>
+      </div>
+      <details class="help">
+        <summary>CSVの形式を見る</summary>
+        <p>1人が複数日参加する場合は、日付ごとに1行ずつ記入します。見出し行の列名はおおよそ一致していれば読み込めます。</p>
+        <div class="table-wrap"><table class="format-table"><thead><tr><th>列名</th><th>書き方</th><th>例</th></tr></thead><tbody>
+          <tr><td>氏名</td><td>必須</td><td>山田 太郎</td></tr>
+          <tr><td>ステータス</td><td>未合格／1年目合格／2年目合格／上級生（上級生以外はドリッパーの「下級生」扱い）</td><td>2年目合格</td></tr>
+          <tr><td>所属店舗</td><td>本店／2号店／くれあ。複数は区切って記入</td><td>本店, くれあ</td></tr>
+          <tr><td>対応できるドリップ</td><td>1杯ホット／1杯アイス／2杯ホット／2杯アイス から複数</td><td>1杯ホット, 2杯ホット</td></tr>
+          <tr><td>車の有無</td><td>あり／なし（前日準備の買い出しは車ありの人だけ）</td><td>あり</td></tr>
+          <tr><td>やりたい役職・苦手な役職</td><td>複数可。自動割当で、やりたい役職を優先し、苦手な役職はなるべく避けます</td><td>レジ、ホール</td></tr>
+          <tr><td>日付・開始時刻・終了時刻</td><td>2026-10-30 や 2026/10/30、9:00 や 09:00 のどちらでも可</td><td>2026-10-31, 10:00, 18:00</td></tr>
+        </tbody></table></div>
+      </details>
+    </section>
+
+    <section id="availabilityPanel" class="panel" data-view="availability">
+      <div class="section-title"><div><h3>日別・時間別の勤務可能者</h3><p class="sub">○ が勤務可能な時間帯です。その日に参加できる人だけを表示しています。</p></div></div>
+      <div class="grid-toolbar"><div id="availDates" class="seg"></div></div>
+      <div id="availabilityBoard" class="availability-board"></div>
+    </section>
+
+    <section id="memberPanel" class="panel" data-view="members">
+      <div class="section-title"><div><h3>メンバーのステータス</h3><p class="sub">アンケート回答から自動反映しています。ここで修正すると割当候補にすぐ反映されます。</p></div></div>
+      <div class="filter-bar"><input id="memberSearch" type="search" placeholder="氏名で検索" /><div id="memberStoreFilter" class="chips"></div><span id="memberShown" class="map-note"></span></div>
+      <div class="table-wrap scroll-wrap"><table class="member-table"><thead><tr><th>スタッフ</th><th>ステータス</th><th>所属店舗</th><th>対応できるドリップ</th><th>車</th><th>やりたい役職</th><th>苦手な役職</th></tr></thead><tbody id="memberEditor"></tbody></table></div>
+    </section>
+
+    <section class="panel" data-view="rules">
+      <div class="section-title"><div><h3>役職ごとの担当条件</h3><p class="sub">各役職を担当するのに必要な最低ステータスを設定します。</p></div></div>
+      <div class="ladder"><span>未合格</span>＜<span>1年目合格</span>＜<span>2年目合格</span>＜<span>上級生</span></div>
+      <details class="help"><summary>ドリッパー枠のルール</summary><p>「ドリッパー上級生」は上級生のみ。「ドリッパー（下級生＋上級生）」は、上級生以外を下級生として 2〜3人 入れます。</p></details>
+      <div class="table-wrap"><table class="rule-table"><thead><tr><th>店舗</th><th>ロール</th><th>担当に必要な最低ステータス</th></tr></thead><tbody id="roleRuleEditor"></tbody></table></div>
+    </section>
+
+    <section id="shiftPanel" class="panel" data-view="shift">
+      <div class="section-title"><div><h3>シフト割当</h3></div><div class="actions"><button id="fullscreenBtn" class="quiet">⛶ 全画面</button><button id="countsBtn" class="quiet">必要人数を設定</button><button id="auditBtn" class="quiet">勤務状況チェック<span id="auditBadge" class="audit-count hidden"></span></button><button id="clearBtn" class="quiet danger">割当をクリア</button><button id="autoBtn" class="primary">✦ 自動割当</button></div></div>
+      <div class="grid-toolbar"><div id="gridDates" class="seg"></div><div id="gridStores" class="chips"></div><div class="view-opts"><label class="toggle"><input type="checkbox" id="fullNameToggle">フルネーム</label></div></div>
+      <div class="legend"><span><i class="lg lg-empty"></i>未割当</span><span><i class="lg lg-conflict"></i>同じ時間に重複</span><span><i class="lg lg-dislike"></i>苦手な役職</span><span>★ やりたい役職</span><span>⚠ 別の枠で勤務中</span><span><i class="lg lg-hot">1H</i><i class="lg lg-ice">2I</i>ドリップ（1杯ホット／2杯アイス）</span><span>⠿ ドラッグで移動</span><span id="gridLegend" class="legend-note"></span></div>
+      <div id="shiftGridEmpty" class="empty">アンケート回答CSVを読み込んでください。</div>
+      <div id="shiftGridWrap" class="shift-grid-wrap hidden"></div>
+      <details class="help"><summary>操作ヘルプ</summary><ul>
+        <li>各セル右上の <b>3/5</b> は「割当済み／必要人数」です。この数字か「必要人数を設定」を押すと、右側のパネルで必要人数を変更できます。</li><li>名前は姓だけを表示しています（同じ姓の人は名の1文字目まで）。マウスを重ねるとフルネームと勤務時間が出ます。「フルネーム」をオンにすると全員フルネームで表示します。</li>
+        <li>各ドロップダウンには、その時間・店舗・役職の条件を満たすメンバーだけが表示されます（（ ）内はその日の勤務時間）。</li>
+        <li>担当者の左の「⠿」をドラッグ（またはクリック→移動先をクリック）すると、別の枠へ移動・入れ替えできます。</li>
+        <li>条件を変更しても、条件に合わなくなった割当だけが外れます。</li>
+      </ul></details>
+    </section>
+  </main>
+  <footer id="footerNote">データはこのブラウザ内で処理されます。インターネット接続は不要です。</footer>
+  <aside id="auditDrawer" class="audit-drawer" aria-label="勤務状況チェック" aria-hidden="true"><button id="auditClose" class="drawer-close" title="閉じる（Esc）">×</button><div id="assignmentAudit" class="assignment-audit"></div></aside>
+  <aside id="countDrawer" class="audit-drawer count-drawer" aria-label="必要人数の設定" aria-hidden="true"><button id="countClose" class="drawer-close" title="閉じる（Esc）">×</button><div class="count-panel"><div class="audit-title"><strong>必要人数の設定</strong><button id="countReset" class="quiet small">この日を標準に戻す</button></div><p class="hours-note">変更はすぐシフト表に反映されます。「一括」に入力すると、その役職の全時間帯をまとめて変更します。人数を減らすと、はみ出した枠の割当は外れます。</p><div id="countDates" class="seg"></div><div id="countEditor" class="count-editor"></div></div></aside>
+  <dialog id="shareDialog" class="share-dialog" aria-label="共同編集"><h3>👥 共同編集</h3><div id="shareBody"></div></dialog>
+  <div id="toast" class="toast hidden" role="status"></div>
+  <script src="app.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="sync.js"></script>
+</body>
+</html>
