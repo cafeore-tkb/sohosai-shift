@@ -20,6 +20,8 @@ describe("個人TTのカレンダー", () => {
       "佐藤 花子": "佐藤花子",
       "山田　太郎": "山田太郎3",
     });
+    // /shift/all（全体のシフト）とは重ならない
+    expect(calendarSlugs(["all", "ALL"])).toEqual({ all: "all2", ALL: "ALL2" });
     expect(slugId("山田太郎")).toMatch(/^m[0-9a-f]{14}$/);
     expect(slugId("山田太郎")).toBe(slugId("山田太郎"));
     expect(slugId("山田太郎")).not.toBe(slugId("山田太郎2"));
@@ -76,10 +78,10 @@ describe("個人TTのカレンダー", () => {
     const m = autoModel(),
       pub = buildPublication(m, opts);
     expect(pub.members.map((x) => x.name)).toEqual(allNames(m));
-    for (const { id, name, slug } of pub.members) {
+    for (const { id, name, slug, short } of pub.members) {
+      expect(short).toBeTruthy();
       expect(slug).toBe(nameSlug(name));
       expect(id).toBe(slugId(slug));
-      expect(pub.events[id]).toEqual(memberEvents(m, name));
       expect(pub.ics[id]).toContain(`雙峰祭シフト（${name}）`);
     }
     expect(pub.digest).toBe(publicationDigest(m));

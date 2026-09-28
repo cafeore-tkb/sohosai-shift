@@ -238,12 +238,13 @@ UI は `ui/WorkloadTag.tsx`（担当者ポップアップの候補の「目安�
 **公開サイトの URL・カレンダー配信（個人TT）** … README の「公開サイトの URL」「カレンダー配信」。
 - `sync/site.ts`：`currentRoute()`（`/edit`＝本番の部屋・`/shift[/{名前}]`＝カレンダー・それ以外＝アプリ。古い `#room={本番}`・`#cal=` は置き換える。file:// は常にアプリ）`siteRoom()`（`window.SHIFT_SITE.room`）`CALENDAR_PATH`（"shift"＝パスと pubs の ID）
 - `domain/calendarId.ts`：`nameSlug`（氏名 → URL の名前）`calendarSlugs`（重なれば番号）`slugId`（URL の名前 → `m`＋16進14桁。Worker も使うので import なし）
+- `domain/overview.ts`：`shiftOverview(m)`（日ごと・参加者ごとの縦の並び `OverviewSeg`＝[行数, 種類, 表示, 店舗]。`personMatrix` から。配信に JSON で入れる）`expandSegs`
 - `domain/ical.ts`：`memberEvents(m, name)`（`personSegments` を日ごとに＝同じ担当が続く時間を1件）
   `personIcs`（購読用。UTC・75オクテットで折り返し・UID は日時＋担当＋ID から）`importIcs`（取り込み用：カレンダー全体の指定を外す）`buildPublication`（members に id・name・slug）・`publicationDigest`（未配信の変更の検出）
 - `sync/firebase.ts`：本番の部屋（`/edit`）では `editors`（編集できる人。管理者だけが変える）と `pubs/shift` を扱い、`shareActions.publish` / `unpublish` / `addEditor` / `removeEditor`。
   ダイアログの `goto`（ローカルで本番の部屋へ案内）・`denied`（登録されていないアカウント）・`room.editors`・`room.calendar`
 - `sync/calendarFeed.ts`：閲覧ページが Firestore の REST API で `pubs/shift` の一部（mask）を読む。`feedUrls(slug)`
-- `ui/calendar/CalendarPage.tsx`：`/shift`（一覧・前回の人）と `/shift/{名前}`（pushState・戻る）。`main.tsx` はアプリ本体（store・sync）を起動せずにこれだけを描く
+- `ui/calendar/CalendarPage.tsx`：`/shift`（一覧・前回の人）・`/shift/{名前}`（その人の列を日ごとに並べた表）・`/shift/all`（`OverviewPanel`：日ごとの全員の表）。表は `Timetable`（個人別と同じ見た目・操作なし）。pushState・戻る。`main.tsx` はアプリ本体（store・sync）を起動せずにこれだけを描く
 - `index.html`：`firebase-config.js` は Web ではサイト直下（`/shift/{名前}` の深さでも読める）、file:// では隣を読む
 - `worker/`：Cloudflare Worker（アプリ本体の配信も兼ねる。dist を静的ファイルとして配り、知らないパスは index.html。`/shift/*` と `/robots.txt` だけ Worker が先に受ける）。
   `/shift/{名前}.ics` → Firestore の `ics.{slugId(名前)}`、`/shift/{名前}` → index.html。テストは `worker/src/index.test.ts`（ルートの vitest で動く）

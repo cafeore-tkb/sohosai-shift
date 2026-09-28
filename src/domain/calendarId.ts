@@ -18,6 +18,9 @@ export function hashHex(s: string): string {
 /** 氏名 → URL の名前（空白を除き、URL で困る記号は _ に） */
 export const nameSlug = (name: string): string => name.normalize("NFC").replace(/[\s　]+/g, "").replace(/[/?#%\\.]+/g, "_");
 
+/** /shift/all は全体のシフト（この名前の人は「all2」になる） */
+export const OVERVIEW_SLUG = "all";
+
 /** URL の名前 → Firestore のフィールド名に使う ID（"m" + 16進14桁） */
 export const slugId = (slug: string): string => `m${hashHex(slug.normalize("NFC"))}`;
 
@@ -31,7 +34,7 @@ export function calendarSlugs(names: readonly string[]): Record<string, string> 
   for (const name of names) {
     const base = nameSlug(name) || "_";
     let slug = base;
-    for (let n = 2; used.has(slug); n++) slug = `${base}${n}`;
+    for (let n = 2; used.has(slug) || slug.toLowerCase() === OVERVIEW_SLUG; n++) slug = `${base}${n}`;
     used.add(slug);
     out[name] = slug;
   }

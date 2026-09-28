@@ -1,13 +1,13 @@
 // カレンダー配信の閲覧ページ（/shift、/shift/{名前}）が読むデータ。ログインしないので Firebase の SDK は使わず、Firestore の REST API で pubs/shift を読む。
 // 購読の URL（/shift/{名前}.ics）は同じサイトの Worker が返す
 
-import type { CalEvent } from "../domain";
+import type { OverviewDay } from "../domain";
 import { CALENDAR_PATH } from "./site";
 
 export interface PubSummary {
   title: string;
   publishedAt: Date | null;
-  members: { id: string; name: string; slug: string }[];
+  members: { id: string; name: string; slug: string; short?: string }[];
 }
 
 type RestValue = {
@@ -61,13 +61,18 @@ export async function fetchPub(): Promise<PubSummary | null> {
   };
 }
 
-/** 1人分の予定と .ics（購読用のまま。取り込み用は importIcs で変える） */
-export async function fetchMember(id: string): Promise<{ events: CalEvent[]; ics: string } | null> {
+/** 1人分の .ics（購読用のまま。取り込み用は importIcs で変える）。ダウンロードするときに読む */
+export async function fetchIcs(id: string): Promise<string | null> {
   if (!validId(id)) return null;
-  const d = await readPub([`events.${id}`, `ics.${id}`]);
-  const ics = (d?.ics as Record<string, string> | undefined)?.[id];
-  if (!ics) return null;
-  return { events: ((d!.events as Record<string, CalEvent[]> | undefined)?.[id] || []) as CalEvent[], ics };
+  const d = await readPub([`ics.${id}`]);
+  return (d?.ics as Record<string, string> | undefined)?.[id] || null;
+}
+
+/** 表（/shift/all と /shift/{名前}） */
+export async function fetchOverview(): Promise<OverviewDay[] | null> {
+  const d = await readPub(["overview"]);
+  if (!d || typeof d.overview !== "string") return null;
+  return JSON.parse(d.overview) as OverviewDay[];
 }
 
 /** 購読の URL（同じサイトの Worker：/shift/{名前}.ics） */

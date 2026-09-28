@@ -5,6 +5,8 @@ import { eventDates } from "./slots";
 import { personSegments } from "./cells";
 import { allNames } from "./audit";
 import { calendarSlugs, hashHex, slugId } from "./calendarId";
+import { buildShortNames } from "./names";
+import { shiftOverview } from "./overview";
 import type { Model } from "./types";
 
 export const CALENDAR_TITLE = "雙峰祭シフト";
@@ -19,12 +21,12 @@ export interface CalEvent {
 
 /** 配信する中身（pubs/{キー} に置く） */
 export interface Publication {
-  /** メンバーの並び順。slug は URL（/shift/{slug}）、id は Firestore のフィールド名（= slugId(slug)） */
-  members: { id: string; name: string; slug: string }[];
-  /** id → その人の予定（閲覧ページの確認用） */
-  events: Record<string, CalEvent[]>;
+  /** メンバーの並び順。slug は URL（/shift/{slug}）、id は Firestore のフィールド名（= slugId(slug)）、short は表の短い名前（名字） */
+  members: { id: string; name: string; slug: string; short: string }[];
   /** id → その人の .ics */
   ics: Record<string, string>;
+  /** 表（OverviewDay[] の JSON。/shift/all と /shift/{名前}） */
+  overview: string;
   /** 予定の中身から作る値。いまの Model の digest と違えば「未配信の変更あり」 */
   digest: string;
 }
@@ -130,25 +132,26 @@ export function importIcs(ics: string): string {
 
 /** 配信の中身の digest（予定が同じなら同じ。配信の日時は含まない） */
 export function publicationDigest(m: Model): string {
-  return hashHex(JSON.stringify(allNames(m).map((n) => [n, memberEvents(m, n)])));
+  return digestOf(allNames(m).map((n) => [n, memberEvents(m, n)]), JSON.stringify(shiftOverview(m)));
 }
+const digestOf = (all: [string, CalEvent[]][], overview: string) => hashHex(JSON.stringify(all) + overview);
 
 /** 全員分の配信の中身 */
 export function buildPublication(m: Model, opts: IcsOptions): Publication {
   const names = allNames(m),
     slugs = calendarSlugs(names),
     ids = Object.fromEntries(names.map((n) => [n, slugId(slugs[n])])),
-    events: Publication["events"] = {},
     ics: Publication["ics"] = {};
-  const all = names.map((n): [string, CalEvent[]] => [n, memberEvents(m, n)]);
+  const all = names.map((n): [string, CalEvent[]] => [n, memberEvents(m, n)]),
+    overview = JSON.stringify(shiftOverview(m)),
+    shortNames = buildShortNames(m);
   for (const [name, list] of all) {
-    events[ids[name]] = list;
     ics[ids[name]] = personIcs(ids[name], name, list, opts);
   }
   return {
-    members: names.map((name) => ({ id: ids[name], name, slug: slugs[name] })),
-    events,
+    members: names.map((name) => ({ id: ids[name], name, slug: slugs[name], short: shortNames[name] || name })),
     ics,
-    digest: hashHex(JSON.stringify(all)),
+    overview,
+    digest: digestOf(all, overview),
   };
 }
