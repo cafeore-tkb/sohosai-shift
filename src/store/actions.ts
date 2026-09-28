@@ -42,6 +42,7 @@ import {
   resetCounts,
   resetForSample,
   sampleCsv,
+  sendToBreak,
   setMemberCar,
   setMemberDislikes,
   setMemberIce,
@@ -223,6 +224,13 @@ export function clearPicked(): void {
   if (!p) return;
   closePicker();
   finish(clearAssignment(M(), p.key));
+}
+/** 「昼食へ」「休憩へ」：いまの担当をその時間から length 枠その係へ（同じ時間の枠からは外す） */
+export function breakPicked(role: string, length: number): void {
+  const p = store.ui.picker;
+  if (!p) return;
+  closePicker();
+  finish(sendToBreak(M(), p.key, role, length));
 }
 /** 「移動…」：移動先をクリックで選ぶモード（ポップアップの枠が選んでいる範囲の中なら範囲ごと） */
 export function startMove(): void {

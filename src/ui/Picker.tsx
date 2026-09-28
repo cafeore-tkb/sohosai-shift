@@ -14,6 +14,8 @@ import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import {
   PICK_RUNS,
   SLOT,
+  breakRoles,
+  breakStoreOf,
   canWorkAt,
   dayName,
   dripBadge,
@@ -37,6 +39,12 @@ import { trapTab } from "./components/focus";
 import styles from "./Picker.module.css";
 import { useAudit } from "./useDerived";
 import { WorkloadTag } from "./WorkloadTag";
+
+/** 「昼食へ」「休憩へ」の長さ [枠数, 表示] */
+const BREAK_RUNS: readonly (readonly [number, string])[] = [
+  [1, "30分"],
+  [2, "1時間"],
+];
 
 const coarse = typeof matchMedia === "function" && matchMedia("(pointer:coarse)").matches;
 /** 下からのシートにする画面（Picker.module.css と同じ） */
@@ -277,6 +285,8 @@ function PickerBody({
   const drag = useSheetDrag();
   const drip = !!slotChoices[item.role];
   const total = free.length + busy.length;
+  // 前日準備など、その日に昼食・休憩の係があれば「昼食へ」「休憩へ」（いま入っている係は除く）
+  const breaks = breakRoles.filter((r) => r !== item.role && breakStoreOf(item.date, r) !== undefined);
   return (
     <div className={styles.panel} data-pk-panel="" tabIndex={-1}>
       <div className={styles.handle} aria-hidden="true" {...drag} />
@@ -314,6 +324,24 @@ function PickerBody({
           <Button size="sm" danger data-pk-clear="" onClick={actions.clearPicked}>
             外す
           </Button>
+        </div>
+      ) : null}
+      {chosen && breaks.length ? (
+        <div className={styles.breaks} role="group" aria-label={`${chosen} を${breaks.join("・")}へ`}>
+          <span className={styles.breaksLabel}>{breaks.join("・")}へ</span>
+          {breaks.flatMap((role) =>
+            BREAK_RUNS.map(([n, label]) => (
+              <Button
+                key={`${role}${n}`}
+                size="sm"
+                data-pk-break={`${role}|${n}`}
+                title={`${chosen} を ${item.start} から${label} ${role}に入れます（同じ時間の担当からは外します）`}
+                onClick={() => actions.breakPicked(role, n)}
+              >
+                {`${role} ${label}`}
+              </Button>
+            )),
+          )}
         </div>
       ) : null}
       {chosen && rangeItems.length > 1 ? (
@@ -448,8 +476,8 @@ function PickerRow({
         <span className={styles.name}>{c.name}</span>
         {drip ? <DripOf badge={dripBadge(m, c.name)} /> : null}
         {statusShort[st] ? <StatusTag top={st === "上級生"}>{statusShort[st]}</StatusTag> : null}
-        {/* 働ける量の目安（勤務中の人は移動なので時間は増えない） */}
-        <WorkloadTag m={m} name={c.name} hours={c.hours + (busy ? 0 : 0.5)} />
+        {/* 働ける量の目安（勤務中の人は移動なので時間は増えない。昼食・休憩は勤務時間に入らない） */}
+        <WorkloadTag m={m} name={c.name} hours={c.hours + (busy || breakRoles.includes(item.role) ? 0 : 0.5)} />
       </span>
       <span className={styles.hours} title="この日の勤務時間">
         {fmt(c.hours)}

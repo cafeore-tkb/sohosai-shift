@@ -3,9 +3,10 @@
 import { assignmentAudit } from "./audit";
 import { itemLabel, slotLabel } from "./labels";
 import { available, canWorkAt, decided, dislikes, fitsSlot, wants } from "./rules";
+import { rolesForDate } from "./config";
 import { findSlot, flattened, itemsOf } from "./slots";
 import { SLOT, toHM, toMin } from "./time";
-import type { Item, Model } from "./types";
+import type { Item, Model, Slot } from "./types";
 
 // ---- 元に戻す ----
 
@@ -431,6 +432,51 @@ export function clearAssignment(m: Model, key: string): EditResult {
   const before = snapshotAssignments(m);
   m.assignments[key] = "";
   return done(before, m, `${name} を外しました`);
+}
+
+/** その日に breakRole（昼食・休憩など）の係があれば、その係のまとまり（店舗の欄。前日準備なら "準備"） */
+export const breakStoreOf = (date: string, role: string): string | undefined =>
+  Object.entries(rolesForDate(date)).find(([, roles]) => roles.some(([r]) => r === role))?.[0];
+
+/**
+ * 「昼食へ」「休憩へ」：key の枠の人を、その時間から length 枠（30分×length）その係へ入れる。
+ * 同じ時間に入っていた枠（key の枠を含む）からは外す。表の外・参加できない時間で止まる（最初の30分は必ず入れる）。
+ * 番目は、入れる時間のどれでも空いている一番前。枠や人がいなければ null
+ */
+export function sendToBreak(m: Model, key: string, role: string, length: number): EditResult | null {
+  const item = flattened(m).find((x) => x.key === key),
+    name = item ? m.assignments[key] : "",
+    store = item ? breakStoreOf(item.date, role) : undefined;
+  if (!item || !name || store === undefined) return null;
+  const steps: Slot[] = [];
+  for (let t = item.start; steps.length < length; ) {
+    const s = findSlot(m, item.date, store, role, t);
+    if (!s || (steps.length && !canWorkAt(m, name, s))) break;
+    steps.push(s);
+    t = s.end;
+  }
+  if (!steps.length) return null;
+  const n = Math.min(...steps.map((s) => Number(s.count) || 0)),
+    occ = Array.from({ length: n }, (_, i) => i).find((i) =>
+      steps.every((s) => [name, ""].includes(m.assignments[`${s.id}-${i}`] || "")),
+    );
+  if (occ === undefined) return { ok: false, message: `${role} に空きがありません`, changes: [] };
+  const before = snapshotAssignments(m),
+    from: string[] = [];
+  for (const s of steps) {
+    const target = `${s.id}-${occ}`;
+    for (const x of overlapping(m, name, { ...s, occ, key: target }, [target])) {
+      m.assignments[x.key] = "";
+      if (x.role !== role) from.push(itemLabel({ store: x.store, role: x.role, count: 1 }));
+    }
+    m.assignments[target] = name;
+  }
+  const out = [...new Set(from)];
+  return done(
+    before,
+    m,
+    `${name} を ${steps[0].start}〜${steps[steps.length - 1].end} ${role} に入れました${out.length ? `（${out.join("、")} から外しました）` : ""}`,
+  );
 }
 
 /** すべての割当をクリア（旧 clearBtn） */
