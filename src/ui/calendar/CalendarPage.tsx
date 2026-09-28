@@ -1,26 +1,27 @@
-// カレンダー配信の閲覧ページ（#cal=キー。ログイン不要）。名前を選ぶと、その人の予定の確認と、購読（webcal）・ファイルで取り込む（.ics）ができる。
-// 選んだ人は URL（#cal=キー&m=ID）と、このブラウザ（localStorage）に残す。アプリ本体（store・共同編集）は起動しない
+// カレンダー配信の閲覧ページ（/shift＝名前の一覧、/shift/{名前}＝その人。ログイン不要）。その人の予定の確認と、購読（webcal）・ファイルで取り込む（.ics）ができる。
+// 前に選んだ人はこのブラウザ（localStorage）に残し、一覧の上に出す。アプリ本体（store・共同編集）は起動しない
 
 import { useEffect, useMemo, useState } from "react";
 import { CALENDAR_TITLE, dayLabel, dayName, importIcs } from "../../domain";
 import type { CalEvent } from "../../domain";
 import { feedUrls, fetchMember, fetchPub } from "../../sync/calendarFeed";
 import type { PubSummary } from "../../sync/calendarFeed";
+import { calendarUrl, currentRoute } from "../../sync/site";
 import { Button, IconSprite, LinkButton, Notice, SearchInput } from "../components";
 import styles from "./CalendarPage.module.css";
 
-const hashParam = (k: string) => new URLSearchParams(location.hash.slice(1)).get(k) || "";
+type Member = PubSummary["members"][number];
 const STORE_KEY = "shift-cal-member";
-const remembered = (key: string): string => {
+const remembered = (): string => {
   try {
-    return localStorage.getItem(`${STORE_KEY}:${key}`) || "";
+    return localStorage.getItem(STORE_KEY) || "";
   } catch {
     return "";
   }
 };
-const remember = (key: string, id: string) => {
+const remember = (slug: string) => {
   try {
-    localStorage.setItem(`${STORE_KEY}:${key}`, id);
+    localStorage.setItem(STORE_KEY, slug);
   } catch {
     /* 保存できなくても使える */
   }
@@ -28,22 +29,35 @@ const remember = (key: string, id: string) => {
 const fmtStamp = (d: Date | null) =>
   d ? d.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
 
-export function CalendarPage() {
-  const key = hashParam("cal");
+export function CalendarPage({ initialSlug }: { initialSlug: string }) {
   const [pub, setPub] = useState<PubSummary | null | undefined>(undefined);
   const [error, setError] = useState("");
-  const [id, setId] = useState(() => hashParam("m") || remembered(key));
+  const [slug, setSlug] = useState(initialSlug);
 
   useEffect(() => {
-    fetchPub(key).then(setPub, (e: Error) => setError(e.message));
-  }, [key]);
+    fetchPub().then(setPub, (e: Error) => setError(e.message));
+    // ブラウザの戻る・進む
+    const onPop = () => {
+      const r = currentRoute();
+      setSlug(r.kind === "calendar" ? r.slug : "");
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
-  const member = pub?.members.find((x) => x.id === id) || null;
+  const member = pub?.members.find((x) => x.slug === slug) || null;
+  useEffect(() => {
+    if (member) {
+      remember(member.slug);
+      document.title = `${member.name} さんのシフト`;
+    } else document.title = "シフトをカレンダーに入れる";
+  }, [member]);
   const choose = (next: string) => {
-    setId(next);
-    if (next) remember(key, next);
-    history.replaceState(null, "", `#cal=${key}${next ? `&m=${next}` : ""}`);
+    setSlug(next);
+    history.pushState(null, "", calendarUrl(next));
+    scrollTo(0, 0);
   };
+  const last = pub?.members.find((x) => x.slug === remembered()) || null;
 
   return (
     <div className={styles.page}>
@@ -60,17 +74,20 @@ export function CalendarPage() {
           読み込み中…
         </p>
       ) : pub === null ? (
-        <Notice tone="warn">このリンクのカレンダーは見つかりません。配信が止められたか、リンクが違います。シフト担当者に確認してください。</Notice>
+        <Notice tone="warn">いまはカレンダーを配信していません。シフト担当者に確認してください。</Notice>
       ) : member ? (
-        <MemberPanel pubKey={key} member={member} onChange={() => choose("")} />
+        <MemberPanel member={member} onChange={() => choose("")} />
       ) : (
-        <NamePicker members={pub.members} onPick={choose} />
+        <>
+          {slug ? <Notice tone="warn">{`「${slug}」さんは見つかりません。一覧から名前を選んでください。`}</Notice> : null}
+          <NamePicker members={pub.members} last={last} onPick={choose} />
+        </>
       )}
     </div>
   );
 }
 
-function NamePicker({ members, onPick }: { members: PubSummary["members"]; onPick: (id: string) => void }) {
+function NamePicker({ members, last, onPick }: { members: Member[]; last: Member | null; onPick: (slug: string) => void }) {
   const [q, setQ] = useState("");
   const shown = useMemo(() => {
     const t = q.replace(/\s+/g, "");
@@ -81,13 +98,25 @@ function NamePicker({ members, onPick }: { members: PubSummary["members"]; onPic
       <h2 id="calPickTitle" className={styles.h2}>
         自分の名前を選んでください
       </h2>
+      {last ? (
+        <p className={styles.last}>
+          前回：
+          <button type="button" className={styles.name} data-cal-last={last.slug} onClick={() => onPick(last.slug)}>
+            {last.name}
+          </button>
+        </p>
+      ) : null}
       <SearchInput id="calSearch" placeholder="名前で検索" aria-label="名前で検索" value={q} onChange={(e) => setQ(e.currentTarget.value)} />
       <ul className={styles.names}>
         {shown.map((x) => (
           <li key={x.id}>
-            <button type="button" className={styles.name} data-cal-member={x.id} onClick={() => onPick(x.id)}>
+            <a className={styles.name} href={calendarUrl(x.slug)} data-cal-member={x.slug} onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+                e.preventDefault();
+                onPick(x.slug);
+              }}>
               {x.name}
-            </button>
+            </a>
           </li>
         ))}
       </ul>
@@ -96,15 +125,15 @@ function NamePicker({ members, onPick }: { members: PubSummary["members"]; onPic
   );
 }
 
-function MemberPanel({ pubKey, member, onChange }: { pubKey: string; member: { id: string; name: string }; onChange: () => void }) {
+function MemberPanel({ member, onChange }: { member: Member; onChange: () => void }) {
   const [data, setData] = useState<{ events: CalEvent[]; ics: string } | null | undefined>(undefined);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     setData(undefined);
-    fetchMember(pubKey, member.id).then(setData, (e: Error) => setError(e.message));
-  }, [pubKey, member.id]);
-  const urls = feedUrls(pubKey, member.id);
+    fetchMember(member.id).then(setData, (e: Error) => setError(e.message));
+  }, [member.id]);
+  const urls = feedUrls(member.slug);
   const days = useMemo(() => {
     const out: [string, CalEvent[]][] = [];
     for (const e of data?.events || []) {
@@ -119,7 +148,7 @@ function MemberPanel({ pubKey, member, onChange }: { pubKey: string; member: { i
     const blob = new Blob([importIcs(data!.ics)], { type: "text/calendar;charset=utf-8" }),
       a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `シフト_${member.name.replace(/[\\/:*?"<>|\s]+/g, "")}.ics`;
+    a.download = `シフト_${member.slug}.ics`;
     document.body.append(a);
     a.click();
     a.remove();
@@ -127,11 +156,11 @@ function MemberPanel({ pubKey, member, onChange }: { pubKey: string; member: { i
   };
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(urls!.https);
+      await navigator.clipboard.writeText(urls.https);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      prompt("この URL をコピーしてください", urls!.https);
+      prompt("この URL をコピーしてください", urls.https);
     }
   };
 
@@ -180,30 +209,28 @@ function MemberPanel({ pubKey, member, onChange }: { pubKey: string; member: { i
 
       {data ? (
         <>
-          {urls ? (
-            <section className={styles.card} aria-labelledby="calSubTitle">
-              <h2 id="calSubTitle" className={styles.h2}>
-                購読する <span className={styles.rec}>おすすめ</span>
-              </h2>
-              <p className={styles.lead}>シフトが変わると、カレンダーにも自動で反映されます。「{`${CALENDAR_TITLE}（${member.name}）`}」という専用のカレンダーとして追加され、色や名前はカレンダーごとに変えられます。</p>
-              <div className={styles.actions}>
-                <LinkButton id="calWebcal" variant="primary" icon="cal" href={urls.webcal}>
-                  iPhone・Mac のカレンダーで購読
-                </LinkButton>
-                <LinkButton id="calGoogle" icon="cal" href={urls.google} target="_blank" rel="noopener noreferrer">
-                  Google カレンダーで購読
-                </LinkButton>
-                <Button id="calCopy" icon={copied ? "check" : "copy"} onClick={copy}>
-                  {copied ? "コピーしました" : "URL をコピー"}
-                </Button>
-              </div>
-              <ul className={styles.notes}>
-                <li>Google カレンダーはスマホのアプリからは追加できません。パソコンのブラウザで開いて追加すると、スマホにも出ます。</li>
-                <li>反映されるまでの時間はアプリ次第です（Google は数時間〜1日、iPhone は設定の「照会カレンダー」の更新間隔）。直前の変更はシフト担当者の連絡を優先してください。</li>
-                <li>Android・Outlook などは「URL をコピー」して、カレンダーの「URL で追加」に貼り付けてください。</li>
-              </ul>
-            </section>
-          ) : null}
+          <section className={styles.card} aria-labelledby="calSubTitle">
+            <h2 id="calSubTitle" className={styles.h2}>
+              購読する <span className={styles.rec}>おすすめ</span>
+            </h2>
+            <p className={styles.lead}>シフトが変わると、カレンダーにも自動で反映されます。「{`${CALENDAR_TITLE}（${member.name}）`}」という専用のカレンダーとして追加され、色や名前はカレンダーごとに変えられます。</p>
+            <div className={styles.actions}>
+              <LinkButton id="calWebcal" variant="primary" icon="cal" href={urls.webcal}>
+                iPhone・Mac のカレンダーで購読
+              </LinkButton>
+              <LinkButton id="calGoogle" icon="cal" href={urls.google} target="_blank" rel="noopener noreferrer">
+                Google カレンダーで購読
+              </LinkButton>
+              <Button id="calCopy" icon={copied ? "check" : "copy"} onClick={copy}>
+                {copied ? "コピーしました" : "URL をコピー"}
+              </Button>
+            </div>
+            <ul className={styles.notes}>
+              <li>Google カレンダーはスマホのアプリからは追加できません。パソコンのブラウザで開いて追加すると、スマホにも出ます。</li>
+              <li>反映されるまでの時間はアプリ次第です（Google は数時間〜1日、iPhone は設定の「照会カレンダー」の更新間隔）。直前の変更はシフト担当者の連絡を優先してください。</li>
+              <li>Android・Outlook などは「URL をコピー」して、カレンダーの「URL で追加」に貼り付けてください。</li>
+            </ul>
+          </section>
           <section className={styles.card} aria-labelledby="calFileTitle">
             <h2 id="calFileTitle" className={styles.h2}>
               ファイルで取り込む

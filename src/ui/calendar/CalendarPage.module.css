@@ -70,7 +70,11 @@
   list-style: none;
 }
 .name {
+  display: flex;
+  align-items: center;
   width: 100%;
+  color: var(--ink);
+  text-decoration: none;
   min-height: var(--touch-min);
   padding: var(--sp-3) var(--sp-5);
   border: 1px solid var(--secondary-border);
@@ -81,6 +85,19 @@
 }
 .name:hover {
   background: var(--secondary-hover);
+}
+
+.last {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+.last .name {
+  width: auto;
+  border-color: var(--primary);
 }
 
 /* 予定 */

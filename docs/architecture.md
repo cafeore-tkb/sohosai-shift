@@ -235,13 +235,18 @@ UI は `ui/WorkloadTag.tsx`（担当者ポップアップの候補の「目安�
 
 **sync/firebase.ts** … 旧 sync.js の移植（`startSync()`）。ドキュメント形式・差分／マージ・WHOLE_MAP_THRESHOLD・受信の保留（busy → flush）・ログイン・管理者・退出・hashchange は旧版と同じ。gstatic から動的 import、`window.__FIREBASE_MOCK__` があればそれを使う。画面には store の `setShare` で状態を渡し、ダイアログは React（`ui/ShareDialog.tsx`）が描く。Model の共有データの書き換えは domain の `replaceShared` / `applySharedChange` で行う（sync は Model の中身の決まりを知らない）。
 
-**カレンダー配信（個人TT）** … README の「カレンダー配信」。
-- `domain/ical.ts`：`memberEvents(m, name)`（`personSegments` を日ごとに＝同じ担当が続く時間を1件）`calendarIds(names)`（氏名 → `m`＋16進14桁。名前が同じなら同じ）
-  `personIcs`（購読用。UTC・75オクテットで折り返し・UID は日時＋担当＋ID から）`importIcs`（取り込み用：カレンダー全体の指定を外す）`buildPublication`・`publicationDigest`（配信の中身と、未配信の変更の検出）
-- `sync/firebase.ts`：部屋の `calKey`（管理者だけが変えられる）と `pubs/{calKey}` を監視し、`shareActions.publish` / `unpublish`。ダイアログの `calendar`（共通リンク・最終配信・digest）
-- `sync/calendarFeed.ts`：閲覧ページが Firestore の REST API で `pubs/{キー}` の一部（mask）を読む。`feedUrls`（`window.SHIFT_CALENDAR.feedBase` の Worker）
-- `ui/calendar/CalendarPage.tsx`：`#cal=キー`（`&m=ID`）のとき `main.tsx` はアプリ本体（store・sync）を起動せずにこれだけを描く
-- `worker/`：Cloudflare Worker（アプリ本体の配信も兼ねる。dist を静的ファイルとして配り、`/c/*` と `/robots.txt` だけ Worker が受ける）。`GET /c/{キー}/{ID}.ics` → Firestore の `ics.{ID}`。テストは `worker/src/index.test.ts`（ルートの vitest で動く）
+**公開サイトの URL・カレンダー配信（個人TT）** … README の「公開サイトの URL」「カレンダー配信」。
+- `sync/site.ts`：`currentRoute()`（`/edit`＝本番の部屋・`/shift[/{名前}]`＝カレンダー・それ以外＝アプリ。古い `#room={本番}`・`#cal=` は置き換える。file:// は常にアプリ）`siteRoom()`（`window.SHIFT_SITE.room`）`CALENDAR_PATH`（"shift"＝パスと pubs の ID）
+- `domain/calendarId.ts`：`nameSlug`（氏名 → URL の名前）`calendarSlugs`（重なれば番号）`slugId`（URL の名前 → `m`＋16進14桁。Worker も使うので import なし）
+- `domain/ical.ts`：`memberEvents(m, name)`（`personSegments` を日ごとに＝同じ担当が続く時間を1件）
+  `personIcs`（購読用。UTC・75オクテットで折り返し・UID は日時＋担当＋ID から）`importIcs`（取り込み用：カレンダー全体の指定を外す）`buildPublication`（members に id・name・slug）・`publicationDigest`（未配信の変更の検出）
+- `sync/firebase.ts`：本番の部屋（`/edit`）では `editors`（編集できる人。管理者だけが変える）と `pubs/shift` を扱い、`shareActions.publish` / `unpublish` / `addEditor` / `removeEditor`。
+  ダイアログの `goto`（ローカルで本番の部屋へ案内）・`denied`（登録されていないアカウント）・`room.editors`・`room.calendar`
+- `sync/calendarFeed.ts`：閲覧ページが Firestore の REST API で `pubs/shift` の一部（mask）を読む。`feedUrls(slug)`
+- `ui/calendar/CalendarPage.tsx`：`/shift`（一覧・前回の人）と `/shift/{名前}`（pushState・戻る）。`main.tsx` はアプリ本体（store・sync）を起動せずにこれだけを描く
+- `index.html`：`firebase-config.js` は Web ではサイト直下（`/shift/{名前}` の深さでも読める）、file:// では隣を読む
+- `worker/`：Cloudflare Worker（アプリ本体の配信も兼ねる。dist を静的ファイルとして配り、知らないパスは index.html。`/shift/*` と `/robots.txt` だけ Worker が先に受ける）。
+  `/shift/{名前}.ics` → Firestore の `ics.{slugId(名前)}`、`/shift/{名前}` → index.html。テストは `worker/src/index.test.ts`（ルートの vitest で動く）
 
 **ui/**
 - `App.tsx` … アプリの枠の並び、body のクラス（`is-focus`＝全画面、`is-painting`・`is-dragging`＝カーソルの形だけ）と `data-view`、キー（`handleKeyDown`）・ポップアップの外側クリック。

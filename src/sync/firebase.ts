@@ -7,6 +7,7 @@ import { CALENDAR_TITLE, SHARED_MAPS, applySharedChange, buildPublication, repla
 import type { Availability, Model, SharedMap } from "../domain";
 import { store } from "../store";
 import type { ShareDialogContent } from "../store";
+import { CALENDAR_PATH, calendarUrl, currentRoute, editUrl, siteRoom } from "./site";
 
 const FB_VERSION = "12.19.0";
 const WHOLE_MAP_THRESHOLD = 200; // 1つのマップでこれ以上の変更があれば、項目ごとではなくマップごと送る
@@ -46,8 +47,6 @@ interface FbError extends Error {
 declare global {
   interface Window {
     FIREBASE_CONFIG?: { apiKey?: string; projectId?: string; [k: string]: unknown };
-    /** カレンダー配信（購読）の Worker。feedBase がなければ購読は出さず、ファイルで取り込むだけ */
-    SHIFT_CALENDAR?: { feedBase?: string };
     __FIREBASE_MOCK__?: Fb;
   }
 }
@@ -110,7 +109,10 @@ const statusText: Record<string, string> = {
 export function startSync(): void {
   const config = window.FIREBASE_CONFIG;
   const enabled = !!(config && config.apiKey && config.projectId);
+  // 本番の部屋は /edit（firebase-config.js の SHIFT_SITE.room）。ほかの部屋は今までどおり #room=…
+  const fixedRoom = siteRoom();
   const roomFromHash = () => (location.hash.match(/room=([A-Za-z0-9]{20,})/) || [])[1] || "";
+  const roomFromUrl = () => (currentRoute().kind === "room" ? fixedRoom : roomFromHash());
   const M = (): Model => store.model;
   let fb: Fb | null = null,
     ref: DocRef | null = null,
@@ -120,15 +122,22 @@ export function startSync(): void {
     roomId = "",
     user: User | null | undefined,
     starting = false,
-    meta: { owner: string; admins: string[]; calKey: string; updatedBy?: string; updatedAt?: Date | null } = { owner: "", admins: [], calKey: "" },
-    // カレンダー配信（pubs/{calKey}）
+    denied = false,
+    meta: { owner: string; admins: string[]; editors: string[]; calKey: string; updatedBy?: string; updatedAt?: Date | null } = {
+      owner: "",
+      admins: [],
+      editors: [],
+      calKey: "",
+    },
+    // カレンダー配信（pubs/shift。本番の部屋だけ）
     pub: { at: Date | null; by: string; digest: string } | null = null,
     pubKey = "",
     publishing = false;
 
   const myEmail = () => (user?.email || "").toLowerCase();
   const isAdmin = () => !!user && meta.admins.includes(myEmail());
-  const roomUrl = () => `${location.origin}${location.pathname}#room=${roomId}`;
+  const isFixed = () => !!fixedRoom && roomId === fixedRoom;
+  const roomUrl = () => (isFixed() ? editUrl() : `${location.origin}${location.pathname}#room=${roomId}`);
   const toast = (message: string, sticky = false) => store.showToast(message, sticky);
 
   function sharedNow(): Shared {
@@ -224,6 +233,7 @@ export function startSync(): void {
     meta = {
       owner: (data.owner as string) || "",
       admins: Array.isArray(data.admins) ? (data.admins as string[]) : [],
+      editors: Array.isArray(data.editors) ? (data.editors as string[]) : [],
       calKey: typeof data.calKey === "string" ? data.calKey : "",
       updatedBy: (data.updatedBy as string) || "",
       updatedAt: at?.toDate?.() || null,
@@ -316,7 +326,11 @@ export function startSync(): void {
       (err) => {
         console.error(err);
         setStatus("error", err.code === "permission-denied" ? "アクセス権がありません" : "接続できません");
-        toast(`共同編集に接続できません：${err.message}`, true);
+        // 編集できる人に登録されていないアカウント：ダイアログで知らせる（別のアカウントに切り替えられる）
+        if (err.code === "permission-denied") {
+          denied = true;
+          openDialog();
+        } else toast(`共同編集に接続できません：${err.message}`, true);
       },
     );
   }
@@ -372,41 +386,43 @@ export function startSync(): void {
       toast(e.code === "permission-denied" ? "管理者を変更する権限がありません" : `変更できませんでした：${e.message}`);
     }
   }
-  // ---- カレンダー配信（個人TT）：管理者が押したときの内容を pubs/{calKey} に置く。誰でも読める（一覧は取れない） ----
+  // ---- カレンダー配信（個人TT）：本番の部屋（/edit）の管理者が押したときの内容を pubs/shift に置く。誰でも読める（一覧は取れない） ----
   const toDate = (v: unknown): Date | null =>
     typeof v === "number" ? new Date(v) : ((v as { toDate?: () => Date } | undefined)?.toDate?.() ?? null);
   function watchPublication(): void {
-    if (!meta.calKey || meta.calKey === pubKey) return;
-    pubKey = meta.calKey;
+    if (!isFixed() || pubKey) return;
+    pubKey = CALENDAR_PATH;
     fb!.onSnapshot(
       fb!.doc(fb!.db, "pubs", pubKey),
       { includeMetadataChanges: false },
       (snap) => {
         const d = snap.exists() ? snap.data() : null;
-        pub = d ? { at: toDate(d.publishedAt), by: (d.publishedBy as string) || "", digest: (d.digest as string) || "" } : null;
+        pub = d && d.room === roomId ? { at: toDate(d.publishedAt), by: (d.publishedBy as string) || "", digest: (d.digest as string) || "" } : null;
         refreshDialog();
       },
       (err) => console.error(err),
     );
   }
-  const calendarUrl = () => (meta.calKey ? `${location.origin}${location.pathname}#cal=${meta.calKey}` : "");
   async function publish(): Promise<void> {
-    if (!isAdmin() || publishing) return;
+    if (!isFixed() || !isAdmin() || publishing) return;
     publishing = true;
     refreshDialog();
     try {
-      const key = meta.calKey || randomId(32),
-        stamp = new Date(),
+      const stamp = new Date(),
         version = `${stamp.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 配信版`,
         p = buildPublication(M(), { stamp, version });
-      if (!meta.calKey) await fb!.updateDoc(ref, { calKey: key, updatedBy: user!.email, updatedAt: fb!.serverTimestamp() });
-      await fb!.setDoc(fb!.doc(fb!.db, "pubs", key), {
+      await fb!.setDoc(fb!.doc(fb!.db, "pubs", CALENDAR_PATH), {
         room: roomId,
         title: CALENDAR_TITLE,
         ...p,
         publishedBy: user!.email,
         publishedAt: fb!.serverTimestamp(),
       });
+      // 以前のランダムなキー（#cal=…）の配信が残っていれば片付ける
+      if (meta.calKey !== CALENDAR_PATH) {
+        if (meta.calKey) await fb!.deleteDoc(fb!.doc(fb!.db, "pubs", meta.calKey)).catch((e: unknown) => console.error(e));
+        await fb!.updateDoc(ref, { calKey: CALENDAR_PATH, updatedBy: user!.email, updatedAt: fb!.serverTimestamp() });
+      }
       toast(`${p.members.length}名分のカレンダーを配信しました`);
     } catch (err) {
       const e = err as FbError;
@@ -417,19 +433,30 @@ export function startSync(): void {
     refreshDialog();
   }
   async function unpublish(): Promise<void> {
-    if (!isAdmin() || !meta.calKey) return;
-    if (!confirm("カレンダーの配信を止めますか？\n購読している人のカレンダーから予定が消え、共通リンクも開けなくなります。\nもう一度「配信する」と、同じリンク・同じ購読URLで再開します。")) return;
+    if (!isFixed() || !isAdmin() || !pub) return;
+    if (!confirm("カレンダーの配信を止めますか？\n購読している人のカレンダーから予定が消え、/shift も開けなくなります。\nもう一度「配信する」と、同じ URL で再開します。")) return;
     try {
-      await fb!.deleteDoc(fb!.doc(fb!.db, "pubs", meta.calKey));
+      await fb!.deleteDoc(fb!.doc(fb!.db, "pubs", CALENDAR_PATH));
       toast("カレンダーの配信を止めました");
     } catch (err) {
       console.error(err);
       toast(`止められませんでした：${(err as Error).message}`, true);
     }
   }
+  // 編集できる人（本番の部屋。管理者は登録しなくても編集できる）
+  async function setEditors(list: string[]): Promise<void> {
+    try {
+      await fb!.updateDoc(ref, { editors: list, updatedBy: user!.email, updatedAt: fb!.serverTimestamp() });
+    } catch (err) {
+      const e = err as FbError;
+      console.error(e);
+      toast(e.code === "permission-denied" ? "編集できる人を変更する権限がありません" : `変更できませんでした：${e.message}`);
+    }
+  }
 
   function leaveRoom(): void {
     if (!confirm("このブラウザでの共同編集を終了しますか？\nクラウド上のシフトは残り、リンクを開けばいつでも再参加できます。")) return;
+    if (isFixed()) return location.assign("/");
     history.replaceState(null, "", location.pathname + location.search);
     location.reload();
   }
@@ -455,7 +482,9 @@ export function startSync(): void {
     if (!enabled) return { kind: "disabled" };
     if (user === undefined) return { kind: "loading" };
     if (!user) return { kind: "login", inRoom: !!roomId };
-    if (!roomId) return { kind: "start", email: user.email, starting };
+    if (denied) return { kind: "denied", email: user.email };
+    // 本番の部屋があるサイトでは、新しい部屋は作らずに /edit へ案内する
+    if (!roomId) return fixedRoom ? { kind: "goto", email: user.email, url: editUrl() } : { kind: "start", email: user.email, starting };
     return {
       kind: "room",
       email: user.email,
@@ -465,8 +494,10 @@ export function startSync(): void {
       isAdmin: isAdmin(),
       updatedBy: meta.updatedBy || "",
       when: meta.updatedAt ? meta.updatedAt.toLocaleString("ja-JP") : "",
+      editors: isFixed() ? meta.editors : null,
       calendar: {
-        url: calendarUrl(),
+        enabled: isFixed(),
+        url: pub ? calendarUrl() : "",
         published: pub ? { by: pub.by, when: pub.at ? pub.at.toLocaleString("ja-JP") : "", digest: pub.digest } : null,
         publishing,
       },
@@ -493,6 +524,14 @@ export function startSync(): void {
     start: () => void startRoom(),
     leave: leaveRoom,
     publish: () => void publish(),
+    addEditor: (email) => {
+      const a = email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a)) return;
+      if (!meta.editors.includes(a) && !meta.admins.includes(a)) void setEditors([...meta.editors, a]);
+    },
+    removeEditor: (a) => {
+      if (confirm(`${a} を編集できる人から外しますか？`)) void setEditors(meta.editors.filter((x) => x !== a));
+    },
     unpublish: () => void unpublish(),
     addAdmin: (email) => {
       const a = email.trim().toLowerCase();
@@ -506,9 +545,9 @@ export function startSync(): void {
 
   store.onStateChange = schedulePush;
   window.addEventListener("hashchange", () => {
-    if (roomFromHash() !== roomId) location.reload();
+    if (roomFromUrl() !== roomId) location.reload();
   });
-  const initial = roomFromHash();
+  const initial = roomFromUrl();
   if (initial) {
     if (enabled) joinRoom(initial);
     else setTimeout(() => alert("共同編集のリンクですが、Firebase の設定（firebase-config.js）がないため接続できません。"), 0);

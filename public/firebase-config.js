@@ -10,8 +10,8 @@ window.FIREBASE_CONFIG = {
   appId: "1:27330219246:web:816744e9296928c9d1f7ff",
 };
 
-// カレンダー配信（個人TT）の購読用 Worker の URL（worker/。例："https://sohosai-shift.xxxx.workers.dev"）。
-// 空なら、閲覧ページ（#cal=…）は「ファイルで取り込む」だけを出す。
-window.SHIFT_CALENDAR = {
-  feedBase: "https://sohosai-shift.cafeore.workers.dev",
+// 公開サイト（https://sohosai-shift.cafeore.workers.dev）の本番の共同編集の部屋。/edit で開き、カレンダー配信は /shift。
+// 空なら /edit・/shift は使わず、共同編集は今までどおり「共同編集を始める」で作った部屋（#room=…）。
+window.SHIFT_SITE = {
+  room: "3uHViyjAK1PM9wWLl1MBAE3k",
 };

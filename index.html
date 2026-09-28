@@ -8,8 +8,11 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- 共同編集の設定（ビルドせずに差し替えられるよう、別ファイルのまま読み込む） -->
-    <script src="./firebase-config.js"></script>
+    <!-- 共同編集の設定（ビルドせずに差し替えられるよう、別ファイルのまま読み込む）。
+         Web ではサイトの直下（/shift/名前 のような深いパスでも同じファイル）、file://（オフライン配布）では index.html の隣 -->
+    <script>
+      document.write('<script src="' + (/^https?:$/.test(location.protocol) ? "/" : "./") + 'firebase-config.js"><\/script>');
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

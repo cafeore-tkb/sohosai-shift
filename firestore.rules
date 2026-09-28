@@ -12,17 +12,25 @@ service cloud.firestore {
     }
 
     // 共同編集の部屋（1部屋＝1ドキュメント）。
-    // ・部屋IDを知っていて（＝共有リンクを持っていて）Google ログインした人は、閲覧・編集できる。
+    // ・閲覧・編集できるのは、管理者（admins）と「編集できる人」（editors）に登録した Google アカウントだけ。
+    //   本番の部屋（/edit）の ID はサイトの設定（firebase-config.js）で公開しているので、ID を知っているだけでは入れない。
+    //   本番の部屋は、editors が空でも管理者だけ。ほかの部屋（本番より前に作った部屋）は、editors を作るまで今までどおり ID を知っていてログインした人なら誰でも。
     // ・勤務可能時間（availability）も参加者全員が修正できる（CSVの丸ごと読み込みを管理者に限るのはアプリ側の制限）。
-    // ・管理者リスト（admins）とカレンダー配信のキー（calKey）を変えられるのは管理者だけ。
+    // ・管理者リスト（admins）・編集できる人（editors）・カレンダー配信のキー（calKey）を変えられるのは管理者だけ。
     // ・作成者（owner）は変更できず、常に管理者に含まれる。
     // ・一覧取得（list）を禁止しているので、IDを知らない人は部屋を探せない。
     match /rooms/{roomId} {
       function isAdmin() {
         return me() in resource.data.admins;
       }
+      // 本番の部屋（firebase-config.js の SHIFT_SITE.room）は必ず登録制。ほかの部屋は editors を作るまで今までどおり
+      function canEdit() {
+        return isAdmin()
+          || me() in resource.data.get('editors', [])
+          || (roomId != '3uHViyjAK1PM9wWLl1MBAE3k' && !('editors' in resource.data));
+      }
 
-      allow get: if signedIn();
+      allow get: if signedIn() && canEdit();
 
       allow create: if signedIn()
         && roomId.matches('^[A-Za-z0-9]{24,}$')
@@ -30,23 +38,26 @@ service cloud.firestore {
         && request.resource.data.admins == [me()]
         && request.resource.data.updatedBy == request.auth.token.email;
 
-      allow update: if signedIn()
+      allow update: if signedIn() && canEdit()
         && request.resource.data.owner == resource.data.owner
         && request.resource.data.owner in request.resource.data.admins
         && request.resource.data.updatedBy == request.auth.token.email
-        && (isAdmin() || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['admins', 'calKey']));
+        && (isAdmin() || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['admins', 'editors', 'calKey']));
 
       allow list, delete: if false;
     }
 
-    // カレンダー配信（個人TT）。管理者が「配信」した時点の全員分の予定（1部屋＝1ドキュメント、ID は部屋の calKey）。
-    // ・キーを知っていれば誰でも読める（ログイン不要。閲覧ページと購読の Worker が読む）。一覧取得は禁止なので、キーを知らない人は探せない。
+    // カレンダー配信（個人TT）。管理者が「配信」した時点の全員分の予定（1部屋＝1ドキュメント）。
+    // ・本番は pubs/shift（/shift で見る）。作れるのは本番の部屋（firebase-config.js の SHIFT_SITE.room と同じ ID）の管理者だけ。
+    //   ほかの ID（以前のランダムなキー）は、その部屋の管理者が削除できるだけで、新しくは作れない。
+    // ・誰でも読める（ログイン不要。閲覧ページと購読の Worker が読む）。一覧取得は禁止。
     // ・書き込み・削除はその部屋の管理者だけ。別の部屋の配信には付け替えられない。
     match /pubs/{key} {
       allow get: if true;
       allow list: if false;
 
-      allow create: if key.matches('^[A-Za-z0-9]{24,}$')
+      allow create: if key == 'shift'
+        && request.resource.data.room == '3uHViyjAK1PM9wWLl1MBAE3k'
         && adminOf(request.resource.data.room)
         && request.resource.data.publishedBy == request.auth.token.email;
 

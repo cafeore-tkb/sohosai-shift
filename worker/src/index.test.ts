@@ -1,45 +1,53 @@
 import { describe, expect, it, vi } from "vitest";
+import { slugId } from "../../src/domain/calendarId";
 import { handle } from "./index";
 
-const env = { FIREBASE_PROJECT_ID: "proj", FIREBASE_API_KEY: "apikey" };
-const KEY = "A".repeat(32),
-  ID = "m0123456789abcd";
 const ICS = "BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n";
+const ID = slugId("山田太郎");
+const doc = { fields: { ics: { mapValue: { fields: { [ID]: { stringValue: ICS } } } } } };
+const assets = vi.fn(async (req: Request) => new Response(`asset ${new URL(req.url).pathname}`, { status: 200 }));
+const env = { FIREBASE_PROJECT_ID: "proj", FIREBASE_API_KEY: "apikey", ASSETS: { fetch: assets } };
 
 function firestore(status: number, body: unknown = {}) {
   return vi.fn(async (_url: string | URL | Request) => new Response(JSON.stringify(body), { status }));
 }
-const doc = { fields: { ics: { mapValue: { fields: { [ID]: { stringValue: ICS } } } } } };
+const at = (path: string, f: typeof fetch = firestore(200, doc), method = "GET") =>
+  handle(new Request(`https://cal.example${path}`, { method }), env, f);
 
-describe("カレンダー配信の Worker", () => {
-  it("/c/{キー}/{ID}.ics はその人の .ics だけを Firestore から読んで text/calendar で返す（検索エンジンには載せない）", async () => {
+describe("Worker", () => {
+  it("/shift/{名前}.ics はその人の .ics だけを pubs/shift から読んで text/calendar で返す（検索エンジンには載せない）", async () => {
     const f = firestore(200, doc);
-    const res = await handle(new Request(`https://cal.example/c/${KEY}/${ID}.ics`), env, f);
+    const res = await at(`/shift/${encodeURIComponent("山田太郎")}.ics`, f);
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("text/calendar; charset=utf-8");
     expect(res.headers.get("X-Robots-Tag")).toContain("noindex");
     expect(await res.text()).toBe(ICS);
     const url = new URL(String(f.mock.calls[0][0]));
-    expect(url.pathname).toBe(`/v1/projects/proj/databases/(default)/documents/pubs/${KEY}`);
+    expect(url.pathname).toBe("/v1/projects/proj/databases/(default)/documents/pubs/shift");
     expect(url.searchParams.getAll("mask.fieldPaths")).toEqual([`ics.${ID}`]);
     expect(url.searchParams.get("key")).toBe("apikey");
+    // 濁点が分解された URL でも同じ人
+    expect((await at(`/shift/${encodeURIComponent("山田太郎".normalize("NFD"))}.ics`)).status).toBe(200);
     // HEAD は本文なし
-    const head = await handle(new Request(`https://cal.example/c/${KEY}/${ID}.ics`, { method: "HEAD" }), env, firestore(200, doc));
+    const head = await at(`/shift/${encodeURIComponent("山田太郎")}.ics`, firestore(200, doc), "HEAD");
     expect(head.status).toBe(200);
     expect(await head.text()).toBe("");
   });
 
-  it("配信を止めた・いない人・形の違う URL は 404、Firestore のエラーは 502、robots.txt は全部お断り", async () => {
-    const at = (path: string, f: typeof fetch = firestore(200, doc), method = "GET") => handle(new Request(`https://cal.example${path}`, { method }), env, f);
-    expect((await at(`/c/${KEY}/${ID}.ics`, firestore(404))).status).toBe(404);
-    expect((await at(`/c/${KEY}/m0000000000000f.ics`, firestore(200, { fields: {} }))).status).toBe(404);
-    expect((await at(`/c/${KEY}/${ID}.ics`, firestore(403))).status).toBe(502);
-    const never = vi.fn();
-    for (const p of ["/", `/c/short/${ID}.ics`, `/c/${KEY}/${ID}`, `/c/${KEY}/../x.ics`, `/c/${KEY}/${ID}.ics/x`])
-      expect((await at(p, never as unknown as typeof fetch)).status).toBe(404);
+  it("/shift/{名前} は閲覧ページ（index.html）", async () => {
+    const res = await at(`/shift/${encodeURIComponent("山田太郎")}`);
+    expect(await res.text()).toBe("asset /");
+  });
+
+  it("配信を止めた・いない人は 404、Firestore のエラーは 502、robots.txt は全部お断り", async () => {
+    expect((await at(`/shift/${encodeURIComponent("山田太郎")}.ics`, firestore(404))).status).toBe(404);
+    expect((await at(`/shift/${encodeURIComponent("佐藤花子")}.ics`)).status).toBe(404);
+    expect((await at(`/shift/${encodeURIComponent("山田太郎")}.ics`, firestore(403))).status).toBe(502);
+    const never = vi.fn() as unknown as typeof fetch;
+    expect((await at("/shift/%E0%A4%A.ics", never)).status).toBe(404);
+    expect((await at("/c/x/y.ics", never)).status).toBe(404);
     expect(never).not.toHaveBeenCalled();
-    expect((await at(`/c/${KEY}/${ID}.ics`, firestore(200, doc), "POST")).status).toBe(405);
-    const robots = await at("/robots.txt");
-    expect(await robots.text()).toBe("User-agent: *\nDisallow: /\n");
+    expect((await at(`/shift/x.ics`, firestore(200, doc), "POST")).status).toBe(405);
+    expect(await (await at("/robots.txt")).text()).toBe("User-agent: *\nDisallow: /\n");
   });
 });

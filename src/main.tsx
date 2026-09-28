@@ -8,6 +8,7 @@ import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { store } from "./store";
 import { startSync } from "./sync/firebase";
+import { currentRoute } from "./sync/site";
 import { App } from "./ui/App";
 import { CalendarPage } from "./ui/calendar/CalendarPage";
 
@@ -22,17 +23,15 @@ window.__SHIFT_DEBUG__ = { snapshot: () => store.model };
 
 const root = createRoot(document.getElementById("root")!);
 
-// カレンダー配信の閲覧ページ（#cal=キー）：アプリ本体は起動しない
-if (/(^#|&)cal=/.test(location.hash)) {
+// カレンダー配信の閲覧ページ（/shift、/shift/{名前}）：アプリ本体（store・共同編集）は起動しない
+const route = currentRoute();
+if (route.kind === "calendar") {
   document.title = "シフトをカレンダーに入れる";
   root.render(
     <StrictMode>
-      <CalendarPage />
+      <CalendarPage initialSlug={route.slug} />
     </StrictMode>,
   );
-  window.addEventListener("hashchange", () => {
-    if (!/(^#|&)cal=/.test(location.hash)) location.reload();
-  });
 } else startApp();
 
 function startApp() {

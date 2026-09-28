@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { allNames } from "./audit";
-import { buildPublication, calendarIds, importIcs, memberEvents, personIcs, publicationDigest, utcStamp } from "./ical";
+import { calendarSlugs, nameSlug, slugId } from "./calendarId";
+import { buildPublication, importIcs, memberEvents, personIcs, publicationDigest, utcStamp } from "./ical";
 import { flattened } from "./slots";
 import { autoModel } from "../test/fixtures";
 
@@ -9,11 +10,21 @@ const opts = { stamp: new Date("2026-10-28T03:00:00Z"), version: "10/28 12:00 �
 const unfold = (ics: string) => ics.replace(/\r\n /g, "").split("\r\n");
 
 describe("個人TTのカレンダー", () => {
-  it("ID は名前だけで決まり、重ならず、URL とフィールド名に使える", () => {
-    const a = calendarIds(["山田 太郎", "佐藤 花子"]);
-    expect(calendarIds(["佐藤 花子", "山田 太郎"])).toEqual(a);
-    expect(Object.values(a).every((id) => /^m[0-9a-f]{14}$/.test(id))).toBe(true);
-    expect(new Set(Object.values(a)).size).toBe(2);
+  it("URL の名前は空白を除いた氏名（重なれば2人目から番号）、ID は URL の名前だけで決まる", () => {
+    expect(nameSlug("山田 太郎")).toBe("山田太郎");
+    expect(nameSlug(" CHEN　YU TING ")).toBe("CHENYUTING");
+    expect(nameSlug("a/b?c#d%e.f")).toBe("a_b_c_d_e_f");
+    expect(calendarSlugs(["山田 太郎", "山田太郎", "佐藤 花子", "山田　太郎"])).toEqual({
+      "山田 太郎": "山田太郎",
+      山田太郎: "山田太郎2",
+      "佐藤 花子": "佐藤花子",
+      "山田　太郎": "山田太郎3",
+    });
+    expect(slugId("山田太郎")).toMatch(/^m[0-9a-f]{14}$/);
+    expect(slugId("山田太郎")).toBe(slugId("山田太郎"));
+    expect(slugId("山田太郎")).not.toBe(slugId("山田太郎2"));
+    // 合成済み・分解された濁点は同じ ID（URL から来た文字列でも同じになる）
+    expect(slugId("ガ")).toBe(slugId("カ\u3099"));
   });
 
   it("予定はその人の担当を時間順につなぎ、日本時間を UTC で書く", () => {
@@ -65,7 +76,9 @@ describe("個人TTのカレンダー", () => {
     const m = autoModel(),
       pub = buildPublication(m, opts);
     expect(pub.members.map((x) => x.name)).toEqual(allNames(m));
-    for (const { id, name } of pub.members) {
+    for (const { id, name, slug } of pub.members) {
+      expect(slug).toBe(nameSlug(name));
+      expect(id).toBe(slugId(slug));
       expect(pub.events[id]).toEqual(memberEvents(m, name));
       expect(pub.ics[id]).toContain(`雙峰祭シフト（${name}）`);
     }

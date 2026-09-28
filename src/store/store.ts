@@ -58,6 +58,10 @@ export type ShareDialogContent =
   | { kind: "loading" }
   | { kind: "login"; inRoom: boolean }
   | { kind: "start"; email: string; starting: boolean }
+  /** 本番の部屋（/edit）があるサイトのローカル画面：新しい部屋は作らずに案内する */
+  | { kind: "goto"; email: string; url: string }
+  /** 本番の部屋の「編集できる人」に登録されていないアカウント */
+  | { kind: "denied"; email: string }
   | {
       kind: "room";
       email: string;
@@ -68,12 +72,16 @@ export type ShareDialogContent =
       updatedBy: string;
       /** 最終更新の日時（ja-JP の表記）。なければ "" */
       when: string;
+      /** 編集できる人（本番の部屋だけ。ほかの部屋は null＝リンクを持つ人は誰でも） */
+      editors: string[] | null;
       calendar: CalendarShare;
     };
 
 /** カレンダー配信（個人TT）の状態 */
 export interface CalendarShare {
-  /** メンバーに配る共通リンク（まだ一度も配信していなければ ""） */
+  /** 配信できる部屋か（本番の部屋だけ） */
+  enabled: boolean;
+  /** メンバーに配るリンク（/shift。配信していなければ ""） */
   url: string;
   /** いま配信中の内容（止めている・未配信なら null）。digest が今の Model と違えば未配信の変更あり */
   published: { by: string; when: string; digest: string } | null;
@@ -105,6 +113,9 @@ export interface ShareActions {
   publish(): void;
   /** カレンダーの配信を止める（管理者） */
   unpublish(): void;
+  /** 編集できる人を追加・削除する（本番の部屋の管理者） */
+  addEditor(email: string): void;
+  removeEditor(email: string): void;
   addAdmin(email: string): void;
   removeAdmin(email: string): void;
 }

@@ -1,6 +1,6 @@
 // 共同編集のダイアログ（#shareDialog・本文 #shareBody）。中身は sync が store.ui.share に書き、操作は store.shareActions を呼ぶ。
 // 状態：設定なし（disabled）・読み込み中・ログイン（#shareSignIn）・開始（#shareStartBtn）・参加中（リンク＋コピー、管理者の一覧、#adminForm #adminEmail、
-// カレンダー配信 #calPublishBtn #calUrl）。
+// 編集できる人 #editorForm #editorEmail、カレンダー配信 #calPublishBtn #calUrl）・本番の部屋への案内（goto）・登録されていないアカウント（denied）。
 // 共同編集している人の表示（アバター）はない（バックエンドに在室の情報がないため。リードの判断）
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 import { publicationDigest } from "../domain";
 import { store, useModelVersion, useUi } from "../store";
 import type { CalendarShare, ShareDialogContent } from "../store";
-import { Button, Dialog, Icon, Notice, Pill, Spacer, TextInput } from "./components";
+import { Button, Dialog, Icon, LinkButton, Notice, Pill, Spacer, TextInput } from "./components";
 import { SyncPill, syncLook } from "./layout/SyncBadge";
 import styles from "./ShareDialog.module.css";
 
@@ -97,6 +97,49 @@ function content(c: ShareDialogContent): { body: ReactNode; footer: ReactNode } 
             </Button>
             <Button id="shareStartBtn" variant="primary" icon="users" disabled={c.starting} onClick={() => act().start()}>
               {c.starting ? "作成中…" : "共同編集を始める"}
+            </Button>
+          </>
+        ),
+      };
+    case "goto":
+      return {
+        body: (
+          <>
+            <Account email={c.email} />
+            <p>本番のシフトの共同編集は、専用のページで行います。編集できるのは、管理者が登録した人だけです。</p>
+            <p className={styles.muted}>このページ（{location.host}/）はローカル用です。データはこのブラウザの中だけで扱い、ほかの人とは共有されません。</p>
+          </>
+        ),
+        footer: (
+          <>
+            <Button variant="ghost" data-close="">
+              閉じる
+            </Button>
+            <LinkButton id="shareGotoBtn" variant="primary" icon="users" href={c.url}>
+              本番の共同編集を開く
+            </LinkButton>
+          </>
+        ),
+      };
+    case "denied":
+      return {
+        body: (
+          <>
+            <Account email={c.email} />
+            <Notice tone="warn">このアカウントは、本番のシフトを編集できる人に登録されていません。</Notice>
+            <p>
+              管理者に、このメールアドレス（<b>{c.email}</b>）を「編集できる人」に追加してもらってから、読み込み直してください。別のアカウントで入る場合は、ログアウトしてからログインし直してください。
+            </p>
+          </>
+        ),
+        footer: (
+          <>
+            <LinkButton variant="ghost" href="/">
+              ローカルで使う
+            </LinkButton>
+            <Spacer />
+            <Button variant="primary" icon="reset" onClick={() => location.reload()}>
+              読み込み直す
             </Button>
           </>
         ),
@@ -223,10 +266,11 @@ function RoomBody({ c }: { c: Extract<ShareDialogContent, { kind: "room" }> }) {
         )}
       </section>
 
-      <CalendarSection cal={c.calendar} isAdmin={c.isAdmin} />
+      {c.editors ? <EditorsSection editors={c.editors} isAdmin={c.isAdmin} /> : null}
+      {c.calendar.enabled ? <CalendarSection cal={c.calendar} isAdmin={c.isAdmin} /> : null}
 
       <ul className={styles.notes}>
-        <li>リンクを持っていて Google ログインした人は、誰でも閲覧・編集できます。</li>
+        <li>{c.editors ? "閲覧・編集できるのは、管理者と「編集できる人」に登録した人だけです。" : "リンクを持っていて Google ログインした人は、誰でも閲覧・編集できます。"}</li>
         <li>同じ枠を同時に変更した場合は、あとから変更した内容が残ります。</li>
         {c.updatedBy ? <li>{`最終更新：${c.updatedBy}${c.when ? `（${c.when}）` : ""}`}</li> : null}
       </ul>
@@ -248,7 +292,7 @@ function CalendarSection({ cal, isAdmin }: { cal: CalendarShare; isAdmin: boolea
       </h3>
       {live ? (
         <>
-          <p>メンバーにはこの共通リンクだけを共有します。名前を選ぶと、自分のシフトをカレンダーに購読・取り込みできます（ログイン不要・検索エンジンには載りません）。</p>
+          <p>メンバーにはこのリンクだけを共有します。名前を選ぶと、自分のシフトをカレンダーに購読・取り込みできます（ログイン不要・検索エンジンには載りません）。個人のページは「/shift/名前」です。</p>
           <CopyLink id="calUrl" btnId="calCopyBtn" value={cal.url} label="カレンダーの共通リンク" />
           <p className={styles.muted}>
             {`最終配信：${cal.published!.by}${cal.published!.when ? `（${cal.published!.when}）` : ""}`}
@@ -262,8 +306,8 @@ function CalendarSection({ cal, isAdmin }: { cal: CalendarShare; isAdmin: boolea
         </>
       ) : (
         <p className={styles.muted}>
-          {cal.url ? "配信を止めています。" : "まだ配信していません。"}
-          配信すると、メンバーが共通リンクから自分のシフトをカレンダーに入れられます。配信した時点の内容だけが見え、編集中の内容は「配信」を押すまで届きません。
+          いまは配信していません。
+          配信すると、メンバーが /shift から自分のシフトをカレンダーに入れられます。配信した時点の内容だけが見え、編集中の内容は「配信」を押すまで届きません。
         </p>
       )}
       {isAdmin ? (
@@ -279,6 +323,59 @@ function CalendarSection({ cal, isAdmin }: { cal: CalendarShare; isAdmin: boolea
         </div>
       ) : (
         <p className={styles.muted}>配信は管理者だけができます。</p>
+      )}
+    </section>
+  );
+}
+
+/** 編集できる人（本番の部屋）：管理者のほかに、閲覧・編集できる Google アカウント */
+function EditorsSection({ editors, isAdmin }: { editors: string[]; isAdmin: boolean }) {
+  const emailRef = useRef<HTMLInputElement>(null);
+  return (
+    <section className={styles.admins} aria-labelledby="shareEditorsTitle">
+      <h3 id="shareEditorsTitle" className={styles.adminsTitle}>
+        編集できる人
+      </h3>
+      {editors.length ? (
+        <ul className={styles.adminList}>
+          {editors.map((a) => (
+            <li key={a}>
+              <span className={styles.email}>{a}</span>
+              {isAdmin ? (
+                <Button variant="ghost" size="sm" danger data-remove-editor={a} aria-label={`${a} を編集できる人から削除`} onClick={() => act().removeEditor(a)}>
+                  削除
+                </Button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className={styles.muted}>まだいません（管理者だけが編集できます）。</p>
+      )}
+      {isAdmin ? (
+        <form
+          key={editors.join()}
+          id="editorForm"
+          className={styles.linkbox}
+          onSubmit={(e) => {
+            e.preventDefault();
+            act().addEditor(emailRef.current!.value);
+          }}
+        >
+          <TextInput
+            id="editorEmail"
+            ref={emailRef}
+            type="email"
+            placeholder="追加するGoogleアカウントのメールアドレス"
+            aria-label="追加する編集できる人のメールアドレス"
+            required
+          />
+          <Button type="submit" icon="plus">
+            追加
+          </Button>
+        </form>
+      ) : (
+        <p className={styles.muted}>編集できる人の追加・削除は管理者だけができます。</p>
       )}
     </section>
   );

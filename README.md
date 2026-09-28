@@ -97,31 +97,44 @@ print → domain
 初回セットアップの手順と、利用者側の使い方（共同編集の始め方・管理者・注意点）は [README_共有手順.txt](README_共有手順.txt) の
 「共同編集」にあります。
 
+## 公開サイトの URL
+
+| URL | 画面 |
+|---|---|
+| `/` | ローカル（このブラウザだけで動く。データは共有されない） |
+| `/edit` | 本番の共同編集の部屋（`public/firebase-config.js` の `window.SHIFT_SITE.room`）。**閲覧・編集できるのは管理者と「編集できる人」に登録した Google アカウントだけ**（firestore.rules）。管理者が共有ダイアログで追加・削除する |
+| `/shift` | カレンダー配信の名前の一覧（ログイン不要） |
+| `/shift/{名前}` | その人の予定と、購読・ダウンロード（名前は空白を除いた氏名） |
+| `/shift/{名前}.ics` | 購読の URL（Worker が返す） |
+
+古いリンク（`#room={本番の部屋}` と `#cal=…`）は `/edit`・`/shift` に置き換わります。`SHIFT_SITE.room` が空なら、今までどおり
+「共同編集を始める」で部屋（`#room=…`）を作れます。本番の部屋の ID は公開の設定に書いてあるので、ID を知っているだけでは入れません
+（本番の部屋は rules で必ず登録制。ID を変えるときは firestore.rules の2か所も直す）。
+
 ## カレンダー配信（個人TT）
 
-共同編集の部屋の管理者が、共有ダイアログの「カレンダー配信」で**配信**すると、その時点の全員分の個人TTが Firestore の
-`pubs/{キー}` に置かれます（編集中の内容は、もう一度「配信」を押すまで届きません）。メンバーには**共通リンク**（`…/#cal=キー`）
-だけを共有します。ログイン不要で、名前を選ぶと自分の予定の確認と、
+本番の部屋（`/edit`）の管理者が、共有ダイアログの「カレンダー配信」で**配信**すると、その時点の全員分の個人TTが Firestore の
+`pubs/shift` に置かれます（編集中の内容は、もう一度「配信」を押すまで届きません）。メンバーには **`/shift`** だけを共有します。
+ログイン不要で、名前を選ぶと（`/shift/山田太郎`）自分の予定の確認と、
 
 - **購読**（webcal。シフトが変わると自動で反映。専用のカレンダーとして追加される）
 - **ファイルで取り込む**（.ics。自分のカレンダーに予定として入る。変更は届かない）
 
-ができます。キーを知らない人は探せず（一覧取得は禁止）、閲覧ページと購読の応答は検索エンジンに載せません（noindex）。
-シフトは部内で見えて構わない前提で、共通リンクを知っていれば誰の分も見られます。止めるときは「配信を止める」（ドキュメントを削除。
-もう一度配信すると同じリンク・同じ購読 URL で再開）。
+ができます。閲覧ページと購読の応答は検索エンジンに載せません（noindex・robots.txt）。シフトは部内で見えて構わない前提で、
+URL を知っていれば誰の分も見られます。止めるときは「配信を止める」（ドキュメントを削除。もう一度配信すると同じ URL で再開）。
 
-購読の URL は Cloudflare Worker（`worker/`、`GET /c/{キー}/{ID}.ics`）が返します。Worker は秘密の値を持たず、Firestore の
-REST API で `pubs/{キー}` のその人の分（`ics.{ID}`）だけを読んで `text/calendar` で返します。ICS を作るのはアプリだけ
-（`src/domain/ical.ts`）で、ダウンロードと購読は同じ中身です（取り込み用はカレンダー名・更新間隔の指定だけを外す）。
+購読の URL（`/shift/{名前}.ics`）は Cloudflare Worker（`worker/`）が返します。Worker は秘密の値を持たず、名前から ID を求めて
+（`src/domain/calendarId.ts`。アプリと同じ関数）、Firestore の REST API で `pubs/shift` のその人の分（`ics.{ID}`）だけを読んで
+`text/calendar` で返します。ICS を作るのはアプリだけ（`src/domain/ical.ts`）で、ダウンロードと購読は同じ中身です
+（取り込み用はカレンダー名・更新間隔の指定だけを外す）。
 
 **初回セットアップ**
 
-1. `firestore.rules` を反映する（`pubs/{key}` のルールと、部屋の `calKey` を管理者だけにする変更）。
+1. `firestore.rules` を反映する。
 2. Cloudflare（cafeore.internal のアカウント）で、権限「アカウント → Workers スクリプト → 編集」だけの API トークンを作り、
    GitHub の Settings → Secrets and variables → Actions に `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を登録する。
 3. Actions の「Deploy」を実行する（main に push したときも動く）。手元からなら `npm run build && cd worker && npx wrangler login && npx wrangler deploy`。
-4. デプロイされた URL（いまは `https://sohosai-shift.cafeore.workers.dev`）を `public/firebase-config.js` の
-   `window.SHIFT_CALENDAR.feedBase` に書く。空のあいだは、閲覧ページは「ファイルで取り込む」だけを出す。
+4. Firebase Authentication の承認済みドメインに `sohosai-shift.cafeore.workers.dev` を入れる。
 
 ## オフライン配布（zip）
 
