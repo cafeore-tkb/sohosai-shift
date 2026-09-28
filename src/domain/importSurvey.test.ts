@@ -30,7 +30,7 @@ describe("importSurvey", () => {
     expect(m.view).toBe("shift");
   });
 
-  it("判別できない値は警告", () => {
+  it("判別できない値・ない列は知らせる", () => {
     const m = createModel();
     const r = importSurvey(
       m,
@@ -45,11 +45,9 @@ describe("importSurvey", () => {
     ]);
     expect(m.memberCars).toEqual({ A: false, B: false });
     expect("A" in m.memberDrips).toBe(false);
-  });
-
-  it("ステータス・店舗の列がないとき", () => {
-    const r = importSurvey(createModel(), "name,date,start,end\nA,2026-10-31,10:00,12:00");
-    expect(r.messages[1]).toBe("CSVにステータス・所属店舗の列がないため、「メンバーのステータス」で設定してください。");
+    // ステータス・店舗の列がないとき
+    const r2 = importSurvey(createModel(), "name,date,start,end\nA,2026-10-31,10:00,12:00");
+    expect(r2.messages[1]).toBe("CSVにステータス・所属店舗の列がないため、「メンバーのステータス」で設定してください。");
   });
 
   it("Attendar 形式：続いた時間をつなげる", () => {

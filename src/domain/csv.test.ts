@@ -5,22 +5,17 @@ import { exportCsv, sampleCsv, templateCsv } from "./exports";
 import { autoModel } from "../test/fixtures";
 
 describe("csvRows", () => {
-  it("引用符・エスケープ・CRLF・空行・trim", () => {
+  it("引用符・エスケープ・CRLF・空行・trim、csvLine と往復する", () => {
     expect(csvRows('a, "b,c" ,"d""e"\r\n\r\n , \n"x\ny",z')).toEqual([
       ["a", "b,c", 'd"e'],
       ["x\ny", "z"],
     ]);
-  });
-  it("最後の行に改行がなくても読む・空文字は []", () => {
     expect(csvRows("a,b")).toEqual([["a", "b"]]);
     expect(csvRows("")).toEqual([]);
-  });
-  it("csvLine と往復する", () => {
+    // csvLine と往復する。csvLineQuoted はすべて囲む
     const row = ["山田, 太郎", 'a"b', "c\nd", "", "普通"];
     expect(csvLine(row)).toBe('"山田, 太郎","a""b","c\nd",,普通');
     expect(csvRows(csvLine(row))).toEqual([row]);
-  });
-  it("csvLineQuoted はすべて囲む", () => {
     expect(csvLineQuoted(["a", 'b"', 3])).toBe('"a","b""","3"');
   });
 });

@@ -12,26 +12,19 @@ describe("autoAssign（サンプル）", () => {
   const items = flattened(m);
   const assigned = items.filter((x) => m.assignments[x.key]);
 
-  it("ほとんどの枠が埋まる", () => {
+  it("ほとんどの枠が埋まり、重複なし・条件と勤務可能時間を満たす（ドリッパー 1st・6th は上級生）", () => {
     expect(assigned.length / items.length).toBeGreaterThan(0.8);
-  });
-  it("重複なし・条件と勤務可能時間を満たす", () => {
     expect(assignmentAudit(m).conflicts.size).toBe(0);
+    const keys = new Set(items.map((x) => x.key));
+    for (const [k, name] of Object.entries(m.assignments)) {
+      expect(keys.has(k)).toBe(true);
+      expect(name).not.toBe("");
+    }
     for (const x of assigned) {
       const name = m.assignments[x.key];
       expect(fitsSlot(m, name, x)).toBe(true);
       expect(canWorkAt(m, name, x)).toBe(true);
-    }
-  });
-  it("ドリッパー 1st・6th は上級生だけ", () => {
-    for (const x of assigned.filter((x) => x.role === "ドリッパー" && (x.occ === 0 || x.occ === 5)))
-      expect(levelOf(m, m.assignments[x.key])).toBe(statusLevels["上級生"]);
-  });
-  it("割当のキーは実在する枠だけ（空文字は作らない）", () => {
-    const keys = new Set(items.map((x) => x.key));
-    for (const [k, v] of Object.entries(m.assignments)) {
-      expect(keys.has(k)).toBe(true);
-      expect(v).not.toBe("");
+      if (x.role === "ドリッパー" && (x.occ === 0 || x.occ === 5)) expect(levelOf(m, name)).toBe(statusLevels["上級生"]);
     }
   });
   it("同じ入力なら同じ結果・既存の割当は捨てる", () => {

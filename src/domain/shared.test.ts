@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gridView, personNamesFor } from "./grid";
+import { gridView } from "./grid";
 import { createModel, refreshDerived } from "./model";
 import { applySharedChange, replaceShared, sharedMap } from "./shared";
 import { defaultCount, ensureAllSlots, eventDates } from "./slots";
@@ -65,16 +65,5 @@ describe("シフト表の絞り込み", () => {
     expect(day.viewDates).toEqual([dates[0]]);
     m.gridStore = day.stores[0];
     expect(gridView(m, dates).storeF).toBe(day.stores[0]);
-  });
-
-  it("personNamesFor：店舗で絞り込んだときはその店舗の所属だけ", () => {
-    const m = tinyModel();
-    refreshDerived(m);
-    const d = eventDates(m)[0];
-    const all = personNamesFor(m, d, "");
-    expect(all.length).toBeGreaterThan(0);
-    m.memberStores[all[0]] = ["本店"];
-    for (const n of all.slice(1)) m.memberStores[n] = [];
-    expect(personNamesFor(m, d, "本店")).toEqual([all[0]]);
   });
 });

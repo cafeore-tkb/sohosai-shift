@@ -6,7 +6,7 @@ import { flattened } from "./slots";
 import { item, tinyModel } from "../test/fixtures";
 
 describe("mergeSpans / fmt", () => {
-  it("重なり・隣接をまとめる（分）", () => {
+  it("重なり・隣接をまとめる（分）、fmt", () => {
     expect(
       mergeSpans([
         { start: "11:00", end: "11:30" },
@@ -19,14 +19,12 @@ describe("mergeSpans / fmt", () => {
       { start: 600, end: 690 },
       { start: 780, end: 810 },
     ]);
-  });
-  it("fmt", () => {
     expect([fmt(0), fmt(1.5), fmt(2), fmt(1 / 3)]).toEqual(["0h", "1.5h", "2h", "0.3h"]);
   });
 });
 
 describe("assignmentAudit", () => {
-  it("重複・勤務時間（重なりは1回だけ数える）", () => {
+  it("重複・勤務時間（重なりは1回だけ数える・昼食は含まない）", () => {
     const m = tinyModel();
     const a = item(m, "レジ", "10:00"),
       b = item(m, "ホール", "10:00"),
@@ -38,19 +36,17 @@ describe("assignmentAudit", () => {
     expect(Object.keys(audit.booked)).toEqual(["A|2026-10-31", "B|2026-10-31"]);
     expect(auditRow(m, audit, "A", ["2026-10-31", "2026-11-01"])).toEqual({ perDay: [1, null], total: 1 });
     expect(auditRow(m, audit, "C", ["2026-10-31"])).toEqual({ perDay: [0], total: 0 });
-  });
-
-  it("昼食・休憩は勤務時間に含まない", () => {
-    const m = tinyModel();
-    m.availability.forEach((x) => (x.date = "2026-10-30"));
-    m.slots = [];
-    refreshDerived(m);
-    const lunch = m.slots.find((s) => s.role === "昼食")!;
+    // 昼食・休憩は勤務時間に含まない
+    const p = tinyModel();
+    p.availability.forEach((x) => (x.date = "2026-10-30"));
+    p.slots = [];
+    refreshDerived(p);
+    const lunch = p.slots.find((s) => s.role === "昼食")!;
     lunch.count = 1;
-    const prep = m.slots.find((s) => s.role === "店舗準備（本店）" && s.start === "11:00")!;
-    m.assignments[`${lunch.id}-0`] = "A";
-    m.assignments[`${prep.id}-0`] = "A";
-    expect(assignmentAudit(m).hours.A["2026-10-30"]).toBe(0.5);
+    const prep = p.slots.find((s) => s.role === "店舗準備（本店）" && s.start === "11:00")!;
+    p.assignments[`${lunch.id}-0`] = "A";
+    p.assignments[`${prep.id}-0`] = "A";
+    expect(assignmentAudit(p).hours.A["2026-10-30"]).toBe(0.5);
   });
 
   it("時間外・苦手・やりたい役職に入っていない人", () => {

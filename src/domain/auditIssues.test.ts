@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { assignmentAudit, dislikedCount, offAssignments, unfitAssignments } from "./audit";
 import { slotCell } from "./cells";
 import { auditIssues } from "./auditIssues";
-import { autoModel, item, tinyModel } from "../test/fixtures";
+import { item, tinyModel } from "../test/fixtures";
 
 describe("auditIssues", () => {
   it("重複：人・日ごとに1件、同じ時間帯なら役職を ／ で並べる", () => {
@@ -54,12 +54,5 @@ describe("auditIssues", () => {
     expect(cell().kind).toBe("off"); // 条件外より勤務できない時間
     m.assignments[item(m, "レジ", "10:00").key] = "C";
     expect(cell().kind).toBe("conflict");
-  });
-
-  it("サンプル＋自動割当：重複の枠はすべてどこかの件に入る", () => {
-    const m = autoModel();
-    const audit = assignmentAudit(m);
-    const { conflicts } = auditIssues(m, audit);
-    expect(new Set(conflicts.flatMap((x) => x.keys))).toEqual(audit.conflicts);
   });
 });

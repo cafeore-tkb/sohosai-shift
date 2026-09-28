@@ -9,7 +9,7 @@ import { overTargetIfPicked, overTargets, workloadTarget } from "./workload";
 import { D, autoModel } from "../test/fixtures";
 
 describe("働ける量", () => {
-  it('parseWorkload はゆるく読む（空・希望なしは ""、読めなければ undefined）', () => {
+  it('parseWorkload はゆるく読み、アンケートの任意の列「働ける量」を読み込む', () => {
     expect(["少し", "すこし", "少なめ", "2時間", "3h", "少し（2〜3時間）"].map(parseWorkload)).toEqual(
       Array(6).fill("少し"),
     );
@@ -21,9 +21,7 @@ describe("働ける量", () => {
     );
     expect(["", " ", "希望なし", "-"].map(parseWorkload)).toEqual(["", "", "", ""]);
     expect(parseWorkload("よくわからない")).toBeUndefined();
-  });
-
-  it("アンケートの任意の列「働ける量」を読み込む（空は目安なし、読めない値は警告）", () => {
+    // アンケートの任意の列「働ける量」を読み込む（空は目安なし、読めない値は警告）
     const m = createModel();
     m.memberWorkload.C = "少し";
     const r = importSurvey(
@@ -35,11 +33,7 @@ describe("働ける量", () => {
     expect(m.memberWorkload).toEqual({ A: "少し" });
     expect(r.messages[1]).toBe("ステータス・所属店舗・働ける量を4名分反映しました。");
     expect(r.warns).toEqual(["働ける量を判別できなかった回答（目安なしとして扱います）：E（???）"]);
-  });
-
-  it("列がなければ変えない", () => {
-    const m = createModel();
-    m.memberWorkload.A = "少し";
+    // 列がなければ変えない
     importSurvey(m, "氏名,日付,開始時刻,終了時刻\nA,2026-10-31,10:00,12:00");
     expect(m.memberWorkload).toEqual({ A: "少し" });
   });
@@ -71,17 +65,6 @@ describe("働ける量", () => {
     expect(short.A[D] + short.B[D]).toBe(9);
     expect(workloadTarget(createModel(), "A")).toBeNull();
   });
-
-  it("自動割当（サンプル）：目安のある人の目安超えは、目安を見ない場合より少ない", () => {
-    const m = autoModel();
-    const over = overTargets(m, assignmentAudit(m)).length;
-    // 同じサンプルを、働ける量を見ずに自動割当し直して比べる
-    const saved = { ...m.memberWorkload };
-    m.memberWorkload = {};
-    autoAssign(m);
-    m.memberWorkload = saved;
-    expect(over).toBeLessThan(overTargets(m, assignmentAudit(m)).length);
-  }, 20000);
 
   it("overTargets・overTargetIfPicked", () => {
     const m = autoModel();

@@ -18,22 +18,13 @@ function model(names: string[]): Model {
 const kana = ["あべ", "いとう", "うえだ", "えもと", "おの"];
 
 describe("orderedNames", () => {
-  it("falls back to 五十音 order with no saved order (unchanged behaviour)", () => {
+  it("保存した順がなければ五十音、あれば番号順（数値でない番号は無視）", () => {
     const m = model(["おの", "あべ", "えもと", "いとう", "うえだ", "あべ"]);
     expect(allNames(m)).toEqual(kana);
     expect(namesOn(m, D)).toEqual(kana);
-  });
-
-  it("puts ranked names first by rank, unranked after them in 五十音 order, ties by 五十音", () => {
-    const m = model(kana);
-    m.memberOrder = { おの: 1, うえだ: 2, いとう: 2 };
+    // 番号のある人が先（同じ番号は五十音）、番号のない人は後ろで五十音。数値でない番号は無視
+    m.memberOrder = { おの: 1, うえだ: 2, いとう: 2, えもと: Number.NaN, あべ: "1" as unknown as number };
     expect(orderedNames(m, kana)).toEqual(["おの", "いとう", "うえだ", "あべ", "えもと"]);
-  });
-
-  it("ignores non-numeric ranks (garbage from the room)", () => {
-    const m = model(kana);
-    m.memberOrder = { おの: "1" as unknown as number, えもと: Number.NaN, うえだ: 5 };
-    expect(orderedNames(m, kana)).toEqual(["うえだ", "あべ", "いとう", "えもと", "おの"]);
   });
 
   it("is used by every member list (board, datalist, person columns)", () => {
@@ -47,14 +38,11 @@ describe("orderedNames", () => {
 });
 
 describe("sortedMembers", () => {
-  it("学年順: 上級生 > 2年目合格 > 1年目合格 > 未合格 > 未設定, then 五十音", () => {
+  it("学年順・所属店舗順（同じなら五十音）", () => {
     const m = model(kana);
     m.memberStatuses = { おの: "上級生", いとう: "1年目合格", えもと: "上級生", あべ: "未合格", うえだ: "未設定" };
     expect(sortedMembers(m, kana, "status")).toEqual(["えもと", "おの", "いとう", "あべ", "うえだ"]);
-  });
-
-  it("所属店舗順: 本店, 2号店, くれあ, none (first shop wins), then 五十音", () => {
-    const m = model(kana);
+    // 所属店舗順: 本店, 2号店, くれあ, なし（最初の店舗で決める）
     m.memberStores = { おの: ["本店"], いとう: ["くれあ", "2号店"], あべ: ["くれあ"], えもと: ["本店", "くれあ"] };
     expect(sortedMembers(m, kana, "store")).toEqual(["えもと", "おの", "いとう", "あべ", "うえだ"]);
   });
@@ -87,13 +75,11 @@ describe("sortedMembers", () => {
 });
 
 describe("movedOrder / moveMember", () => {
-  it("moves within the full list", () => {
+  it("全員の中で動かす・絞り込み中は見えている隣の人の横へ", () => {
     expect(movedOrder(kana, kana, "おの", 0)).toEqual(["おの", "あべ", "いとう", "うえだ", "えもと"]);
     expect(movedOrder(kana, kana, "あべ", 4)).toEqual(["いとう", "うえだ", "えもと", "おの", "あべ"]);
     expect(movedOrder(kana, kana, "いとう", 1)).toEqual(kana);
-  });
-
-  it("while filtered, lands next to the visible neighbour; hidden members keep their places", () => {
+    // 絞り込み中は見えている隣の人の横へ。見えていない人の順はそのまま
     const visible = ["あべ", "うえだ", "おの"];
     // おの を見えている先頭（あべ の前）へ
     expect(movedOrder(kana, visible, "おの", 0)).toEqual(["おの", "あべ", "いとう", "うえだ", "えもと"]);
@@ -103,16 +89,13 @@ describe("movedOrder / moveMember", () => {
     expect(movedOrder(kana, ["あべ", "うえだ"], "あべ", 1)).toEqual(["いとう", "うえだ", "あべ", "えもと", "おの"]);
   });
 
-  it("first move with no saved order ranks everyone", () => {
+  it("最初の移動で全員に番号を振り、その後は動かした人の番号だけ変える", () => {
     const m = model(kana);
     const before = moveMember(m, allNames(m), allNames(m), "おの", 0);
     expect(before).toEqual({});
     expect(allNames(m)).toEqual(["おの", "あべ", "いとう", "うえだ", "えもと"]);
     expect(Object.keys(m.memberOrder).sort()).toEqual([...kana].sort());
-  });
-
-  it("later moves change only the moved member's rank (one key for co-editing)", () => {
-    const m = model(kana);
+    // 2回目からは動かした人の番号だけ変わる（共同編集で送るのは1キー）
     setMemberOrder(m, kana);
     const prev = { ...m.memberOrder };
     moveMember(m, allNames(m), allNames(m), "おの", 1);
@@ -135,12 +118,8 @@ describe("movedOrder / moveMember", () => {
       moveMember(m, allNames(m), allNames(m), who, 1);
       expect(allNames(m)[1]).toBe(who);
     }
-  });
-
-  it("returns null and keeps the order when nothing moves", () => {
-    const m = model(kana);
-    expect(moveMember(m, allNames(m), allNames(m), "いとう", 1)).toBeNull();
-    expect(m.memberOrder).toEqual({});
+    // 動かないときは null
+    expect(moveMember(m, allNames(m), allNames(m), "あべ", 1)).toBeNull();
   });
 });
 

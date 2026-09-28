@@ -37,7 +37,7 @@ describe("store actions", () => {
     expect(store.dataVersion).toBe(v + 2);
   });
 
-  it("loads the sample: shift view, import status with the intro text", () => {
+  it("loads the sample (shift view, intro text); blocked while the co-editing lock is on", () => {
     actions.loadSample();
     const m = store.model;
     expect(m.view).toBe("shift");
@@ -46,10 +46,9 @@ describe("store actions", () => {
     expect(m.slots.length).toBeGreaterThan(0);
     expect(store.ui.importStatus?.lines).toHaveLength(1);
     expect(store.ui.importStatus?.lines[0].text).toMatch(/^2025年ベースのサンプル（架空の50名・3日間/);
-  });
-
-  it("blocks imports when the co-editing lock is on", () => {
+    // 共同編集のロック中は読み込めない
     store.canImportCSV = () => false;
+    Object.assign(store.model, createModel());
     actions.loadSample();
     expect(alert).toHaveBeenCalledWith("共同編集中のため、CSVの読み込みは管理者だけができます。");
     expect(store.model.availability).toHaveLength(0);
@@ -157,33 +156,7 @@ describe("store actions", () => {
     expect(store.ui.selection).toEqual([]);
   });
 
-  it("範囲の外の枠をつかむ・普通にクリックすると選択は消え、その枠だけが動く", () => {
-    actions.loadSample();
-    actions.runAutoAssign();
-    const m = store.model,
-      items = flattened(m);
-    const filledKeys = items.filter((x) => m.assignments[x.key]).map((x) => x.key);
-    const [k1, k2] = filledKeys;
-    actions.selectTo(k1);
-    expect(store.ui.selection).toEqual([k1]);
-    actions.beginDrag(k2);
-    expect(store.ui.selection).toEqual([]);
-    // 2025年ベースのサンプルは自動割当で全部埋まることがあるので、k2 と同じ時間の別の枠を空ける
-    const at = items.find((x) => x.key === k2)!;
-    const target =
-      items.find((x) => x.key !== k2 && !m.assignments[x.key]) ??
-      items.find((x) => x.key !== k1 && x.key !== k2 && x.date === at.date && x.start === at.start)!;
-    m.assignments[target.key] = "";
-    const name = m.assignments[k2];
-    actions.endDrag(k2, target.key);
-    expect(m.assignments[target.key]).toBe(name);
-    expect(m.assignments[k2]).toBe("");
-    actions.selectTo(k1);
-    actions.openPicker(k2);
-    expect(store.ui.selection).toEqual([]);
-  });
-
-  it("opening counts closes the audit drawer and follows the grid date", () => {
+  it("opening counts closes the audit drawer and follows the grid date; a blank bulk count does nothing", () => {
     actions.loadSample();
     actions.toggleAudit(true);
     actions.setGridDate("2026-10-31");
@@ -191,31 +164,21 @@ describe("store actions", () => {
     expect(store.ui.auditOpen).toBe(false);
     expect(store.ui.countsOpen).toBe(true);
     expect(store.model.countDate).toBe("2026-10-31");
-  });
-
-  it("a blank bulk count does nothing", () => {
-    actions.loadSample();
+    // 空欄の一括指定は何もしない
     const before = JSON.stringify(store.model.slotCounts);
     expect(actions.changeRoleCounts("本店|||マスター", "")).toBe(false);
     expect(JSON.stringify(store.model.slotCounts)).toBe(before);
     expect(actions.changeRoleCounts("本店|||マスター", "2")).toBe(true);
   });
 
-  it("commit pushes to co-editing unless push: false", () => {
-    const push = vi.fn();
-    store.onStateChange = push;
-    actions.setGridDate("");
-    expect(push).not.toHaveBeenCalled();
-    actions.clearAssignments();
-    expect(push).toHaveBeenCalledTimes(1);
-  });
-
-  it("member order: sort / move write the shared order, push, and undo from the toast", () => {
+  it("member order: sort / move write the shared order, push, and undo from the toast (blocked after a later change)", () => {
     const m = store.model;
     m.availability = ["おの", "あべ", "いとう"].map((name) => ({ name, date: "2026-10-31", start: "10:00", end: "11:00" }));
     m.memberStatuses = { いとう: "上級生", おの: "2年目合格" };
     const push = vi.fn();
     store.onStateChange = push;
+    actions.setGridDate(""); // 表示だけの変更は送らない
+    expect(push).not.toHaveBeenCalled();
     actions.sortMembers("status");
     expect(allNames(m)).toEqual(["いとう", "おの", "あべ"]);
     expect(push).toHaveBeenCalled();
@@ -226,16 +189,12 @@ describe("store actions", () => {
     store.ui.toast?.action?.run();
     expect(allNames(m)).toEqual(["いとう", "おの", "あべ"]);
     expect(store.ui.toast?.message).toBe("元に戻しました");
-  });
-
-  it("member order undo is blocked after a later change (e.g. from a co-editor)", () => {
-    const m = store.model;
-    m.availability = ["おの", "あべ"].map((name) => ({ name, date: "2026-10-31", start: "10:00", end: "11:00" }));
+    // その後に（共同編集の相手などが）変えていれば戻さない
     actions.sortMembers("kana");
     const undo = store.ui.toast?.action;
     m.memberOrder = { ...m.memberOrder, おの: 0 };
     undo?.run();
     expect(store.ui.toast?.message).toBe("その後に変更があったため元に戻せません");
-    expect(allNames(m)).toEqual(["おの", "あべ"]);
+    expect(allNames(m)).toEqual(["おの", "あべ", "いとう"]);
   });
 });

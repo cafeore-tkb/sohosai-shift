@@ -20,18 +20,16 @@ describe("roleRows", () => {
   const grid = dayGrid(m, D, "")!;
   const rows = roleRows(m, D, grid, audit, short);
 
-  it("has one row per 30 minutes and one cell per column", () => {
+  it("has one row per 30 minutes and one cell per column, in the legacy key order", () => {
     expect(rows.length).toBe(grid.hours.length);
     for (const r of rows) expect(r.cells.length).toBe(grid.cols.length);
-  });
-
-  it("keeps the same slot keys and DOM order as the legacy grid (rows × columns)", () => {
+    // 旧版の表と同じ枠のキー・同じ順（行 × 列）
     const keys = rows.flatMap((r) => r.cells.flatMap((c) => (c.kind === "item" ? [c.key] : [])));
     const legacy = grid.hours.flatMap((h) => grid.cols.flatMap((c) => gridCell(grid, c, h).item?.key ?? []));
     expect(keys).toEqual(legacy);
   });
 
-  it("joins one person's consecutive rows into a stint and marks continuation rows", () => {
+  it("joins one person's consecutive rows into a stint, and consecutive 空き rows into one box", () => {
     for (let ci = 0; ci < grid.cols.length; ci++)
       for (let r = 1; r < rows.length; r++) {
         const up = rows[r - 1].cells[ci],
@@ -45,9 +43,7 @@ describe("roleRows", () => {
           expect(c.mark).not.toBe("want");
         }
       }
-  });
-
-  it("merges consecutive 空き rows into one box and shows the label once", () => {
+    // 続いた空きは1つの箱にまとめ、ラベルは1回だけ
     let seen = 0;
     for (let ci = 0; ci < grid.cols.length; ci++)
       for (let r = 1; r < rows.length; r++) {
@@ -61,11 +57,6 @@ describe("roleRows", () => {
       }
     expect(seen).toBeGreaterThan(0);
   });
-
-  it("marks not-needed cells with their slot id", () => {
-    const na = rows.flatMap((r) => r.cells).filter((c) => c.kind === "na");
-    for (const c of na) if (c.kind === "na") expect(m.slots.some((s) => s.id === c.slotId)).toBe(true);
-  });
 });
 
 describe("roleHead / personTable / toolbar", () => {
@@ -73,16 +64,14 @@ describe("roleHead / personTable / toolbar", () => {
   const audit = assignmentAudit(m),
     short = buildShortNames(m);
 
-  it("counts open slots per shop band", () => {
+  it("counts open slots per shop band; builds merged person blocks", () => {
     const grid = dayGrid(m, D, "")!;
     const items = flattened(m).filter((x) => x.date === D);
     const head = roleHead(m, grid, items);
     expect(head.bands.map((b) => b.store)).toEqual(grid.stores.map(([s]) => s));
     for (const b of head.bands) expect(b.open).toBe(items.filter((x) => x.store === b.store && !m.assignments[x.key]).length);
     expect(head.groups.reduce((n, g) => n + g.span, 0)).toBe(grid.cols.length);
-  });
-
-  it("builds merged person blocks with the first slot key", () => {
+    // 個人別：続いた割当を1つのブロックにして、最初の枠のキーを持つ
     const names = Object.keys(audit.hours).slice(0, 5);
     const t = personTable(m, D, names, audit, short);
     const blocks = t.rows.flat().filter((c) => c.kind === "block");

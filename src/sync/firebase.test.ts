@@ -21,13 +21,10 @@ describe("sync document format", () => {
       [["assignments", "c"], "w"],
     ]);
     expect(diff(base, cur)).toContainEqual([["assignments", "c"], undefined]);
-  });
-
-  it("memberOrder: a room from an old client has none, and a move sends only the moved key", () => {
+    // memberOrder：古いクライアントの部屋にはなく、移動は動かした人のキーだけ送る
     expect(normalize({ assignments: {} }).memberOrder).toEqual({});
-    const base = normalize({ memberOrder: { A: 1, B: 2, C: 3 } });
-    const cur = normalize({ memberOrder: { A: 1, B: 2, C: 1.5 } });
-    expect(diff(cur, base)).toEqual([[["memberOrder", "C"], 1.5]]);
+    const order = normalize({ memberOrder: { A: 1, B: 2, C: 3 } });
+    expect(diff(normalize({ memberOrder: { A: 1, B: 2, C: 1.5 } }), order)).toEqual([[["memberOrder", "C"], 1.5]]);
   });
 
   it("mergeAvailability keeps my changed person×day and takes theirs elsewhere", () => {
