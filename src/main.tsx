@@ -27,6 +27,8 @@ const root = createRoot(document.getElementById("root")!);
 const route = currentRoute();
 if (route.kind === "calendar") {
   document.title = "シフトをカレンダーに入れる";
+  // 全体のシフトの表は画面より広く、ページごと横にスクロールする。スマホのブラウザが表に合わせて縮小表示しないよう、倍率の下限を1に
+  document.querySelector('meta[name="viewport"]')?.setAttribute("content", "width=device-width, initial-scale=1.0, minimum-scale=1.0, viewport-fit=cover");
   root.render(
     <StrictMode>
       <CalendarPage initialSlug={route.slug} />

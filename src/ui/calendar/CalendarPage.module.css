@@ -1,8 +1,22 @@
-/* === カレンダー配信の閲覧ページ（#cal=キー）: 1カラム、スマホ優先 === */
+/* === カレンダー配信の閲覧ページ（/shift）: スマホ優先。個人のページは 720px の1カラム、名前の一覧は全体のシフトに合わせて横に広い === */
 .page {
   max-width: 720px;
   margin: 0 auto;
   padding: var(--sp-9) var(--sp-6) var(--sp-11);
+}
+/* 名前の一覧＋全体のシフト：外枠は表の幅まで広がる（画面より広ければページが横にスクロール） */
+.shell {
+  width: max-content;
+  min-width: 100%;
+}
+/* 上の部分（見出し・名前の一覧）は画面の幅。横にスクロールしても画面の左に残る */
+.pageWide {
+  position: sticky;
+  left: 0;
+  width: 100vw;
+  max-width: 100vw;
+  margin: 0;
+  padding-bottom: 0;
 }
 .head {
   margin-bottom: var(--sp-7);
@@ -82,6 +96,9 @@
   background: var(--secondary-bg);
   text-align: left;
   font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .name:hover {
   background: var(--secondary-hover);
@@ -115,8 +132,7 @@
 }
 .full > .card {
   width: max-content;
-  min-width: min(100%, 720px);
-  margin: 0 auto;
+  min-width: 100%;
 }
 .headLink {
   display: block;
@@ -175,8 +191,36 @@
   .page {
     padding: var(--sp-7) var(--sp-5) var(--sp-10);
   }
+  .pageWide {
+    padding-bottom: 0;
+  }
+  .full {
+    padding: 0 var(--sp-5) var(--sp-10);
+  }
+  .title {
+    font-size: 19px;
+  }
+  .head {
+    margin-bottom: var(--sp-5);
+  }
   .card {
-    padding: var(--sp-6);
+    padding: var(--sp-6) var(--sp-5);
+  }
+  /* 名前は3列（375px で3つ並ぶ） */
+  .names {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: var(--sp-2);
+  }
+  .name {
+    padding: var(--sp-3) var(--sp-4);
+    font-size: var(--fs-md);
+  }
+  .last {
+    flex-wrap: wrap;
+  }
+  /* 表の列を少し細く（1画面に多くの人が入る） */
+  .full {
+    --person-col: 64px;
   }
   .actions > * {
     width: 100%;

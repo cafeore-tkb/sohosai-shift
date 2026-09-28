@@ -8,7 +8,7 @@ import type { OverviewDay, OverviewSeg } from "../../domain";
 import { feedUrls, fetchIcs, fetchOverview, fetchPub } from "../../sync/calendarFeed";
 import type { PubSummary } from "../../sync/calendarFeed";
 import { calendarUrl, currentRoute } from "../../sync/site";
-import { Button, IconSprite, LinkButton, Notice, SearchInput } from "../components";
+import { Button, IconSprite, LinkButton, Notice, SearchInput, cx } from "../components";
 import styles from "./CalendarPage.module.css";
 import { OverviewPanel } from "./OverviewPanel";
 import { Timetable } from "./Timetable";
@@ -73,8 +73,9 @@ export function CalendarPage({ initialSlug }: { initialSlug: string }) {
 
   const list = !!pub && !member;
   return (
-    <>
-      <div className={styles.page}>
+    // 名前の一覧のページは、全体のシフトの表に合わせて横に広い（上の部分は画面の幅で、表を横にスクロールしても左に残る）
+    <div className={list ? styles.shell : undefined}>
+      <div className={cx(styles.page, list && styles.pageWide)}>
         <IconSprite />
         <header className={styles.head}>
           <p className={styles.eyebrow}>{pub?.title || "シフト"}</p>
@@ -107,7 +108,7 @@ export function CalendarPage({ initialSlug }: { initialSlug: string }) {
           {days ? <OverviewPanel days={days} members={pub.members} mine={remembered()} onPick={choose} /> : <Loading done={days === null} />}
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
 
