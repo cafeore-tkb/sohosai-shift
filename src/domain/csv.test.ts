@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { openRoles } from "./config";
 import { csvLine, csvLineQuoted, csvRows, decodeCsvBytes } from "./csv";
 import { exportCsv, sampleCsv, templateCsv } from "./exports";
 import { autoModel } from "../test/fixtures";
@@ -43,10 +44,10 @@ describe("書き出し", () => {
     expect(new Set(rows.slice(1).map((r) => r[0])).size).toBe(50);
     expect(rows[1]).toEqual(["野村岳", "上級生", "本店, くれあ", "○", "あり", "豆屋", "マスター, ホール", "いっぱい", "2026-10-30", "10:00", "20:00"]);
   });
-  it("シフト CSV は枠の数＋見出し、未割当は「未割当」", () => {
+  it("シフト CSV は枠の数＋見出し、未割当は「未割当」（人数の上限がない係の空きの番目は出さない）", () => {
     const m = autoModel();
     const rows = csvRows(exportCsv(m).slice(1));
-    const items = m.slots.reduce((n, s) => n + s.count, 0);
+    const items = m.slots.reduce((n, s) => n + s.count - (openRoles.includes(s.role) ? 1 : 0), 0);
     expect(rows.length).toBe(items + 1);
     expect(rows[0]).toEqual(["日付", "店舗", "ロール", "開始時刻", "終了時刻", "担当者"]);
     expect(rows.some((r) => r[2] === "ドリッパー 6th")).toBe(true);

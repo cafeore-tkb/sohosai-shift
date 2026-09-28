@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { createModel, refreshDerived } from "./model";
+import { autoAssign } from "./autoAssign";
+import { openRoles } from "./config";
 import {
+  countedItems,
   defaultCount,
   ensureAllSlots,
   eventDates,
+  findSlot,
   flattened,
   hoursForDate,
   partnerOf,
@@ -178,5 +182,53 @@ describe("移行処理", () => {
     expect(m.assignments[`${s.id}-1`]).toBe("A");
     expect(m.assignments[`${s.id}-2`]).toBeUndefined();
     expect(m.slotBlanks).toEqual({});
+  });
+});
+
+describe("人数の上限がない係（前日準備の昼食・休憩・最終オペ練）", () => {
+  const P = "2026-10-30";
+  const prepModel = () => {
+    const m = createModel();
+    for (const name of ["A", "B", "C"]) m.availability.push({ name, date: P, start: "11:00", end: "13:00" });
+    refreshDerived(m);
+    return m;
+  };
+  const counts = (m: ReturnType<typeof createModel>, role: string) =>
+    m.slots.filter((s) => s.date === P && s.role === role).map((s) => s.count);
+
+  it("空きが1つ。入れるたびにその役職のすべての時間で番目が1つ増え、外すと戻る", () => {
+    const m = prepModel();
+    expect(counts(m, "昼食")).toEqual([1, 1, 1, 1]);
+    const lunch = (start: string, occ: number) => `${findSlot(m, P, "準備", "昼食", start)!.id}-${occ}`;
+    m.assignments[lunch("12:00", 0)] = "A";
+    refreshDerived(m);
+    expect(counts(m, "昼食")).toEqual([2, 2, 2, 2]);
+    m.assignments[lunch("12:00", 1)] = "B";
+    m.assignments[lunch("11:30", 2)] = "C";
+    refreshDerived(m);
+    expect(counts(m, "昼食")).toEqual([4, 4, 4, 4]);
+    m.assignments[lunch("11:30", 2)] = "";
+    refreshDerived(m);
+    expect(counts(m, "昼食")).toEqual([3, 3, 3, 3]);
+    expect(counts(m, "休憩")).toEqual([1, 1, 1, 1]);
+    expect(counts(m, "最終オペ練")).toEqual([1, 1, 1, 1]);
+  });
+
+  it("必要人数の設定は効かず、slotCounts にも書かない", () => {
+    const m = prepModel();
+    const s = findSlot(m, P, "準備", "休憩", "11:00")!;
+    setSlotCount(m, s, 5);
+    setRoleCounts(m, P, "準備", "休憩", 3);
+    refreshDerived(m);
+    expect(s.count).toBe(1);
+    expect(m.slotCounts).toEqual({});
+  });
+
+  it("自動割当では埋めず、未割当・充足率に数えない", () => {
+    const m = prepModel();
+    autoAssign(m);
+    refreshDerived(m);
+    expect(flattened(m).filter((x) => openRoles.includes(x.role) && m.assignments[x.key])).toEqual([]);
+    expect(countedItems(m).some((x) => openRoles.includes(x.role))).toBe(false);
   });
 });

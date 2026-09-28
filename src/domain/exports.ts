@@ -3,6 +3,7 @@
 import { csvLine, csvLineQuoted } from "./csv";
 import { MOCK_SURVEY_HEADERS, mockSurveyCsv, mockSurveyNames } from "./mockSurvey";
 import { posLabel } from "./rules";
+import { openRoles } from "./config";
 import { flattened } from "./slots";
 import type { Model } from "./types";
 
@@ -13,7 +14,10 @@ const SURVEY_HEADERS = MOCK_SURVEY_HEADERS;
 /** shift.csv の中身（BOM つき、すべて "" で囲む、改行は LF、末尾に改行なし） */
 export function exportCsv(m: Model): string {
   const rows: unknown[][] = [["日付", "店舗", "ロール", "開始時刻", "終了時刻", "担当者"]];
-  flattened(m).forEach((x) =>
+  // 人数の上限がない係は、いつも1つある空きの番目を出さない
+  flattened(m)
+    .filter((x) => m.assignments[x.key] || !openRoles.includes(x.role))
+    .forEach((x) =>
     rows.push([
       x.date,
       x.store,

@@ -3,7 +3,7 @@
 import { allNames, assignmentAudit, type Audit } from "../domain/audit";
 import { namesOn } from "../domain/availability";
 import { personMatrix, personSegments } from "../domain/cells";
-import { dayName, printRole, roleBase, rolesForDate, slotChoices, storeClass } from "../domain/config";
+import { dayName, openRoles, printRole, roleBase, rolesForDate, slotChoices, storeClass } from "../domain/config";
 import { buildShortNames } from "../domain/names";
 import { decided, posLabel } from "../domain/rules";
 import { ensureAllSlots, eventDates, findSlot, flattened, hoursForDate } from "../domain/slots";
@@ -27,7 +27,8 @@ export function printDayTable(m: Model, date: string, shortNames: ShortNames): s
     cols: { store: string; role: string; i: number; first: boolean }[] = [];
   for (const [store, roles] of groups)
     for (const [role] of roles) {
-      const max = Math.max(0, ...hours.map((h) => Number(find(store, role, h)?.count) || 0));
+      // 人数の上限がない係は、いつも1つある空きの番目を印刷しない
+      const max = Math.max(0, ...hours.map((h) => Number(find(store, role, h)?.count) || 0)) - (openRoles.includes(role) ? 1 : 0);
       for (let i = 0; i < max; i++) {
         cols.push({ store, role, i, first: !cols.length || cols[cols.length - 1].store !== store });
       }

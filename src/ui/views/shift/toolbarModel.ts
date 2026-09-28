@@ -1,7 +1,7 @@
 // シフト調整のツールバーに出す数（日付の充足率・店舗ごとの未割当・スマホの上の帯）。DOM・React に触らない。
 // 数え方は旧版と同じ：充足率は fillOf（decided）、未割当は担当者のいない枠。
 
-import { dayLabel, dayName, fillOf, flattened, gridView } from "../../../domain";
+import { countedItems, dayLabel, dayName, fillOf, gridView } from "../../../domain";
 import type { Audit, Item, Model } from "../../../domain";
 
 export interface DayOption {
@@ -34,7 +34,7 @@ export const shortDayName = (name: string): string => name.replace(/^本番/, ""
 
 export function dayOptions(m: Model, dates: readonly string[]): DayOption[] {
   if (!dates.length) return [];
-  const items = flattened(m);
+  const items = countedItems(m);
   const days = dates.map((date, i): DayOption => {
     const label = dayName(date, i);
     return {
@@ -70,7 +70,7 @@ export function storeOptions(m: Model, dates: readonly string[]): { options: Sto
   if (!dates.length) return { options: [], current: "" };
   const { viewDates, stores, storeF } = gridView(m, dates);
   if (stores.length < 2) return { options: [], current: storeF };
-  const inView = flattened(m).filter((x) => viewDates.includes(x.date));
+  const inView = countedItems(m).filter((x) => viewDates.includes(x.date));
   const open = (list: Item[]) => list.filter((x) => !m.assignments[x.key]).length;
   return {
     options: [
@@ -85,7 +85,7 @@ export function storeOptions(m: Model, dates: readonly string[]): { options: Sto
 export function viewSummary(m: Model, dates: readonly string[], audit: Audit): { open: number; conflicts: number; rate: number; all: boolean } {
   if (!dates.length) return { open: 0, conflicts: 0, rate: 0, all: false };
   const { viewDates } = gridView(m, dates);
-  const inView = flattened(m).filter((x) => viewDates.includes(x.date));
+  const inView = countedItems(m).filter((x) => viewDates.includes(x.date));
   return {
     open: inView.filter((x) => !m.assignments[x.key]).length,
     conflicts: inView.filter((x) => audit.conflicts.has(x.key)).length,

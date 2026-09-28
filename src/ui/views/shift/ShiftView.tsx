@@ -4,7 +4,7 @@
 
 import { memo, useEffect, useLayoutEffect, useRef } from "react";
 import type { FocusEvent, MouseEvent, PointerEvent as ReactPointerEvent, RefObject } from "react";
-import { dayGrid, dayLabel, dayName, eventDates, fillOf, flattened, gridView, personNamesFor } from "../../../domain";
+import { countedItems, dayGrid, dayLabel, dayName, eventDates, fillOf, gridView, personNamesFor } from "../../../domain";
 import type { Model } from "../../../domain";
 import { actions, store, useModel, useModelVersion, useReveal, useUi } from "../../../store";
 import type { RevealRequest } from "../../../store";
@@ -147,7 +147,7 @@ const GridBody = memo(
     const shortNames = useShortNames();
     const all = m.gridDate === "all";
     const { viewDates, storeF } = gridView(m, dates);
-    const items = flattened(m);
+    const items = countedItems(m);
 
     // Tab で表に入れるセルを1つ残す（描き直しでセルがなくなったとき）
     useLayoutEffect(() => ensureRoving(wrapRef.current));

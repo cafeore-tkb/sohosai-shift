@@ -1,6 +1,6 @@
 // 自動割当
 
-import { breakRoles, statusLevels } from "./config";
+import { breakRoles, openRoles, statusLevels } from "./config";
 import { available, decided, dislikes, levelOf, requiredFor, wants, type SlotLike } from "./rules";
 import { ensureAllSlots, flattened, slotAtOffset } from "./slots";
 import type { Availability, Item, Model } from "./types";
@@ -29,7 +29,10 @@ export function autoAssign(m: Model): void {
   };
   // 条件の厳しい番目（上級生枠など）から先に埋め、ほかの番目ではその条件を満たす人をなるべく温存する
   const lv = (x: SlotLike) => statusLevels[requiredFor(m, x)],
-    items = flattened(m).sort(
+    items = flattened(m)
+      // 人数の上限がない係（昼食・休憩など）は手で入れる
+      .filter((x) => !openRoles.includes(x.role))
+      .sort(
       (a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start) || lv(b) - lv(a),
     );
   for (const x of items) {

@@ -9,6 +9,7 @@ import {
   defaultCount,
   liveScheduleFor,
   eventDates,
+  openRoles,
   findSlot,
   hoursForDate,
   plusSlot,
@@ -159,6 +160,20 @@ function CountTable({ m, date }: { m: Model; date: string }) {
               </th>
             </tr>,
             ...roles.map(([role, base]) => {
+              // 人数の上限がない係は必要人数を設定しない（割当に合わせて列が増える）
+              if (openRoles.includes(role))
+                return (
+                  <tr key={`${s}|${role}`}>
+                    <th scope="row" className={styles.role} title="入れるたびに列が増えます">
+                      <b>{role}</b>
+                      <small>上限なし</small>
+                    </th>
+                    <td className={styles.bulk}></td>
+                    <td colSpan={hours.length} className={styles.unlimited}>
+                      人数の上限なし（何人でも入れられます）
+                    </td>
+                  </tr>
+                );
               // 時間ごとの標準（営業時間外は 0。見出しの幅は営業時間内だけで見る）
               const defs = new Map(hours.map((h) => [h, defaultCount(date, s, role, h, base)] as const)),
                 shown = hours.filter(inOpen).map((h) => defs.get(h) ?? base),

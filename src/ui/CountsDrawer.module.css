@@ -111,6 +111,15 @@
   position: sticky;
   left: 14px;
 }
+/* 人数の上限がない係（昼食・休憩など）：入力欄の代わりの注記 */
+.ct td.unlimited {
+  position: sticky;
+  left: 0;
+  padding: var(--sp-2) var(--sp-4);
+  text-align: left;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
 /* 店舗の営業時間（時間割） */
 .group th > .openNote {
   position: sticky;

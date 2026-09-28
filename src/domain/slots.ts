@@ -1,6 +1,6 @@
 // シフト枠（slots）の生成・展開・必要人数と、旧データの移行処理
 
-import { OLD_DRIP, liveScheduleFor, rolesForDate, slotChoices } from "./config";
+import { OLD_DRIP, liveScheduleFor, openRoles, rolesForDate, slotChoices } from "./config";
 import { dripsForIce } from "./parse";
 import { posKey, ruleKey } from "./rules";
 import { SLOT, hmToMin, plusSlot, toHM, toMin } from "./time";
@@ -33,6 +33,9 @@ export const itemsOf = (slot: Slot): Item[] =>
 export function flattened(m: Model): Item[] {
   return m.slots.flatMap(itemsOf);
 }
+
+/** 未割当・充足率に数える枠（人数の上限がない係は数えない） */
+export const countedItems = (m: Model): Item[] => flattened(m).filter((x) => !openRoles.includes(x.role));
 
 /** シフトを作る日付（勤務可能時間にある日付の先頭3日） */
 export const eventDates = (m: Model): string[] => [...new Set(m.availability.map((a) => a.date))].sort().slice(0, 3);
@@ -77,6 +80,28 @@ export function ensureAllSlots(m: Model): void {
   migratePositions(m);
   eventDates(m).forEach((date) => ensureGridSlots(m, date, hoursForDate(m, date)));
   migrateBlanks(m);
+  growOpenSlots(m);
+}
+
+/**
+ * 人数の上限がない係（openRoles）の人数：その日・役職のどの時間も「入っている一番うしろの番目＋空き1つ」。
+ * 割当から決まるので slotCounts には書かない（どの端末でも同じになる）
+ */
+export function growOpenSlots(m: Model): void {
+  const group = new Map<string, string>(),
+    used = new Map<string, number>();
+  for (const s of m.slots)
+    if (openRoles.includes(s.role)) group.set(s.id, `${s.date}\u0000${s.store}\u0000${s.role}`);
+  if (!group.size) return;
+  for (const [key, name] of Object.entries(m.assignments)) {
+    const i = key.lastIndexOf("-"),
+      g = name ? group.get(key.slice(0, i)) : undefined;
+    if (g !== undefined) used.set(g, Math.max(used.get(g) ?? 0, Number(key.slice(i + 1)) + 1));
+  }
+  for (const s of m.slots) {
+    const g = group.get(s.id);
+    if (g !== undefined) s.count = (used.get(g) ?? 0) + 1;
+  }
 }
 
 /** 役職の人数（rolesForDate の値。時間割のある役職ではその日の最大）。時間ごとの標準は defaultCount */
@@ -106,6 +131,7 @@ export const slotDefault = (slot: { date: string; store: string; role: string; s
 
 /** 必要人数を変える（標準と同じなら slotCounts から消す）。入力値は数値に丸める */
 export function setSlotCount(m: Model, slot: Slot, value: unknown): void {
+  if (openRoles.includes(slot.role)) return;
   slot.count = Math.max(0, Math.floor(Number(value) || 0));
   if (slot.count === slotDefault(slot)) delete m.slotCounts[slot.id];
   else m.slotCounts[slot.id] = slot.count;

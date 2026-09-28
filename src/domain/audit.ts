@@ -3,7 +3,7 @@
 import { breakRoles, roleBase } from "./config";
 import { orderedNames } from "./order";
 import { canWorkAt, decided, dislikes, fitsSlot } from "./rules";
-import { flattened } from "./slots";
+import { countedItems, flattened } from "./slots";
 import { toMin } from "./time";
 import type { Item, Model } from "./types";
 
@@ -99,8 +99,9 @@ export function fillOf(m: Model, list: readonly Item[]): { filled: number; total
 
 /** ヘッダーのサマリー（旧 updateStats の数値） */
 export function summaryStats(m: Model, audit: Audit = assignmentAudit(m)) {
-  const items = flattened(m),
-    filled = items.filter((x) => m.assignments[x.key]).length,
+  // 必要枠・未割当・充足率は人数の上限がない係を数えない（割当済みは数える）
+  const items = countedItems(m),
+    filled = flattened(m).filter((x) => m.assignments[x.key]).length,
     open = items.filter((x) => !decided(m, x.key)).length,
     rate = items.length ? Math.round(((items.length - open) / items.length) * 100) : 0,
     staff = new Set(m.availability.map((x) => x.name)).size;

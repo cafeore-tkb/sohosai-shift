@@ -8,6 +8,7 @@ import {
   flattened,
   fmt,
   gridCell,
+  openRoles,
   personMatrix,
   plusSlot,
   posLabel,
@@ -131,7 +132,7 @@ export function roleHead(m: Model, grid: DayGrid, dayItems: readonly Item[]): Ro
       label: g.base === "ドリッパー" ? "ドリッパー" : g.role,
       // 1列だけの役職（マスターなど）は見出しが1つなので、役職の条件（番目の条件と厳しいほう）をそこに出す
       tag: single ? requirementTag(requiredFor(m, { store: g.store, role: g.cols[0].role, occ: g.cols[0].occ })) : "",
-      title: roleNote(g.count),
+      title: openRoles.includes(g.role) ? "人数の上限なし（入れるたびに列が増えます）" : roleNote(g.count),
       span: g.cols.length,
       single,
       edge: edgeOf(grid, first),

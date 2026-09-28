@@ -198,6 +198,11 @@ export const iceStatuses: readonly string[] = ["○", "1杯のみ", "2杯のみ"
 
 /** 勤務時間に含めない係 */
 export const breakRoles: readonly string[] = ["昼食", "休憩"];
+/**
+ * 人数の上限がない係：必要人数は設定せず、いつも空きの番目が1つ残る（入れるたびに列が増える）。
+ * 自動割当では埋めず、未割当・充足率にも数えない
+ */
+export const openRoles: readonly string[] = ["昼食", "休憩", "最終オペ練"];
 // 番目の呼び方：ドリッパーは当日の配置どおり 1st〜6th、ほかは 1・2・3
 export const ordinalRoles: readonly string[] = ["ドリッパー"];
 /** 画面を持つ（データがないと開けない）タブ */
