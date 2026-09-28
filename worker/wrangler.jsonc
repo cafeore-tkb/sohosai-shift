@@ -1,4 +1,5 @@
-// カレンダー配信の Worker（Cloudflare：cafeore.internal のアカウント）。main に push すると .github/workflows/worker.yml がデプロイする
+// Shift Maker の配信（Cloudflare：cafeore.internal のアカウント、https://sohosai-shift.cafeore.workers.dev）。
+// アプリ本体（../dist の静的ファイル）と、カレンダー購読の /c/…（src/index.ts）。main に push すると .github/workflows/deploy.yml がデプロイする
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "sohosai-shift",
@@ -6,6 +7,12 @@
   "compatibility_date": "2026-09-28",
   "workers_dev": true,
   "observability": { "enabled": true },
+  // アプリ本体は dist をそのまま配る（npm run build のあとにデプロイする）。/c/* と /robots.txt だけ先に Worker が受ける
+  "assets": {
+    "directory": "../dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/c/*", "/robots.txt"]
+  },
   "vars": {
     // アプリの public/firebase-config.js と同じ公開の値（秘密ではない）
     "FIREBASE_PROJECT_ID": "sohosai-shift",

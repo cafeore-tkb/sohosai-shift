@@ -1,5 +1,7 @@
-# main に push されたら、テスト → ビルドして GitHub Pages に公開する
-name: Deploy to GitHub Pages
+# main に push されたら、テスト → ビルド → Cloudflare Workers（アプリ本体＋カレンダー購読。https://sohosai-shift.cafeore.workers.dev）と
+# GitHub Pages（旧 URL。https://cafeore-tkb.github.io/sohosai-shift/）に公開する
+# 必要な Secrets：CLOUDFLARE_API_TOKEN（「Workers スクリプトの編集」だけの API トークン）、CLOUDFLARE_ACCOUNT_ID
+name: Deploy
 
 on:
   push:
@@ -27,6 +29,12 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - name: Deploy to Cloudflare Workers
+        working-directory: worker
+        run: npx --yes wrangler@4 deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

@@ -69,11 +69,14 @@ print → domain
 画面の文言やヘルプ（`src/ui/layout/HelpPopover.tsx`、`src/ui/views/import/ImportView.tsx` の CSV の形式）を変えたときは、
 [README_共有手順.txt](README_共有手順.txt) も合わせて直してください。
 
-## デプロイ（GitHub Pages）
+## デプロイ（Cloudflare Workers・GitHub Pages）
 
 `main` ブランチに push すると、GitHub Actions（[.github/workflows/deploy.yml](.github/workflows/deploy.yml)）が
-`npm ci` → `npm test` → `npm run build` を行い、`dist/` を GitHub Pages に公開します（Actions の画面から手動でも実行できます）。
-テストかビルドが失敗したときは公開されません。
+`npm ci` → `npm test` → `npm run build` を行い、`dist/` を **Cloudflare Workers**（`worker/`。https://sohosai-shift.cafeore.workers.dev 、
+アプリ本体は静的ファイル、`/c/…` はカレンダー購読）と **GitHub Pages** に公開します（Actions の画面から手動でも実行できます）。
+テストかビルドが失敗したときは公開されません。Cloudflare へのデプロイには Secrets の `CLOUDFLARE_API_TOKEN`
+（権限「アカウント → Workers スクリプト → 編集」だけ）と `CLOUDFLARE_ACCOUNT_ID` が要ります。
+静的ファイルの応答ヘッダー（noindex）は `public/_headers`。
 
 リポジトリの Settings → Pages の Source は「GitHub Actions」にしておきます。
 
@@ -89,7 +92,7 @@ print → domain
 - **`firestore.rules`** … 部屋（`rooms/{roomId}`）のルール。部屋 ID（共有リンクの `#room=…`）を知っていて Google ログインした人だけが
   読み書きでき、管理者リストを変えられるのは管理者だけ、一覧取得は禁止です。変更したら
   `firebase deploy --only firestore:rules`（`.firebaserc` の既定プロジェクトは `sohosai-shift`）かコンソールの「ルール」タブで反映します。
-- Authentication の「承認済みドメイン」に `cafeore-tkb.github.io`（と開発に使うなら `localhost`）を入れておきます。
+- Authentication の「承認済みドメイン」に `sohosai-shift.cafeore.workers.dev` と `cafeore-tkb.github.io`（と開発に使うなら `localhost`）を入れておきます。
 
 初回セットアップの手順と、利用者側の使い方（共同編集の始め方・管理者・注意点）は [README_共有手順.txt](README_共有手順.txt) の
 「共同編集」にあります。
@@ -116,8 +119,7 @@ REST API で `pubs/{キー}` のその人の分（`ics.{ID}`）だけを読ん�
 1. `firestore.rules` を反映する（`pubs/{key}` のルールと、部屋の `calKey` を管理者だけにする変更）。
 2. Cloudflare（cafeore.internal のアカウント）で、権限「アカウント → Workers スクリプト → 編集」だけの API トークンを作り、
    GitHub の Settings → Secrets and variables → Actions に `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を登録する。
-3. Actions の「Deploy calendar worker」を実行する（`worker/` を変えて main に push したときも動く。Secrets がなければテストだけ）。
-   手元からなら `cd worker && npx wrangler login && npx wrangler deploy`。
+3. Actions の「Deploy」を実行する（main に push したときも動く）。手元からなら `npm run build && cd worker && npx wrangler login && npx wrangler deploy`。
 4. デプロイされた URL（いまは `https://sohosai-shift.cafeore.workers.dev`）を `public/firebase-config.js` の
    `window.SHIFT_CALENDAR.feedBase` に書く。空のあいだは、閲覧ページは「ファイルで取り込む」だけを出す。
 

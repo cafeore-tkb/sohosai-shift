@@ -241,7 +241,7 @@ UI は `ui/WorkloadTag.tsx`（担当者ポップアップの候補の「目安�
 - `sync/firebase.ts`：部屋の `calKey`（管理者だけが変えられる）と `pubs/{calKey}` を監視し、`shareActions.publish` / `unpublish`。ダイアログの `calendar`（共通リンク・最終配信・digest）
 - `sync/calendarFeed.ts`：閲覧ページが Firestore の REST API で `pubs/{キー}` の一部（mask）を読む。`feedUrls`（`window.SHIFT_CALENDAR.feedBase` の Worker）
 - `ui/calendar/CalendarPage.tsx`：`#cal=キー`（`&m=ID`）のとき `main.tsx` はアプリ本体（store・sync）を起動せずにこれだけを描く
-- `worker/`：Cloudflare Worker。`GET /c/{キー}/{ID}.ics` → Firestore の `ics.{ID}`。テストは `worker/src/index.test.ts`（ルートの vitest で動く）
+- `worker/`：Cloudflare Worker（アプリ本体の配信も兼ねる。dist を静的ファイルとして配り、`/c/*` と `/robots.txt` だけ Worker が受ける）。`GET /c/{キー}/{ID}.ics` → Firestore の `ics.{ID}`。テストは `worker/src/index.test.ts`（ルートの vitest で動く）
 
 **ui/**
 - `App.tsx` … アプリの枠の並び、body のクラス（`is-focus`＝全画面、`is-painting`・`is-dragging`＝カーソルの形だけ）と `data-view`、キー（`handleKeyDown`）・ポップアップの外側クリック。

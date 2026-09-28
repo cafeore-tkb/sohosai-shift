@@ -1,10 +1,13 @@
-// カレンダー配信（購読）の Worker：GET /c/{キー}/{ID}.ics → Firestore の pubs/{キー} から、その人の .ics（ics.{ID}）だけを読んで返す。
+// Shift Maker の Worker。アプリ本体は静的ファイル（ASSETS＝dist）で、Worker が受けるのは次の2つだけ（wrangler.jsonc の run_worker_first）。
+// カレンダー配信（購読）：GET /c/{キー}/{ID}.ics → Firestore の pubs/{キー} から、その人の .ics（ics.{ID}）だけを読んで返す。
 // 秘密の値は持たない（Firestore の API キーはアプリの firebase-config.js と同じ公開の値。読めるかどうかは firestore.rules が決める）。
 // 検索エンジンには載せない（robots.txt と X-Robots-Tag）
 
 export interface Env {
   FIREBASE_PROJECT_ID: string;
   FIREBASE_API_KEY: string;
+  /** アプリ本体（dist）。テストではない */
+  ASSETS?: { fetch(request: Request): Promise<Response> };
 }
 
 const NOINDEX = { "X-Robots-Tag": "noindex, nofollow, noarchive" };
@@ -43,5 +46,9 @@ export async function handle(request: Request, env: Env, fetchImpl: typeof fetch
 }
 
 export default {
-  fetch: (request: Request, env: Env) => handle(request, env),
+  // run_worker_first の外（アプリ本体）は通常ここへ来ないが、来たら静的ファイルに渡す
+  fetch: (request: Request, env: Env) => {
+    const path = new URL(request.url).pathname;
+    return env.ASSETS && !path.startsWith("/c/") && path !== "/robots.txt" ? env.ASSETS.fetch(request) : handle(request, env);
+  },
 };
