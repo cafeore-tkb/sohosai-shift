@@ -427,7 +427,12 @@ export function startSync(): void {
     } catch (err) {
       const e = err as FbError;
       console.error(e);
-      toast(e.code === "permission-denied" ? "カレンダーを配信する権限がありません（管理者だけができます）" : `配信できませんでした：${e.message}`, true);
+      toast(
+        e.code === "permission-denied"
+          ? "カレンダーを配信できませんでした（権限がありません）。管理者でログインしているか、Firebase のルールが最新の firestore.rules か確認してください"
+          : `カレンダーを配信できませんでした：${e.message}`,
+        true,
+      );
     }
     publishing = false;
     refreshDialog();
