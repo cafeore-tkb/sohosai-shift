@@ -13,5 +13,5 @@ window.FIREBASE_CONFIG = {
 // カレンダー配信（個人TT）の購読用 Worker の URL（worker/。例："https://sohosai-shift-cal.xxxx.workers.dev"）。
 // 空なら、閲覧ページ（#cal=…）は「ファイルで取り込む」だけを出す。
 window.SHIFT_CALENDAR = {
-  feedBase: "",
+  feedBase: "https://sohosai-shift-cal.cafeore.workers.dev",
 };
