@@ -7,7 +7,7 @@ import { CALENDAR_TITLE, SHARED_MAPS, applySharedChange, buildPublication, repla
 import type { Availability, Model, SharedMap } from "../domain";
 import { store } from "../store";
 import type { ShareDialogContent } from "../store";
-import { CALENDAR_PATH, calendarUrl, currentRoute, editUrl, siteRoom } from "./site";
+import { CALENDAR_PATH, calendarUrl, currentRoute, editUrl, isOutdated, siteRoom } from "./site";
 
 const FB_VERSION = "12.19.0";
 const WHOLE_MAP_THRESHOLD = 200; // 1つのマップでこれ以上の変更があれば、項目ごとではなくマップごと送る
@@ -407,6 +407,13 @@ export function startSync(): void {
     if (!isFixed() || !isAdmin() || publishing) return;
     publishing = true;
     refreshDialog();
+    // 開きっぱなしで古い版のままだと、配信の形式が古い（閲覧ページで表が出ない）。読み込み直してもらう
+    if (await isOutdated()) {
+      publishing = false;
+      refreshDialog();
+      if (confirm("アプリの新しい版が公開されています。読み込み直してから、もう一度「配信する」を押してください。\n（編集した内容はクラウドに保存されています）\n\nいま読み込み直しますか？")) location.reload();
+      return;
+    }
     try {
       const stamp = new Date(),
         version = `${stamp.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 配信版`,

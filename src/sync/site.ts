@@ -44,5 +44,23 @@ const safeDecode = (s: string) => {
   }
 };
 
+declare const __BUILD_ID__: string;
+
+/**
+ * 公開中の版がこの画面の版より新しいか（Web のときだけ。確かめられなければ false）。
+ * アプリは開いている間は同じ版のままなので、開きっぱなしのタブが古い形式で配信しないように、配信の前に確かめる
+ */
+export async function isOutdated(): Promise<boolean> {
+  if (!onWeb() || typeof __BUILD_ID__ === "undefined") return false;
+  try {
+    const html = await (await fetch("/", { cache: "no-store" })).text(),
+      // ID は英小文字と数字だけ（この正規表現の文字列自体もページの中にあるので、それには当たらないように）
+      latest = html.match(/<meta name="shift-build" content="([a-z0-9]+)"/)?.[1];
+    return !!latest && latest !== __BUILD_ID__;
+  } catch {
+    return false;
+  }
+}
+
 export const editUrl = () => `${location.origin}/edit`;
 export const calendarUrl = (slug = "") => `${location.origin}/${CALENDAR_PATH}${slug ? `/${encodeURIComponent(slug)}` : ""}`;
