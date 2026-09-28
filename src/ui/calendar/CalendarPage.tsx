@@ -1,4 +1,4 @@
-// カレンダー配信の閲覧ページ（/shift＝名前の一覧、/shift/{名前}＝その人、/shift/all＝全体。ログイン不要）。
+// カレンダー配信の閲覧ページ（/shift＝名前の一覧とその下に全体のシフト、/shift/{名前}＝その人。ログイン不要。以前の /shift/all は /shift へ）。
 // 表はシフト調整の「個人別」と同じ形（Timetable）。その人のページでは、購読（webcal）・ファイルで取り込む（.ics）ができる。
 // 前に選んだ人はこのブラウザ（localStorage）に残し、一覧の上に出す。アプリ本体（store・共同編集）は起動しない
 
@@ -35,7 +35,11 @@ const fmtStamp = (d: Date | null) =>
 export function CalendarPage({ initialSlug }: { initialSlug: string }) {
   const [pub, setPub] = useState<PubSummary | null | undefined>(undefined);
   const [error, setError] = useState("");
-  const [slug, setSlug] = useState(initialSlug);
+  const [slug, setSlug] = useState(() => {
+    if (initialSlug.toLowerCase() !== OVERVIEW_SLUG) return initialSlug;
+    history.replaceState(null, "", calendarUrl());
+    return "";
+  });
   // 表（全体・個人で共用。必要になったら1回だけ読む）
   const [days, setDays] = useState<OverviewDay[] | null | undefined>(undefined);
 
@@ -50,17 +54,16 @@ export function CalendarPage({ initialSlug }: { initialSlug: string }) {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  const all = slug.toLowerCase() === OVERVIEW_SLUG;
   const member = pub?.members.find((x) => x.slug === slug) || null;
   useEffect(() => {
     if (member) {
       remember(member.slug);
       document.title = `${member.name} さんのシフト`;
-    } else document.title = all ? "全体のシフト" : "シフトをカレンダーに入れる";
-  }, [member, all]);
+    } else document.title = "シフトをカレンダーに入れる";
+  }, [member]);
   useEffect(() => {
-    if ((all || member) && days === undefined && pub) fetchOverview().then(setDays, (e: Error) => setError(e.message));
-  }, [all, member, days, pub]);
+    if (days === undefined && pub) fetchOverview().then(setDays, (e: Error) => setError(e.message));
+  }, [days, pub]);
   const choose = (next: string) => {
     setSlug(next);
     history.pushState(null, "", calendarUrl(next));
@@ -68,44 +71,48 @@ export function CalendarPage({ initialSlug }: { initialSlug: string }) {
   };
   const last = pub?.members.find((x) => x.slug === remembered()) || null;
 
+  const list = !!pub && !member;
   return (
-    <div className={styles.page}>
-      <IconSprite />
-      <header className={styles.head}>
-        <p className={styles.eyebrow}>{pub?.title || "シフト"}</p>
-        <h1 className={styles.title}>シフトをカレンダーに入れる</h1>
-        {pub?.publishedAt ? <p className={styles.meta}>{`${fmtStamp(pub.publishedAt)} 配信の内容です`}</p> : null}
-      </header>
-      {error ? (
-        <Notice tone="warn">{`${error}。時間をおいて読み込み直してください。`}</Notice>
-      ) : pub === undefined ? (
-        <p className={styles.meta} role="status">
-          読み込み中…
-        </p>
-      ) : pub === null ? (
-        <Notice tone="warn">いまはカレンダーを配信していません。シフト担当者に確認してください。</Notice>
-      ) : all ? (
-        <>
-          <Nav onBack={() => choose("")} />
+    <>
+      <div className={styles.page}>
+        <IconSprite />
+        <header className={styles.head}>
+          <p className={styles.eyebrow}>{pub?.title || "シフト"}</p>
+          <h1 className={styles.title}>シフトをカレンダーに入れる</h1>
+          {pub?.publishedAt ? <p className={styles.meta}>{`${fmtStamp(pub.publishedAt)} 配信の内容です`}</p> : null}
+        </header>
+        {error ? (
+          <Notice tone="warn">{`${error}。時間をおいて読み込み直してください。`}</Notice>
+        ) : pub === undefined ? (
+          <p className={styles.meta} role="status">
+            読み込み中…
+          </p>
+        ) : pub === null ? (
+          <Notice tone="warn">いまはカレンダーを配信していません。シフト担当者に確認してください。</Notice>
+        ) : member ? (
+          <>
+            <Nav onBack={() => choose("")} />
+            <MemberPanel member={member} days={days} />
+          </>
+        ) : (
+          <>
+            {slug ? <Notice tone="warn">{`「${slug}」さんは見つかりません。一覧から名前を選んでください。`}</Notice> : null}
+            <NamePicker members={pub.members} last={last} onPick={choose} />
+          </>
+        )}
+      </div>
+      {/* 全体のシフト：名前の一覧の下。表は画面の幅に収めず、ページごと縦横にスクロールする（見出しと時間は固定） */}
+      {list ? (
+        <div className={styles.full} id="calAllSection">
           {days ? <OverviewPanel days={days} members={pub.members} mine={remembered()} onPick={choose} /> : <Loading done={days === null} />}
-        </>
-      ) : member ? (
-        <>
-          <Nav onBack={() => choose("")} onAll={() => choose(OVERVIEW_SLUG)} />
-          <MemberPanel member={member} days={days} />
-        </>
-      ) : (
-        <>
-          {slug ? <Notice tone="warn">{`「${slug}」さんは見つかりません。一覧から名前を選んでください。`}</Notice> : null}
-          <NamePicker members={pub.members} last={last} onPick={choose} onAll={() => choose(OVERVIEW_SLUG)} />
-        </>
-      )}
-    </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 
-/** 一覧・全体へ戻るリンク */
-function Nav({ onBack, onAll }: { onBack: () => void; onAll?: () => void }) {
+/** 一覧（と全体のシフト）へ戻るリンク */
+function Nav({ onBack }: { onBack: () => void }) {
   const go = (f: () => void) => (e: React.MouseEvent) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
     e.preventDefault();
@@ -114,13 +121,8 @@ function Nav({ onBack, onAll }: { onBack: () => void; onAll?: () => void }) {
   return (
     <nav className={styles.nav}>
       <LinkButton id="calBack" variant="ghost" size="sm" icon="back" href={calendarUrl()} onClick={go(onBack)}>
-        名前の一覧
+        名前の一覧・全体のシフト
       </LinkButton>
-      {onAll ? (
-        <LinkButton id="calAllLink" variant="ghost" size="sm" icon="grid" href={calendarUrl(OVERVIEW_SLUG)} onClick={go(onAll)}>
-          全体のシフト
-        </LinkButton>
-      ) : null}
     </nav>
   );
 }
@@ -135,7 +137,7 @@ function Loading({ done }: { done: boolean }) {
   );
 }
 
-function NamePicker({ members, last, onPick, onAll }: { members: Member[]; last: Member | null; onPick: (slug: string) => void; onAll: () => void }) {
+function NamePicker({ members, last, onPick }: { members: Member[]; last: Member | null; onPick: (slug: string) => void }) {
   const [q, setQ] = useState("");
   const shown = useMemo(() => {
     const t = q.replace(/\s+/g, "");
@@ -159,14 +161,13 @@ function NamePicker({ members, last, onPick, onAll }: { members: Member[]; last:
           id="calAllLink"
           size="sm"
           icon="grid"
-          href={calendarUrl(OVERVIEW_SLUG)}
+          href="#calAllSection"
           onClick={(e) => {
-            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
             e.preventDefault();
-            onAll();
+            document.getElementById("calAllSection")?.scrollIntoView({ behavior: "smooth" });
           }}
         >
-          全体のシフトを見る
+          全体のシフトを見る（この下）
         </LinkButton>
       </p>
       <SearchInput id="calSearch" placeholder="名前で検索" aria-label="名前で検索" value={q} onChange={(e) => setQ(e.currentTarget.value)} />
@@ -269,7 +270,7 @@ function MemberPanel({ member, days }: { member: Member; days: OverviewDay[] | n
         ) : !table ? (
           <Loading done />
         ) : table.columns.length ? (
-          <div className={styles.scrollX} id="calEvents">
+          <div className={styles.tableBox} id="calEvents">
             <Timetable hours={table.hours} columns={table.columns} label={`${member.name} さんのシフト`} wide />
           </div>
         ) : (

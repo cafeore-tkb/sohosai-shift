@@ -68,7 +68,7 @@ export async function fetchIcs(id: string): Promise<string | null> {
   return (d?.ics as Record<string, string> | undefined)?.[id] || null;
 }
 
-/** 表（/shift/all と /shift/{名前}） */
+/** 表（/shift の全体のシフトと /shift/{名前}） */
 export async function fetchOverview(): Promise<OverviewDay[] | null> {
   const d = await readPub(["overview"]);
   if (!d || typeof d.overview !== "string") return null;

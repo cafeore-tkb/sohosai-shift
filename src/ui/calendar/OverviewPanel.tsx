@@ -1,4 +1,4 @@
-// 全体のシフト（/shift/all）：日を選ぶと、シフト調整の「個人別」と同じ表（行：時間、列：その日の参加者、担当は縦の枠）。
+// 全体のシフト（/shift の名前の一覧の下）：日を選ぶと、シフト調整の「個人別」と同じ表（行：時間、列：その日の参加者、担当は縦の枠）。
 // 見出しの名前を押すとその人のページ（/shift/{名前}）。前に選んだ人（このブラウザ）の列は色を付ける
 
 import { useMemo, useState } from "react";
@@ -75,7 +75,7 @@ export function OverviewPanel({
         ))}
       </Segmented>
       {day && day.people.length ? (
-        <div className={styles.scroll} id="calAll">
+        <div className={styles.tableBox} id="calAll">
           <Timetable hours={day.hours} columns={columns} label={`${day.name} 全体のシフト`} />
         </div>
       ) : (

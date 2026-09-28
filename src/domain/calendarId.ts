@@ -18,7 +18,7 @@ export function hashHex(s: string): string {
 /** 氏名 → URL の名前（空白を除き、URL で困る記号は _ に） */
 export const nameSlug = (name: string): string => name.normalize("NFC").replace(/[\s　]+/g, "").replace(/[/?#%\\.]+/g, "_");
 
-/** /shift/all は全体のシフト（この名前の人は「all2」になる） */
+/** 以前の全体のシフトの URL（/shift/all。いまは /shift へ置き換える）。この名前の人は「all2」になる */
 export const OVERVIEW_SLUG = "all";
 
 /** URL の名前 → Firestore のフィールド名に使う ID（"m" + 16進14桁） */

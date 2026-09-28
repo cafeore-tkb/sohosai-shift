@@ -100,19 +100,23 @@
   border-color: var(--primary);
 }
 
-/* 表（Timetable）：枠の中だけ縦横にスクロールし、見出しと時間は固定 */
-.scroll {
-  max-height: 72vh;
-  overflow: auto;
+/* 表（Timetable）：枠の中ではスクロールさせない。表の大きさのまま置き、ページごと縦横にスクロールする（見出しと時間の列はページに対して固定） */
+.tableBox {
+  width: max-content;
+  min-width: 100%;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  overscroll-behavior: contain;
 }
-/* 個人のページ：行が少ないので縦はページごとスクロール（横だけ枠の中） */
-.scrollX {
-  overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
+/* 全体のシフト：中央の列（.page）の外。幅は表に合わせて広がる（画面より広ければページが横にスクロール） */
+.full {
+  width: max-content;
+  min-width: 100%;
+  padding: 0 var(--sp-6) var(--sp-11);
+}
+.full > .card {
+  width: max-content;
+  min-width: min(100%, 720px);
+  margin: 0 auto;
 }
 .headLink {
   display: block;
@@ -127,8 +131,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.scroll small,
-.scrollX small {
+.tableBox small {
   display: block;
   margin-top: 3px;
   font-size: var(--fs-xs);

@@ -25,7 +25,7 @@ export interface Publication {
   members: { id: string; name: string; slug: string; short: string }[];
   /** id → その人の .ics */
   ics: Record<string, string>;
-  /** 表（OverviewDay[] の JSON。/shift/all と /shift/{名前}） */
+  /** 表（OverviewDay[] の JSON。/shift の全体と /shift/{名前}） */
   overview: string;
   /** 予定の中身から作る値。いまの Model の digest と違えば「未配信の変更あり」 */
   digest: string;

@@ -244,7 +244,8 @@ UI は `ui/WorkloadTag.tsx`（担当者ポップアップの候補の「目安�
 - `sync/firebase.ts`：本番の部屋（`/edit`）では `editors`（編集できる人。管理者だけが変える）と `pubs/shift` を扱い、`shareActions.publish` / `unpublish` / `addEditor` / `removeEditor`。
   ダイアログの `goto`（ローカルで本番の部屋へ案内）・`denied`（登録されていないアカウント）・`room.editors`・`room.calendar`
 - `sync/calendarFeed.ts`：閲覧ページが Firestore の REST API で `pubs/shift` の一部（mask）を読む。`feedUrls(slug)`
-- `ui/calendar/CalendarPage.tsx`：`/shift`（一覧・前回の人）・`/shift/{名前}`（その人の列を日ごとに並べた表）・`/shift/all`（`OverviewPanel`：日ごとの全員の表）。表は `Timetable`（個人別と同じ見た目・操作なし）。pushState・戻る。`main.tsx` はアプリ本体（store・sync）を起動せずにこれだけを描く
+- `ui/calendar/CalendarPage.tsx`：`/shift`（一覧・前回の人と、その下に `OverviewPanel`＝日ごとの全員の表）・`/shift/{名前}`（その人の列を日ごとに並べた表）。以前の `/shift/all` は `/shift` へ置き換える。
+  表は `Timetable`（個人別と同じ見た目・操作なし）。表は内側でスクロールさせず（大きさのまま置き、ページが縦横にスクロール）、見出しと時間の列は sticky。pushState・戻る。`main.tsx` はアプリ本体（store・sync）を起動せずにこれだけを描く
 - `index.html`：`firebase-config.js` は Web ではサイト直下（`/shift/{名前}` の深さでも読める）、file:// では隣を読む
 - `worker/`：Cloudflare Worker（アプリ本体の配信も兼ねる。dist を静的ファイルとして配り、知らないパスは index.html。`/shift/*` と `/robots.txt` だけ Worker が先に受ける）。
   `/shift/{名前}.ics` → Firestore の `ics.{slugId(名前)}`、`/shift/{名前}` → index.html。テストは `worker/src/index.test.ts`（ルートの vitest で動く）
