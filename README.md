@@ -4,10 +4,10 @@
 30分単位のシフト表を自動割当し、クリックやドラッグで手直しして、印刷（PDF）や CSV で書き出します。
 Firebase を使った複数人でのリアルタイム共同編集にも対応しています。
 
-- 公開 URL：**https://cafeore-tkb.github.io/sohosai-shift/**
+- 公開 URL：**https://sohosai-shift.cafeore.workers.dev/**（旧 URL https://cafeore-tkb.github.io/sohosai-shift/ は、リンクの `#room=…` などを保ったまま新 URL へ転送します）
 - 利用者向けの手順書：[README_共有手順.txt](README_共有手順.txt)（画面の使い方・CSV の形式・印刷・共同編集。オフライン配布の zip にも同梱）
 
-ビルド結果は JS・CSS をインライン化した **1ファイルの `dist/index.html`** です。GitHub Pages でも、zip で配ってダブルクリック（`file://`）でも
+ビルド結果は JS・CSS をインライン化した **1ファイルの `dist/index.html`** です。Web でも、zip で配ってダブルクリック（`file://`）でも
 同じように動きます。インターネット接続が必要なのは共同編集を使うときだけです。データはブラウザの中だけで処理され、
 ページを閉じる・再読み込みすると作業内容は消えます（保存は「CSVを書き出す」「印刷ビュー」で行います）。
 
@@ -73,7 +73,7 @@ print → domain
 
 `main` ブランチに push すると、GitHub Actions（[.github/workflows/deploy.yml](.github/workflows/deploy.yml)）が
 `npm ci` → `npm test` → `npm run build` を行い、`dist/` を **Cloudflare Workers**（`worker/`。https://sohosai-shift.cafeore.workers.dev 、
-アプリ本体は静的ファイル、`/c/…` はカレンダー購読）と **GitHub Pages** に公開します（Actions の画面から手動でも実行できます）。
+アプリ本体は静的ファイル、`/c/…` はカレンダー購読）に公開し、**GitHub Pages**（旧 URL）には新 URL へ転送するだけのページ（`pages/`）を置きます（Actions の画面から手動でも実行できます）。
 テストかビルドが失敗したときは公開されません。Cloudflare へのデプロイには Secrets の `CLOUDFLARE_API_TOKEN`
 （権限「アカウント → Workers スクリプト → 編集」だけ）と `CLOUDFLARE_ACCOUNT_ID` が要ります。
 静的ファイルの応答ヘッダー（noindex）は `public/_headers`。

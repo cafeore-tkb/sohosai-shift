@@ -1,5 +1,5 @@
-# main に push されたら、テスト → ビルド → Cloudflare Workers（アプリ本体＋カレンダー購読。https://sohosai-shift.cafeore.workers.dev）と
-# GitHub Pages（旧 URL。https://cafeore-tkb.github.io/sohosai-shift/）に公開する
+# main に push されたら、テスト → ビルド → Cloudflare Workers（アプリ本体＋カレンダー購読。https://sohosai-shift.cafeore.workers.dev）に公開する。
+# GitHub Pages（旧 URL。https://cafeore-tkb.github.io/sohosai-shift/）は新 URL へ転送するだけのページ（pages/。#room=… などはそのまま）
 # 必要な Secrets：CLOUDFLARE_API_TOKEN（「Workers スクリプトの編集」だけの API トークン）、CLOUDFLARE_ACCOUNT_ID
 name: Deploy
 
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: dist
+          path: pages
 
   deploy:
     needs: build

@@ -6,7 +6,7 @@ Shift Maker（オフライン配布版）
    Mac　　：「Shift Maker を開く.command」をダブルクリックします。
    （index.html を直接ダブルクリックしても開けます）
 3. ブラウザ（Chrome／Edge／Safari など）でアプリが開きます。インターネット接続は不要です。
-　 同じものを https://cafeore-tkb.github.io/sohosai-shift/ でも使えます（こちらはインターネット接続が必要です）。
+　 同じものを https://sohosai-shift.cafeore.workers.dev/ でも使えます（こちらはインターネット接続が必要です）。
 
 ※ Mac で「開発元を確認できないため開けません」と表示された場合は、
 　「Shift Maker を開く.command」を右クリック（Controlキー＋クリック）→「開く」を選び、確認画面で「開く」を押してください。
@@ -267,17 +267,17 @@ CSVの読込、シフトの作成、CSV／印刷用HTMLの出力は、すべて�
 【初回セットアップ（管理用アカウント cafeore2016@gmail.com で行う）】
 1. https://console.firebase.google.com/ に cafeore2016@gmail.com でログインし、「プロジェクトを作成」（Google アナリティクスは不要）。
 2. 「構築」→「Authentication」→「始める」→ ログイン方法で「Google」を有効にする。
-   「設定」→「承認済みドメイン」に GitHub Pages のドメイン（cafeore-tkb.github.io）を追加する。
+   「設定」→「承認済みドメイン」に公開URLのドメイン（sohosai-shift.cafeore.workers.dev）を追加する。
 3. 「構築」→「Firestore Database」→「データベースを作成」（ロケーション：asia-northeast1〈東京〉、本番環境モード）。
 4. 「ルール」タブに firestore.rules の中身を貼り付けて「公開」する。
    （または、ターミナルで firebase login → firebase use --add → firebase deploy --only firestore:rules）
 5. 「プロジェクトの設定」→「マイアプリ」→ ウェブアプリ（</>）を追加し、表示された firebaseConfig を firebase-config.js に貼り付ける
    （リポジトリでは public/firebase-config.js。配布フォルダでは index.html と同じ場所の firebase-config.js）。
-6. 公開URL：https://cafeore-tkb.github.io/sohosai-shift/（リポジトリ cafeore-tkb/sohosai-shift の main ブランチに push すると、
-   GitHub Actions がビルドして GitHub Pages に自動で公開します）
+6. 公開URL：https://sohosai-shift.cafeore.workers.dev/（リポジトリ cafeore-tkb/sohosai-shift の main ブランチに push すると、
+   GitHub Actions がビルドして Cloudflare Workers に自動で公開します。旧URL https://cafeore-tkb.github.io/sohosai-shift/ は新URLへ転送します）
 
 【使い方】
-1. https://cafeore-tkb.github.io/sohosai-shift/ を開き、CSV を読み込む（またはサンプルを読み込む）。
+1. https://sohosai-shift.cafeore.workers.dev/ を開き、CSV を読み込む（またはサンプルを読み込む）。
 2. 右上の「共同編集」（人のアイコン）→「Google でログイン」→「共同編集を始める」。
 3. 表示されたリンクを「コピー」して担当者に共有する。開いた人は Google ログインすると参加できます。
 ・参加中は、ロゴの右の表示が「共同編集中」になり、変更は自動で保存されます（保存中は「保存中…」、接続が切れると
