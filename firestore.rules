@@ -1,19 +1,23 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email != null && request.auth.token.email_verified == true;
+    }
+    function me() {
+      return request.auth.token.email.lower();
+    }
+    function adminOf(roomId) {
+      return signedIn() && me() in get(/databases/$(database)/documents/rooms/$(roomId)).data.admins;
+    }
+
     // 共同編集の部屋（1部屋＝1ドキュメント）。
     // ・部屋IDを知っていて（＝共有リンクを持っていて）Google ログインした人は、閲覧・編集できる。
     // ・勤務可能時間（availability）も参加者全員が修正できる（CSVの丸ごと読み込みを管理者に限るのはアプリ側の制限）。
-    // ・管理者リスト（admins）を変えられるのは管理者だけ。
+    // ・管理者リスト（admins）とカレンダー配信のキー（calKey）を変えられるのは管理者だけ。
     // ・作成者（owner）は変更できず、常に管理者に含まれる。
     // ・一覧取得（list）を禁止しているので、IDを知らない人は部屋を探せない。
     match /rooms/{roomId} {
-      function signedIn() {
-        return request.auth != null && request.auth.token.email != null && request.auth.token.email_verified == true;
-      }
-      function me() {
-        return request.auth.token.email.lower();
-      }
       function isAdmin() {
         return me() in resource.data.admins;
       }
@@ -30,9 +34,27 @@ service cloud.firestore {
         && request.resource.data.owner == resource.data.owner
         && request.resource.data.owner in request.resource.data.admins
         && request.resource.data.updatedBy == request.auth.token.email
-        && (isAdmin() || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['admins']));
+        && (isAdmin() || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['admins', 'calKey']));
 
       allow list, delete: if false;
+    }
+
+    // カレンダー配信（個人TT）。管理者が「配信」した時点の全員分の予定（1部屋＝1ドキュメント、ID は部屋の calKey）。
+    // ・キーを知っていれば誰でも読める（ログイン不要。閲覧ページと購読の Worker が読む）。一覧取得は禁止なので、キーを知らない人は探せない。
+    // ・書き込み・削除はその部屋の管理者だけ。別の部屋の配信には付け替えられない。
+    match /pubs/{key} {
+      allow get: if true;
+      allow list: if false;
+
+      allow create: if key.matches('^[A-Za-z0-9]{24,}$')
+        && adminOf(request.resource.data.room)
+        && request.resource.data.publishedBy == request.auth.token.email;
+
+      allow update: if adminOf(resource.data.room)
+        && request.resource.data.room == resource.data.room
+        && request.resource.data.publishedBy == request.auth.token.email;
+
+      allow delete: if adminOf(resource.data.room);
     }
   }
 }

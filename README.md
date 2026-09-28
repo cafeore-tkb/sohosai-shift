@@ -94,6 +94,33 @@ print → domain
 初回セットアップの手順と、利用者側の使い方（共同編集の始め方・管理者・注意点）は [README_共有手順.txt](README_共有手順.txt) の
 「共同編集」にあります。
 
+## カレンダー配信（個人TT）
+
+共同編集の部屋の管理者が、共有ダイアログの「カレンダー配信」で**配信**すると、その時点の全員分の個人TTが Firestore の
+`pubs/{キー}` に置かれます（編集中の内容は、もう一度「配信」を押すまで届きません）。メンバーには**共通リンク**（`…/#cal=キー`）
+だけを共有します。ログイン不要で、名前を選ぶと自分の予定の確認と、
+
+- **購読**（webcal。シフトが変わると自動で反映。専用のカレンダーとして追加される）
+- **ファイルで取り込む**（.ics。自分のカレンダーに予定として入る。変更は届かない）
+
+ができます。キーを知らない人は探せず（一覧取得は禁止）、閲覧ページと購読の応答は検索エンジンに載せません（noindex）。
+シフトは部内で見えて構わない前提で、共通リンクを知っていれば誰の分も見られます。止めるときは「配信を止める」（ドキュメントを削除。
+もう一度配信すると同じリンク・同じ購読 URL で再開）。
+
+購読の URL は Cloudflare Worker（`worker/`、`GET /c/{キー}/{ID}.ics`）が返します。Worker は秘密の値を持たず、Firestore の
+REST API で `pubs/{キー}` のその人の分（`ics.{ID}`）だけを読んで `text/calendar` で返します。ICS を作るのはアプリだけ
+（`src/domain/ical.ts`）で、ダウンロードと購読は同じ中身です（取り込み用はカレンダー名・更新間隔の指定だけを外す）。
+
+**初回セットアップ**
+
+1. `firestore.rules` を反映する（`pubs/{key}` のルールと、部屋の `calKey` を管理者だけにする変更）。
+2. Cloudflare（cafeore.internal のアカウント）で、権限「アカウント → Workers スクリプト → 編集」だけの API トークンを作り、
+   GitHub の Settings → Secrets and variables → Actions に `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を登録する。
+3. Actions の「Deploy calendar worker」を実行する（`worker/` を変えて main に push したときも動く。Secrets がなければテストだけ）。
+   手元からなら `cd worker && npx wrangler login && npx wrangler deploy`。
+4. デプロイされた URL（`https://sohosai-shift-cal.<アカウントのサブドメイン>.workers.dev`）を `public/firebase-config.js` の
+   `window.SHIFT_CALENDAR.feedBase` に書く。空のあいだは、閲覧ページは「ファイルで取り込む」だけを出す。
+
 ## オフライン配布（zip）
 
 インターネットに出せない場面や、公開 URL を使わずに渡したいとき用です。

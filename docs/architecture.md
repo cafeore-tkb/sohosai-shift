@@ -235,6 +235,14 @@ UI は `ui/WorkloadTag.tsx`（担当者ポップアップの候補の「目安�
 
 **sync/firebase.ts** … 旧 sync.js の移植（`startSync()`）。ドキュメント形式・差分／マージ・WHOLE_MAP_THRESHOLD・受信の保留（busy → flush）・ログイン・管理者・退出・hashchange は旧版と同じ。gstatic から動的 import、`window.__FIREBASE_MOCK__` があればそれを使う。画面には store の `setShare` で状態を渡し、ダイアログは React（`ui/ShareDialog.tsx`）が描く。Model の共有データの書き換えは domain の `replaceShared` / `applySharedChange` で行う（sync は Model の中身の決まりを知らない）。
 
+**カレンダー配信（個人TT）** … README の「カレンダー配信」。
+- `domain/ical.ts`：`memberEvents(m, name)`（`personSegments` を日ごとに＝同じ担当が続く時間を1件）`calendarIds(names)`（氏名 → `m`＋16進14桁。名前が同じなら同じ）
+  `personIcs`（購読用。UTC・75オクテットで折り返し・UID は日時＋担当＋ID から）`importIcs`（取り込み用：カレンダー全体の指定を外す）`buildPublication`・`publicationDigest`（配信の中身と、未配信の変更の検出）
+- `sync/firebase.ts`：部屋の `calKey`（管理者だけが変えられる）と `pubs/{calKey}` を監視し、`shareActions.publish` / `unpublish`。ダイアログの `calendar`（共通リンク・最終配信・digest）
+- `sync/calendarFeed.ts`：閲覧ページが Firestore の REST API で `pubs/{キー}` の一部（mask）を読む。`feedUrls`（`window.SHIFT_CALENDAR.feedBase` の Worker）
+- `ui/calendar/CalendarPage.tsx`：`#cal=キー`（`&m=ID`）のとき `main.tsx` はアプリ本体（store・sync）を起動せずにこれだけを描く
+- `worker/`：Cloudflare Worker。`GET /c/{キー}/{ID}.ics` → Firestore の `ics.{ID}`。テストは `worker/src/index.test.ts`（ルートの vitest で動く）
+
 **ui/**
 - `App.tsx` … アプリの枠の並び、body のクラス（`is-focus`＝全画面、`is-painting`・`is-dragging`＝カーソルの形だけ）と `data-view`、キー（`handleKeyDown`）・ポップアップの外側クリック。
 - `layout/` … `AppBar`（ロゴ・`#modeBadge`＝`SyncBadge`・タブ `data-tab`＋`#memberTabCount` `#shiftTabCount`・`#shareBtn`・⋯ の中の `#printExportBtn` `#exportBtn`。スマホではタブが下のタブバーになる）、

@@ -3,7 +3,7 @@
 // 閲覧・編集（勤務可能表の修正を含む）：共有リンクを持ち Google ログインした人。CSVの読み込み（勤務可能時間の置き換え）と管理者の変更：管理者のみ。
 // Firestore のドキュメントの形は旧版と同じ（既存の部屋がそのまま使える）。store の公開 API だけを使う。
 
-import { SHARED_MAPS, applySharedChange, replaceShared, sharedMap } from "../domain";
+import { CALENDAR_TITLE, SHARED_MAPS, applySharedChange, buildPublication, replaceShared, sharedMap } from "../domain";
 import type { Availability, Model, SharedMap } from "../domain";
 import { store } from "../store";
 import type { ShareDialogContent } from "../store";
@@ -32,6 +32,7 @@ interface Fb {
   serverTimestamp(): unknown;
   doc(db: unknown, collection: string, id: string): DocRef;
   setDoc(ref: DocRef, data: Record<string, unknown>): Promise<void>;
+  deleteDoc(ref: DocRef): Promise<void>;
   updateDoc(ref: DocRef, ...args: unknown[]): Promise<void>;
   onSnapshot(ref: DocRef, opts: { includeMetadataChanges: boolean }, next: (s: Snapshot) => void, error: (e: FbError) => void): unknown;
   onUser(cb: (u: User | null) => void): unknown;
@@ -45,6 +46,8 @@ interface FbError extends Error {
 declare global {
   interface Window {
     FIREBASE_CONFIG?: { apiKey?: string; projectId?: string; [k: string]: unknown };
+    /** カレンダー配信（購読）の Worker。feedBase がなければ購読は出さず、ファイルで取り込むだけ */
+    SHIFT_CALENDAR?: { feedBase?: string };
     __FIREBASE_MOCK__?: Fb;
   }
 }
@@ -117,7 +120,11 @@ export function startSync(): void {
     roomId = "",
     user: User | null | undefined,
     starting = false,
-    meta: { owner: string; admins: string[]; updatedBy?: string; updatedAt?: Date | null } = { owner: "", admins: [] };
+    meta: { owner: string; admins: string[]; calKey: string; updatedBy?: string; updatedAt?: Date | null } = { owner: "", admins: [], calKey: "" },
+    // カレンダー配信（pubs/{calKey}）
+    pub: { at: Date | null; by: string; digest: string } | null = null,
+    pubKey = "",
+    publishing = false;
 
   const myEmail = () => (user?.email || "").toLowerCase();
   const isAdmin = () => !!user && meta.admins.includes(myEmail());
@@ -217,9 +224,11 @@ export function startSync(): void {
     meta = {
       owner: (data.owner as string) || "",
       admins: Array.isArray(data.admins) ? (data.admins as string[]) : [],
+      calKey: typeof data.calKey === "string" ? data.calKey : "",
       updatedBy: (data.updatedBy as string) || "",
       updatedAt: at?.toDate?.() || null,
     };
+    watchPublication();
     updateLock();
     refreshDialog();
   }
@@ -363,6 +372,62 @@ export function startSync(): void {
       toast(e.code === "permission-denied" ? "管理者を変更する権限がありません" : `変更できませんでした：${e.message}`);
     }
   }
+  // ---- カレンダー配信（個人TT）：管理者が押したときの内容を pubs/{calKey} に置く。誰でも読める（一覧は取れない） ----
+  const toDate = (v: unknown): Date | null =>
+    typeof v === "number" ? new Date(v) : ((v as { toDate?: () => Date } | undefined)?.toDate?.() ?? null);
+  function watchPublication(): void {
+    if (!meta.calKey || meta.calKey === pubKey) return;
+    pubKey = meta.calKey;
+    fb!.onSnapshot(
+      fb!.doc(fb!.db, "pubs", pubKey),
+      { includeMetadataChanges: false },
+      (snap) => {
+        const d = snap.exists() ? snap.data() : null;
+        pub = d ? { at: toDate(d.publishedAt), by: (d.publishedBy as string) || "", digest: (d.digest as string) || "" } : null;
+        refreshDialog();
+      },
+      (err) => console.error(err),
+    );
+  }
+  const calendarUrl = () => (meta.calKey ? `${location.origin}${location.pathname}#cal=${meta.calKey}` : "");
+  async function publish(): Promise<void> {
+    if (!isAdmin() || publishing) return;
+    publishing = true;
+    refreshDialog();
+    try {
+      const key = meta.calKey || randomId(32),
+        stamp = new Date(),
+        version = `${stamp.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 配信版`,
+        p = buildPublication(M(), { stamp, version });
+      if (!meta.calKey) await fb!.updateDoc(ref, { calKey: key, updatedBy: user!.email, updatedAt: fb!.serverTimestamp() });
+      await fb!.setDoc(fb!.doc(fb!.db, "pubs", key), {
+        room: roomId,
+        title: CALENDAR_TITLE,
+        ...p,
+        publishedBy: user!.email,
+        publishedAt: fb!.serverTimestamp(),
+      });
+      toast(`${p.members.length}名分のカレンダーを配信しました`);
+    } catch (err) {
+      const e = err as FbError;
+      console.error(e);
+      toast(e.code === "permission-denied" ? "カレンダーを配信する権限がありません（管理者だけができます）" : `配信できませんでした：${e.message}`, true);
+    }
+    publishing = false;
+    refreshDialog();
+  }
+  async function unpublish(): Promise<void> {
+    if (!isAdmin() || !meta.calKey) return;
+    if (!confirm("カレンダーの配信を止めますか？\n購読している人のカレンダーから予定が消え、共通リンクも開けなくなります。\nもう一度「配信する」と、同じリンク・同じ購読URLで再開します。")) return;
+    try {
+      await fb!.deleteDoc(fb!.doc(fb!.db, "pubs", meta.calKey));
+      toast("カレンダーの配信を止めました");
+    } catch (err) {
+      console.error(err);
+      toast(`止められませんでした：${(err as Error).message}`, true);
+    }
+  }
+
   function leaveRoom(): void {
     if (!confirm("このブラウザでの共同編集を終了しますか？\nクラウド上のシフトは残り、リンクを開けばいつでも再参加できます。")) return;
     history.replaceState(null, "", location.pathname + location.search);
@@ -400,6 +465,11 @@ export function startSync(): void {
       isAdmin: isAdmin(),
       updatedBy: meta.updatedBy || "",
       when: meta.updatedAt ? meta.updatedAt.toLocaleString("ja-JP") : "",
+      calendar: {
+        url: calendarUrl(),
+        published: pub ? { by: pub.by, when: pub.at ? pub.at.toLocaleString("ja-JP") : "", digest: pub.digest } : null,
+        publishing,
+      },
     };
   }
   function refreshDialog(force = false): void {
@@ -422,6 +492,8 @@ export function startSync(): void {
     signOut: () => void fb!.signOut(),
     start: () => void startRoom(),
     leave: leaveRoom,
+    publish: () => void publish(),
+    unpublish: () => void unpublish(),
     addAdmin: (email) => {
       const a = email.trim().toLowerCase();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a)) return;

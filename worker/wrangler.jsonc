@@ -1,0 +1,14 @@
+// カレンダー配信の Worker（Cloudflare：cafeore.internal のアカウント）。main に push すると .github/workflows/worker.yml がデプロイする
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sohosai-shift-cal",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-28",
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "vars": {
+    // アプリの public/firebase-config.js と同じ公開の値（秘密ではない）
+    "FIREBASE_PROJECT_ID": "sohosai-shift",
+    "FIREBASE_API_KEY": "AIzaSyC6jJKmn8F3hyHzvJ-l-FQ00mUcRJRQ7MY"
+  }
+}

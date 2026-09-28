@@ -1,11 +1,13 @@
 // 共同編集のダイアログ（#shareDialog・本文 #shareBody）。中身は sync が store.ui.share に書き、操作は store.shareActions を呼ぶ。
-// 状態：設定なし（disabled）・読み込み中・ログイン（#shareSignIn）・開始（#shareStartBtn）・参加中（リンク＋コピー、管理者の一覧、#adminForm #adminEmail）。
+// 状態：設定なし（disabled）・読み込み中・ログイン（#shareSignIn）・開始（#shareStartBtn）・参加中（リンク＋コピー、管理者の一覧、#adminForm #adminEmail、
+// カレンダー配信 #calPublishBtn #calUrl）。
 // 共同編集している人の表示（アバター）はない（バックエンドに在室の情報がないため。リードの判断）
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { store, useUi } from "../store";
-import type { ShareDialogContent } from "../store";
+import { publicationDigest } from "../domain";
+import { store, useModelVersion, useUi } from "../store";
+import type { CalendarShare, ShareDialogContent } from "../store";
 import { Button, Dialog, Icon, Notice, Pill, Spacer, TextInput } from "./components";
 import { SyncPill, syncLook } from "./layout/SyncBadge";
 import styles from "./ShareDialog.module.css";
@@ -135,10 +137,10 @@ function Account({ email }: { email: string }) {
 
 const COPIED_MS = 2000;
 
-function RoomBody({ c }: { c: Extract<ShareDialogContent, { kind: "room" }> }) {
+/** 読み取り専用のリンク＋コピー */
+function CopyLink({ id, btnId, value, label }: { id: string; btnId: string; value: string; label: string }) {
   const [copied, setCopied] = useState(false);
   const urlRef = useRef<HTMLInputElement>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!copied) return;
@@ -158,15 +160,23 @@ function RoomBody({ c }: { c: Extract<ShareDialogContent, { kind: "room" }> }) {
   };
 
   return (
+    <div className={styles.linkbox}>
+      <TextInput id={id} ref={urlRef} mono readOnly value={value} aria-label={label} onFocus={(e) => e.currentTarget.select()} />
+      <Button id={btnId} variant="primary" icon={copied ? "check" : "copy"} onClick={copy} aria-live="polite">
+        {copied ? "コピーしました" : "コピー"}
+      </Button>
+    </div>
+  );
+}
+
+function RoomBody({ c }: { c: Extract<ShareDialogContent, { kind: "room" }> }) {
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  return (
     <>
       <Account email={c.email} />
       <p>このリンクを共有すると、同じシフトを一緒に編集できます。</p>
-      <div className={styles.linkbox}>
-        <TextInput id="shareUrl" ref={urlRef} mono readOnly value={c.url} aria-label="共同編集のリンク" onFocus={(e) => e.currentTarget.select()} />
-        <Button id="shareCopyBtn" variant="primary" icon={copied ? "check" : "copy"} onClick={copy} aria-live="polite">
-          {copied ? "コピーしました" : "コピー"}
-        </Button>
-      </div>
+      <CopyLink id="shareUrl" btnId="shareCopyBtn" value={c.url} label="共同編集のリンク" />
 
       <section className={styles.admins} aria-labelledby="shareAdminsTitle">
         <h3 id="shareAdminsTitle" className={styles.adminsTitle}>
@@ -213,11 +223,63 @@ function RoomBody({ c }: { c: Extract<ShareDialogContent, { kind: "room" }> }) {
         )}
       </section>
 
+      <CalendarSection cal={c.calendar} isAdmin={c.isAdmin} />
+
       <ul className={styles.notes}>
         <li>リンクを持っていて Google ログインした人は、誰でも閲覧・編集できます。</li>
         <li>同じ枠を同時に変更した場合は、あとから変更した内容が残ります。</li>
         {c.updatedBy ? <li>{`最終更新：${c.updatedBy}${c.when ? `（${c.when}）` : ""}`}</li> : null}
       </ul>
     </>
+  );
+}
+
+/** カレンダー配信（個人TT）：管理者が配信した時点の内容を、共通リンクからメンバーが購読・取り込みできる */
+function CalendarSection({ cal, isAdmin }: { cal: CalendarShare; isAdmin: boolean }) {
+  const version = useModelVersion();
+  // 今の Model の digest（配信した内容と比べて「未配信の変更あり」を出す）
+  const digest = useMemo(() => (cal.published ? publicationDigest(store.model) : ""), [cal.published, version]);
+  const dirty = !!cal.published && digest !== cal.published.digest;
+  const live = !!cal.published && !!cal.url;
+  return (
+    <section className={styles.admins} aria-labelledby="calTitle">
+      <h3 id="calTitle" className={styles.adminsTitle}>
+        カレンダー配信（個人TT）
+      </h3>
+      {live ? (
+        <>
+          <p>メンバーにはこの共通リンクだけを共有します。名前を選ぶと、自分のシフトをカレンダーに購読・取り込みできます（ログイン不要・検索エンジンには載りません）。</p>
+          <CopyLink id="calUrl" btnId="calCopyBtn" value={cal.url} label="カレンダーの共通リンク" />
+          <p className={styles.muted}>
+            {`最終配信：${cal.published!.by}${cal.published!.when ? `（${cal.published!.when}）` : ""}`}
+            {dirty ? (
+              <>
+                {" "}
+                <Pill tone="warn">未配信の変更あり</Pill>
+              </>
+            ) : null}
+          </p>
+        </>
+      ) : (
+        <p className={styles.muted}>
+          {cal.url ? "配信を止めています。" : "まだ配信していません。"}
+          配信すると、メンバーが共通リンクから自分のシフトをカレンダーに入れられます。配信した時点の内容だけが見え、編集中の内容は「配信」を押すまで届きません。
+        </p>
+      )}
+      {isAdmin ? (
+        <div className={styles.linkbox}>
+          <Button id="calPublishBtn" variant={live ? "secondary" : "primary"} icon="cal" disabled={cal.publishing} onClick={() => act().publish()}>
+            {cal.publishing ? "配信中…" : live ? "いまの内容で配信し直す" : "配信する"}
+          </Button>
+          {live ? (
+            <Button id="calStopBtn" variant="ghost" danger onClick={() => act().unpublish()}>
+              配信を止める
+            </Button>
+          ) : null}
+        </div>
+      ) : (
+        <p className={styles.muted}>配信は管理者だけができます。</p>
+      )}
+    </section>
   );
 }

@@ -68,7 +68,17 @@ export type ShareDialogContent =
       updatedBy: string;
       /** 最終更新の日時（ja-JP の表記）。なければ "" */
       when: string;
+      calendar: CalendarShare;
     };
+
+/** カレンダー配信（個人TT）の状態 */
+export interface CalendarShare {
+  /** メンバーに配る共通リンク（まだ一度も配信していなければ ""） */
+  url: string;
+  /** いま配信中の内容（止めている・未配信なら null）。digest が今の Model と違えば未配信の変更あり */
+  published: { by: string; when: string; digest: string } | null;
+  publishing: boolean;
+}
 
 /** 共同編集の表示（sync が setShare で更新する） */
 export interface ShareState {
@@ -91,6 +101,10 @@ export interface ShareActions {
   signOut(): void;
   start(): void;
   leave(): void;
+  /** いまの内容でカレンダーを配信する（管理者） */
+  publish(): void;
+  /** カレンダーの配信を止める（管理者） */
+  unpublish(): void;
   addAdmin(email: string): void;
   removeAdmin(email: string): void;
 }

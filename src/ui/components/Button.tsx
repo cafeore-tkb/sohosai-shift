@@ -1,6 +1,6 @@
 // ボタン（primary / secondary / ghost、danger、sm / md / lg、アイコン、ラベルの短縮、アイコンだけ）
 
-import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import styles from "./Button.module.css";
 import { cx } from "./cx";
 import { Icon } from "./Icon";
@@ -100,4 +100,20 @@ export interface IconButtonProps extends Omit<ButtonProps, "children" | "icon" |
 /** アイコンだけのボタン（aria-label と title に label） */
 export function IconButton({ icon, label, variant = "ghost", title, ...rest }: IconButtonProps) {
   return <Button variant={variant} icon={icon} iconOnly aria-label={label} title={title ?? label} {...rest} />;
+}
+
+export interface LinkButtonProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+  variant?: "primary" | "secondary" | "ghost";
+  size?: "sm" | "md" | "lg";
+  icon?: IconName;
+}
+
+/** ボタンの見た目のリンク（<a>。webcal:// やダウンロードなど、押すと別のアプリ・ページへ行くもの） */
+export function LinkButton({ variant = "secondary", size = "md", icon, className, children, ...rest }: LinkButtonProps) {
+  return (
+    <a className={cx(styles.btn, styles[variant], size !== "md" && styles[size], className)} {...rest}>
+      {icon ? <Icon name={icon} size={16} className={styles.ic} /> : null}
+      <span className={styles.label}>{children}</span>
+    </a>
+  );
 }

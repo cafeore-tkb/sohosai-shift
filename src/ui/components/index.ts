@@ -1,6 +1,6 @@
 // デザインシステムの部品（docs/design-system.md）。views はここから import する
-export { Button, IconButton } from "./Button";
-export type { ButtonProps, IconButtonProps, IconOnlyAt, ShortAt } from "./Button";
+export { Button, IconButton, LinkButton } from "./Button";
+export type { ButtonProps, IconButtonProps, IconOnlyAt, LinkButtonProps, ShortAt } from "./Button";
 export { Chip, ChipCount, ChipGroup } from "./Chip";
 export { CloseButton } from "./CloseButton";
 export { cx } from "./cx";

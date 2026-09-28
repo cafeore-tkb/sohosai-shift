@@ -1,0 +1,159 @@
+/* === カレンダー配信の閲覧ページ（#cal=キー）: 1カラム、スマホ優先 === */
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--sp-9) var(--sp-6) var(--sp-11);
+}
+.head {
+  margin-bottom: var(--sp-7);
+}
+.eyebrow {
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-eyebrow);
+}
+.title {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  font-feature-settings: "palt";
+}
+.meta {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+
+.card {
+  margin-bottom: var(--sp-6);
+  padding: var(--sp-7);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-paper);
+  box-shadow: var(--sh-xs);
+}
+.h2 {
+  margin-bottom: var(--sp-5);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+.who {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+.rec {
+  margin-left: var(--sp-3);
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--nadeshiko-100);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  color: var(--nadeshiko-700);
+  vertical-align: 2px;
+}
+.lead {
+  font-size: var(--fs-base);
+  color: var(--ink-secondary);
+}
+
+/* 名前の一覧 */
+.names {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: var(--sp-3);
+  margin: var(--sp-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.name {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--sp-3) var(--sp-5);
+  border: 1px solid var(--secondary-border);
+  border-radius: var(--r-md);
+  background: var(--secondary-bg);
+  text-align: left;
+  font-weight: var(--fw-semibold);
+}
+.name:hover {
+  background: var(--secondary-hover);
+}
+
+/* 予定 */
+.days {
+  display: grid;
+  gap: var(--sp-6);
+}
+.dayHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-3);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+.dayHead small {
+  font-size: var(--fs-sm);
+  font-weight: normal;
+  color: var(--ink-muted);
+}
+.events {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.events li {
+  display: flex;
+  gap: var(--sp-5);
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--line-grid);
+}
+.events li:last-child {
+  border-bottom: 0;
+}
+.time {
+  flex: none;
+  min-width: 96px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-secondary);
+}
+
+/* ボタンと注意書き */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  margin-top: var(--sp-5);
+}
+.notes {
+  margin: var(--sp-5) 0 0;
+  padding: 0 0 0 18px;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+.notes li + li {
+  margin-top: 3px;
+}
+.notes b {
+  color: var(--ink-secondary);
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: var(--sp-7) var(--sp-5) var(--sp-10);
+  }
+  .card {
+    padding: var(--sp-6);
+  }
+  .actions > * {
+    width: 100%;
+    height: var(--touch-min);
+  }
+}

@@ -9,6 +9,7 @@ import { flushSync } from "react-dom";
 import { store } from "./store";
 import { startSync } from "./sync/firebase";
 import { App } from "./ui/App";
+import { CalendarPage } from "./ui/calendar/CalendarPage";
 
 declare global {
   interface Window {
@@ -20,12 +21,28 @@ declare global {
 window.__SHIFT_DEBUG__ = { snapshot: () => store.model };
 
 const root = createRoot(document.getElementById("root")!);
-flushSync(() =>
+
+// カレンダー配信の閲覧ページ（#cal=キー）：アプリ本体は起動しない
+if (/(^#|&)cal=/.test(location.hash)) {
+  document.title = "シフトをカレンダーに入れる";
   root.render(
     <StrictMode>
-      <App />
+      <CalendarPage />
     </StrictMode>,
-  ),
-);
-store.commit({ push: false });
-startSync();
+  );
+  window.addEventListener("hashchange", () => {
+    if (!/(^#|&)cal=/.test(location.hash)) location.reload();
+  });
+} else startApp();
+
+function startApp() {
+  flushSync(() =>
+    root.render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    ),
+  );
+  store.commit({ push: false });
+  startSync();
+}
