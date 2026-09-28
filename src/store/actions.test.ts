@@ -182,7 +182,7 @@ describe("store actions", () => {
     actions.sortMembers("status");
     expect(allNames(m)).toEqual(["いとう", "おの", "あべ"]);
     expect(push).toHaveBeenCalled();
-    expect(store.ui.toast?.message).toBe("メンバーを学年順に並べ替えました");
+    expect(store.ui.toast?.message).toBe("メンバーをステータス順に並べ替えました");
     actions.moveMemberTo("あべ", ["いとう", "おの", "あべ"], 0);
     expect(allNames(m)).toEqual(["あべ", "いとう", "おの"]);
     expect(store.ui.toast?.message).toBe("あべ を 1 / 3 番目に移動しました");

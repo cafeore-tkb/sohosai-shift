@@ -16,6 +16,8 @@ export function createModel(): Model {
     memberDrips: {},
     memberCars: {},
     memberWorkload: {},
+    memberKana: {},
+    memberGrade: {},
     memberOrder: {},
     slotTypes: {},
     slotCounts: {},

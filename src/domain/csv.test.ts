@@ -30,14 +30,14 @@ describe("decodeCsvBytes", () => {
 
 describe("書き出し", () => {
   it("ひな形・サンプルは BOM つき", () => {
-    expect(templateCsv().startsWith("﻿氏名,ステータス,所属店舗,")).toBe(true);
+    expect(templateCsv().startsWith("﻿氏名,ふりがな,学年（B1〜B4・M1〜M2・D1〜D3）,ステータス,所属店舗,")).toBe(true);
     expect(templateCsv().endsWith("\n")).toBe(true);
     const rows = csvRows(sampleCsv().slice(1));
-    // 2025年ベースのサンプル（mockSurvey.ts）：50名・155行、働ける量の列つき
+    // 2025年ベースのサンプル（mockSurvey.ts）：50名・155行、ふりがな・学年・働ける量の列つき
     expect(rows.length).toBe(1 + 155);
-    expect(rows[0][7]).toBe("働ける量（少し／5時間程度／いっぱい）");
+    expect(rows[0][9]).toBe("働ける量（少し／5時間程度／いっぱい）");
     expect(new Set(rows.slice(1).map((r) => r[0])).size).toBe(50);
-    expect(rows[1]).toEqual(["野村岳", "上級生", "本店, くれあ", "○", "あり", "豆屋", "マスター, ホール", "いっぱい", "2026-10-30", "10:00", "20:00"]);
+    expect(rows[1]).toEqual(["野村岳", "のむら がく", "B3", "上級生", "本店, くれあ", "○", "あり", "豆屋", "マスター, ホール", "いっぱい", "2026-10-30", "10:00", "20:00"]);
   });
   it("シフト CSV は枠の数＋見出し、未割当は「未割当」（人数の上限がない係の空きの番目は出さない）", () => {
     const m = autoModel();

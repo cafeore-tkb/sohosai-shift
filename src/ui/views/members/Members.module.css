@@ -57,13 +57,25 @@
   width: 100%;
   /* fixed columns: filtering or searching never reflows them; narrower screens scroll the card */
   table-layout: fixed;
-  min-width: 1180px;
+  min-width: 1400px;
   border-collapse: separate;
   border-spacing: 0;
   font-size: var(--fs-md);
 }
 .colName {
   width: 190px;
+}
+.colKana {
+  width: 140px;
+}
+.colGrade {
+  width: 84px;
+}
+.kanaInput {
+  width: 124px;
+}
+.gradeSelect {
+  width: 70px;
 }
 .colStatus {
   width: 128px;
@@ -243,6 +255,7 @@
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
       "top top"
+      "kana grade"
       "stores stores"
       "ice car"
       "work work"
@@ -304,6 +317,19 @@
   }
   .stores {
     grid-area: stores;
+  }
+  .kana {
+    grid-area: kana;
+  }
+  .kanaInput {
+    width: 100%;
+  }
+  .grade {
+    grid-area: grade;
+    justify-content: flex-end;
+  }
+  .gradeSelect {
+    width: 96px;
   }
   .toggles {
     flex-wrap: wrap;

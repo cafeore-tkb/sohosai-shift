@@ -3,7 +3,7 @@
 // 枠がなくなった割当だけを片付け、外した数を返す（0 より大きければ prunedMessage を表示）
 
 import { storeNames } from "./config";
-import { dripsForIce, parseRoles } from "./parse";
+import { dripsForIce, parseKana, parseRoles } from "./parse";
 import { pruneAssignments } from "./prune";
 import type { Model } from "./types";
 
@@ -43,6 +43,19 @@ export function setMemberWorkload(m: Model, name: string, workload: string): voi
   else delete m.memberWorkload[name];
 }
 
+/** ふりがな（"" なら削除。カタカナはひらがなに） */
+export function setMemberKana(m: Model, name: string, text: string): void {
+  const k = parseKana(text);
+  if (k) m.memberKana[name] = k;
+  else delete m.memberKana[name];
+}
+
+/** 学年（在籍コード。undefined なら削除） */
+export function setMemberGrade(m: Model, name: string, code: number | undefined): void {
+  if (code === undefined) delete m.memberGrade[name];
+  else m.memberGrade[name] = code;
+}
+
 /** アイスのステータス（"" なら未設定＝削除） */
 export function setMemberIce(m: Model, name: string, ice: string): number {
   if (ice) m.memberDrips[name] = dripsForIce(ice);
@@ -62,13 +75,14 @@ const norm = (v: string) => v.normalize("NFKC").replace(/\s/g, "");
 export const needsAttention = (m: Model, name: string): boolean =>
   (m.memberStatuses[name] || "未設定") === "未設定" || !(m.memberStores[name] || []).length;
 
-/** メンバー一覧の絞り込み（名前の検索・店舗。"none" は店舗未設定、"attention" は要確認） */
+/** メンバー一覧の絞り込み（名前・ふりがなの検索〈カタカナでも〉・店舗。"none" は店舗未設定、"attention" は要確認） */
 export function filterMembers(m: Model, all: readonly string[], query: string, store: string): string[] {
   const q = norm(query),
+    qk = parseKana(query).replace(/\s/g, ""),
     storesOf = (n: string) => m.memberStores[n] || [];
   return all.filter(
     (n) =>
-      (!q || norm(n).includes(q)) &&
+      (!q || norm(n).includes(q) || (!!qk && norm(m.memberKana?.[n] || "").includes(qk))) &&
       (!store ||
         (store === "none"
           ? !storesOf(n).length

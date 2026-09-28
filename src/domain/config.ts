@@ -157,6 +157,23 @@ export const liveScheduleFor = (date: string): DaySchedule | null =>
 // ---- 働ける量（アンケートの任意の列。自動割当の目安） ----
 
 /** 働ける量の選択肢（空＝希望なし） */
+/**
+ * 学年。アンケートでは B1〜B4・M1〜M2・D1〜D3 で答えてもらい、**入学年度の下2桁（在籍コード）**で覚える（年度が変わってもそのまま使える）。
+ * 今年度の B1 が GRADE_BASE（雙峰祭の年の下2桁）で、学部から続けて進学したとして B2＝−1 … B4＝−3、M1＝−4、M2＝−5、D1＝−6 … D3＝−8。
+ * 例（2026年度）：B1(26)〜B4(23)、M1(22)〜M2(21)、D1(20)〜D3(18)
+ */
+export const gradeLabels: readonly string[] = ["B1", "B2", "B3", "B4", "M1", "M2", "D1", "D2", "D3"];
+export const GRADE_BASE = Number(Object.keys(eventDays)[0].slice(2, 4));
+/** 在籍コード → 学年（B1〜D3。範囲外は ""） */
+export const gradeOf = (code: number | undefined): string => (code === undefined ? "" : gradeLabels[GRADE_BASE - code] || "");
+/** 学年 → 在籍コード（知らない学年は undefined） */
+export const gradeCode = (label: string): number | undefined => {
+  const i = gradeLabels.indexOf(label);
+  return i < 0 ? undefined : GRADE_BASE - i;
+};
+/** 表示（例：「B1」。範囲外の在籍コードは「17年度」） */
+export const gradeText = (code: number | undefined): string => (code === undefined ? "" : gradeOf(code) || `${code}年度`);
+
 export const workloadLevels: readonly string[] = ["少し", "5時間程度", "いっぱい"];
 /** 1日あたりの目安（時間）。いっぱい・未回答は目安なし */
 export const workloadTargetHours: Readonly<Record<string, number>> = {

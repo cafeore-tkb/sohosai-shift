@@ -52,6 +52,10 @@ export interface Model {
   memberCars: Record<string, boolean>;
   /** 氏名 → 働ける量（"少し"・"5時間程度"・"いっぱい"。未回答は削除）。自動割当の目安。旧版は知らないので無視する */
   memberWorkload: Record<string, string>;
+  /** 氏名 → ふりがな（ひらがな。五十音順に使う。未回答は削除）。旧版は知らないので無視する */
+  memberKana: Record<string, string>;
+  /** 氏名 → 在籍コード（入学年度の下2桁。学年は config の gradeOf。未回答は削除）。旧版は知らないので無視する */
+  memberGrade: Record<string, number>;
   /** 氏名 → 並び順の番号（小さいほど先。メンバー表・勤務可能表・個人別・印刷の並び。ない人は後ろに五十音順）。旧版は知らないので無視する */
   memberOrder: Record<string, number>;
   /** item.key → ドリップの種類 */
@@ -90,5 +94,7 @@ export const SHARED_MAPS = [
   "memberCars",
   "memberOrder",
   "memberWorkload",
+  "memberKana",
+  "memberGrade",
 ] as const;
 export type SharedMap = (typeof SHARED_MAPS)[number];

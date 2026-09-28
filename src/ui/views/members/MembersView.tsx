@@ -1,9 +1,9 @@
-// 3. メンバー：ステータス・所属店舗・アイス・車・やりたい／苦手な役職の編集
+// 3. メンバー：ふりがな・学年・ステータス・所属店舗・アイス・車・やりたい／苦手な役職の編集
 // デスクトップは表、スマホ（≤640px）は同じ DOM（tr）を CSS でカードに並べ替える
 
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { MEMBER_SORTS, MEMBER_SORT_LABELS, allNames, workloadLevels, filterMembers, iceOf, iceStatuses, memberStoreCounts, sortedMembers, storeNames } from "../../../domain";
+import { MEMBER_SORTS, MEMBER_SORT_LABELS, allNames, gradeLabels, gradeOf, gradeText, workloadLevels, filterMembers, iceOf, iceStatuses, memberStoreCounts, sortedMembers, storeNames } from "../../../domain";
 import type { MemberSort, Model, SortDir } from "../../../domain";
 import { actions, useModel, useModelVersion } from "../../../store";
 import { Button, Checkbox, Chip, ChipCount, ChipGroup, Icon, IconButton, Notice, Page, SearchInput, SegButton, Segmented, Select, ShopToggle, Spacer, cx, inputClassName, useEdgeFade } from "../../components";
@@ -55,8 +55,8 @@ function MembersContent() {
           id="memberSearch"
           pageSearch
           shortcut="/"
-          placeholder="氏名で検索"
-          aria-label="氏名で検索"
+          placeholder="氏名・ふりがなで検索"
+          aria-label="氏名・ふりがなで検索"
           wrapClassName={styles.search}
           value={m.memberQuery}
           onChange={(e) => actions.setMemberQuery(e.target.value)}
@@ -126,6 +126,8 @@ function MembersContent() {
           {/* 列の幅は固定（絞り込み・検索で行が変わっても列が横に動かない） */}
           <colgroup>
             <col className={styles.colName} />
+            <col className={styles.colKana} />
+            <col className={styles.colGrade} />
             <col className={styles.colStatus} />
             <col className={styles.colStores} />
             <col className={styles.colIce} />
@@ -138,6 +140,12 @@ function MembersContent() {
             <tr>
               <SortHead {...head("kana")} className={styles.nameHead}>
                 スタッフ
+              </SortHead>
+              <th scope="col" title="五十音順はふりがなで並びます（ふりがながない人は氏名）">
+                ふりがな
+              </th>
+              <SortHead {...head("grade")}>
+                学年
               </SortHead>
               <SortHead {...head("status")}>
                 ステータス
@@ -167,7 +175,7 @@ function MembersContent() {
               names.map((name) => <MemberRow key={name} m={m} name={name} drag={drag} />)
             ) : (
               <tr className={styles.emptyRow}>
-                <td colSpan={8}>該当するメンバーがいません</td>
+                <td colSpan={10}>該当するメンバーがいません</td>
               </tr>
             )}
           </tbody>
@@ -261,6 +269,34 @@ function MemberRow({ m, name, drag }: { m: Model; name: string; drag: ReturnType
           </span>
         )}
       </th>
+      <td className={styles.kana}>
+        <ChangeInput
+          className={inputClassName({ size: "sm" }, styles.kanaInput)}
+          data-member-kana={name}
+          aria-label={`${name} のふりがな`}
+          value={m.memberKana[name] || ""}
+          resetKey={version}
+          placeholder="ふりがな"
+          onCommit={(el) => commit(el, () => actions.changeMemberKana(name, el.value))}
+        />
+      </td>
+      <td className={styles.grade}>
+        <Select
+          data-member-grade={name}
+          aria-label={`${name} の学年`}
+          title={typeof m.memberGrade[name] === "number" ? `${m.memberGrade[name]}年度入学` : undefined}
+          tone={gradeOf(m.memberGrade[name]) ? "default" : "unset"}
+          wrapClassName={styles.gradeSelect}
+          value={gradeOf(m.memberGrade[name]) || (typeof m.memberGrade[name] === "number" ? "other" : "")}
+          onChange={(e) => e.currentTarget.value !== "other" && commit(e.currentTarget, () => actions.changeMemberGrade(name, e.currentTarget.value))}
+        >
+          <option value="">学年</option>
+          {gradeLabels.map((g) => (
+            <option key={g}>{g}</option>
+          ))}
+          {typeof m.memberGrade[name] === "number" && !gradeOf(m.memberGrade[name]) ? <option value="other">{gradeText(m.memberGrade[name])}</option> : null}
+        </Select>
+      </td>
       <td className={styles.status}>
         <Select
           data-member={name}

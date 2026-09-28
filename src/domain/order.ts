@@ -9,38 +9,49 @@ import { iceStatuses, statusLevels, storeNames, workloadLevels } from "./config"
 import { iceOf } from "./parse";
 import type { Model } from "./types";
 
-/** 五十音順（旧版の並び） */
+/** 五十音順（旧版の並び：氏名の文字どおり） */
 export const byJa = (a: string, b: string): number => a.localeCompare(b, "ja");
+
+/** 読み（ふりがながあればふりがな、なければ氏名。空白は除く） */
+export const readingOf = (m: Model, name: string): string => (m.memberKana?.[name] || name).replace(/[\s\u3000]+/g, "");
+/** 読みの五十音順（同じ読みなら氏名の順） */
+export const byReading =
+  (m: Model) =>
+  (a: string, b: string): number =>
+    byJa(readingOf(m, a), readingOf(m, b)) || byJa(a, b);
 
 const rankOf = (m: Model, name: string): number | undefined => {
   const r = (m.memberOrder || {})[name];
   return typeof r === "number" && Number.isFinite(r) ? r : undefined;
 };
 
-/** 並び順どおりに並べる（新しい配列）。番号のある人が番号順、ない人はその後ろに五十音順。同じ番号は五十音順 */
+/** 並び順どおりに並べる（新しい配列）。番号のある人が番号順、ない人はその後ろに五十音順（ふりがながあれば読みで）。同じ番号は五十音順 */
 export function orderedNames(m: Model, names: Iterable<string>): string[] {
+  const kana = byReading(m);
   return [...new Set(names)].sort((a, b) => {
     const ra = rankOf(m, a),
       rb = rankOf(m, b);
-    if (ra !== undefined && rb !== undefined) return ra - rb || byJa(a, b);
+    if (ra !== undefined && rb !== undefined) return ra - rb || kana(a, b);
     if (ra !== undefined) return -1;
     if (rb !== undefined) return 1;
-    return byJa(a, b);
+    return kana(a, b);
   });
 }
 
 /** 並べ替え（ツールバーのボタンと、メンバー表の列見出し） */
-export type MemberSort = "status" | "kana" | "store" | "ice" | "car" | "work" | "want" | "dislike";
+export type MemberSort = "grade" | "status" | "kana" | "store" | "ice" | "car" | "work" | "want" | "dislike";
 export type SortDir = "asc" | "desc";
 export const MEMBER_SORTS: readonly { value: MemberSort; label: string; title: string }[] = [
-  { value: "status", label: "学年順", title: "上級生 → 2年目合格 → 1年目合格 → 未合格 → 未設定（同じなら五十音順）" },
-  { value: "kana", label: "五十音順", title: "氏名の五十音順" },
+  { value: "grade", label: "学年順", title: "D3 → … → M1 → B4 → … → B1 → 学年未回答（同じなら五十音順）" },
+  { value: "kana", label: "五十音順", title: "ふりがなの五十音順（ふりがながなければ氏名）" },
+  { value: "status", label: "ステータス順", title: "上級生 → 2年目合格 → 1年目合格 → 未合格 → 未設定（同じなら五十音順）" },
   { value: "store", label: "所属店舗順", title: "本店 → 2号店 → くれあ → 店舗未設定（複数なら先の店舗。同じなら五十音順）" },
 ];
 /** 列見出しで並べ替えたときの呼び名（トースト） */
 export const MEMBER_SORT_LABELS: Readonly<Record<MemberSort, string>> = {
+  grade: "学年順",
   kana: "五十音順",
-  status: "学年順",
+  status: "ステータス順",
   store: "所属店舗順",
   ice: "アイス順",
   car: "車あり順",
@@ -59,6 +70,12 @@ function sortKeyOf(m: Model, kind: Exclude<MemberSort, "kana">): (n: string) => 
     return { unset: !t, k: t };
   };
   switch (kind) {
+    case "grade":
+      // 上の学年から（在籍コードが小さいほど上）
+      return (n) => {
+        const c = m.memberGrade?.[n];
+        return { unset: typeof c !== "number", k: typeof c === "number" ? c : 0 };
+      };
     case "status":
       return (n) => {
         const lv = statusLevels[m.memberStatuses[n] || "未設定"] ?? 0;
@@ -92,9 +109,9 @@ function sortKeyOf(m: Model, kind: Exclude<MemberSort, "kana">): (n: string) => 
 const cmpKey = (a: number | string, b: number | string): number =>
   typeof a === "number" && typeof b === "number" ? a - b : byJa(String(a), String(b));
 
-/** 並べ替えた名前（Model は変えない）。同じなら五十音順。desc は逆順（未設定・未入力は後ろのまま） */
+/** 並べ替えた名前（Model は変えない）。同じなら五十音順（ふりがながあれば読みで）。desc は逆順（未設定・未入力は後ろのまま） */
 export function sortedMembers(m: Model, names: readonly string[], kind: MemberSort, dir: SortDir = "asc"): string[] {
-  const kana = [...new Set(names)].sort(byJa);
+  const kana = [...new Set(names)].sort(byReading(m));
   if (kind === "kana") return dir === "desc" ? kana.reverse() : kana;
   const key = sortKeyOf(m, kind),
     sign = dir === "desc" ? -1 : 1;

@@ -1,6 +1,6 @@
 // アンケート回答・入力欄の値を読むパーサー
 
-import { dripTypes, prefRoles, statusLevels, storeNames } from "./config";
+import { dripTypes, gradeCode, prefRoles, statusLevels, storeNames } from "./config";
 
 /** ステータスを判別する。判別できなければ ""（「未設定」も ""） */
 export function parseStatus(v: unknown): string {
@@ -102,6 +102,34 @@ export function parseCar(v: unknown): boolean | undefined {
   if (!s) return undefined;
   if (/いいえ|なし|無し?$|持って(い)?ない|×|^no$|^n$|^false$|^0$/.test(s)) return false;
   if (/はい|あり|有り?|持って(い)?る|○|◯|^yes$|^y$|^true$|^1$/.test(s)) return true;
+  return undefined;
+}
+
+/** ふりがな：カタカナ・半角カナはひらがなに、空白は1つに（空なら ""） */
+export function parseKana(v: unknown): string {
+  return String(v ?? "")
+    .normalize("NFKC")
+    .replace(/[\u30a1-\u30f6]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
+    .replace(/[\s\u3000]+/g, " ")
+    .trim();
+}
+
+/**
+ * 学年 → 在籍コード（入学年度の下2桁。config の gradeLabels）。空・「なし」は ""、判別できなければ undefined。
+ * 「B1」「m2」「D3」「B1(26)」、「学部1年」「修士1年」「博士2年」「1年」（学部）、入学年度「26」「2026」「26年度」「26生」を読む
+ */
+export function parseGrade(v: unknown): number | "" | undefined {
+  const s = String(v ?? "")
+    .normalize("NFKC")
+    .toUpperCase()
+    .replace(/\s+/g, "");
+  if (!s || /^(-|—|ー|なし|未回答|その他)$/.test(s)) return "";
+  const lb = s.match(/^([BMD])([1-4])/);
+  if (lb) return gradeCode(lb[1] + lb[2]);
+  const yr = s.match(/^(学部|学類|学士|修士|博士|博士前期|博士後期)?([1-4])年(生)?$/);
+  if (yr) return gradeCode(`${/修士|前期/.test(yr[1] || "") ? "M" : /博士|後期/.test(yr[1] || "") ? "D" : "B"}${yr[2]}`);
+  const ent = s.match(/^(?:20)?(\d{2})(?:年度?|生|入学|年度入学)?$/);
+  if (ent) return Number(ent[1]);
   return undefined;
 }
 

@@ -46,7 +46,7 @@ export function ImportView({ hidden }: { hidden: boolean }) {
       data-view="import"
       step={1}
       title="アンケート回答を読み込む"
-      description="氏名・ステータス・所属店舗・アイス・車の有無・役職の希望・働ける量・勤務可能時間をCSVから読み込みます。"
+      description="氏名・ふりがな・学年・ステータス・所属店舗・アイス・車の有無・役職の希望・働ける量・勤務可能時間をCSVから読み込みます。"
     >
       <div className={styles.grid}>
         <div className={styles.aDrop}>
@@ -66,7 +66,7 @@ export function ImportView({ hidden }: { hidden: boolean }) {
   );
 }
 
-const FIELDS = ["氏名", "ステータス", "所属店舗", "アイス", "車の有無", "やりたい・苦手な役職", "働ける量", "日付・時刻"];
+const FIELDS = ["氏名", "ふりがな", "学年", "ステータス", "所属店舗", "アイス", "車の有無", "やりたい・苦手な役職", "働ける量", "日付・時刻"];
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const stamp = (d: Date) => `${d.getMonth() + 1}/${d.getDate()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
@@ -256,6 +256,12 @@ function Steps() {
 
 const FORMAT_ROWS: [string, string, string][] = [
   ["氏名", "必須", "山田 太郎"],
+  ["ふりがな（任意）", "メンバーの五十音順に使います。カタカナでも可（ひらがなにそろえます）", "やまだ たろう"],
+  [
+    "学年（任意）",
+    "B1〜B4（学部）／M1〜M2（修士）／D1〜D3（博士）。「学部1年」「修士2年」「26（入学年度）」も可。メンバーの学年順に使います（入学年度の下2桁で覚えるので、2026年度は B1＝26 … D3＝18）",
+    "B2",
+  ],
   ["ステータス", "未合格／1年目合格／2年目合格／上級生（未合格の人はアイス × 扱い）", "2年目合格"],
   ["所属店舗", "本店／2号店／くれあ。複数は区切って記入", "本店, くれあ"],
   [

@@ -27,8 +27,9 @@ public/firebase-config.js   共同編集の設定（ビルドせずに差し替�
 
 - `domain/types.ts` の `Model` は旧版の `state` と**同じ形**（キー名・値の意味・空文字と削除の区別まで同じ）。
   共同編集の Firestore ドキュメント形式もこれに依存するので、形を変えないこと（既存の部屋と互換）。
-  - 共有されるもの：`availability` と `SHARED_MAPS`（assignments, slotTypes, slotCounts, slotBlanks, settings, roleRequirements, memberStatuses, memberStores, memberWants, memberDislikes, memberDrips, memberCars, memberOrder, memberWorkload）
+  - 共有されるもの：`availability` と `SHARED_MAPS`（assignments, slotTypes, slotCounts, slotBlanks, settings, roleRequirements, memberStatuses, memberStores, memberWants, memberDislikes, memberDrips, memberCars, memberOrder, memberWorkload, memberKana, memberGrade）
   - `memberOrder`（氏名 → 並び順の番号）だけは旧版にない追加のマップ。旧版は知らないキーを読まず・書かない（差分はキーごと）ので、同じ部屋に旧版がいても壊れない（旧版の画面は五十音順のまま）
+  - `memberKana`（氏名 → ふりがな。五十音順・検索）と `memberGrade`（氏名 → 在籍コード＝入学年度の下2桁。学年は `gradeOf`）も旧版にない追加のマップ（扱いは memberOrder と同じ）
   - `memberWorkload`（氏名 → 働ける量 "少し"／"5時間程度"／"いっぱい"、未回答は削除）も旧版にない追加のマップ（扱いは memberOrder と同じ）
   - `slots` は必要人数（slotCounts）から作る派生キャッシュ。**並び順に意味がある**（自動割当の同順位の順、CSV・印刷の並び）。
   - 画面の状態：`view, gridDate, gridStore, gridMode, countDate, fullNames, availDate, memberQuery, memberStore`
@@ -64,7 +65,7 @@ public/firebase-config.js   共同編集の設定（ビルドせずに差し替�
   - 担当者ポップアップ `#picker`：候補 `data-pk-name`、長さ `data-pk-run="1|2|3|4|Infinity"`、`data-pk-clear`（外す）、`data-pk-move`（移動…）、`data-pk-close`、検索 `#pkSearch`
   - 必要人数 `data-count-slot`（number input、change で確定）、`data-count-all`、`data-count-date`
   - 勤務可能表 `data-avail-date`、セル `data-av-name` + `data-av-h`（pointerdown → ドラッグで塗る）
-  - メンバー：行 `data-member-row`（氏名）、並び順のつまみ `data-member-handle`（button。ポインタでドラッグ・Alt+↑↓）、並べ替え `data-member-sort="status|kana|store"`、`data-member`（ステータス select）、`data-member-store`（checkbox, value=店舗）、`data-member-ice`（select）、`data-member-car`（checkbox）、`data-member-want` / `data-member-dislike`（text input、ネイティブの change で確定）、`data-member-filter`
+  - メンバー：行 `data-member-row`（氏名）、並び順のつまみ `data-member-handle`（button。ポインタでドラッグ・Alt+↑↓）、並べ替え `data-member-sort="grade|kana|status|store"`、`data-member-kana`（ふりがな text input、ネイティブの change で確定）、`data-member-grade`（学年 select）、`data-member`（ステータス select）、`data-member-store`（checkbox, value=店舗）、`data-member-ice`（select）、`data-member-car`（checkbox）、`data-member-want` / `data-member-dislike`（text input、ネイティブの change で確定）、`data-member-filter`
   - 役職ルール `data-rule`（select）
   - 読み込み結果の「シフト調整へ進む」`data-goto="shift"`、ドロップ領域 `data-dropzone`、ダイアログを閉じる `data-close`
 - `#toast`：常に DOM にあり、非表示は `hidden` 属性。表示のたびに中身を作り直す（`key` を変える）。

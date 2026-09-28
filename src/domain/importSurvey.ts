@@ -7,7 +7,9 @@ import {
   normKey,
   normTime,
   parseCar,
+  parseGrade,
   parseIce,
+  parseKana,
   parseRoles,
   parseStatus,
   parseStores,
@@ -59,8 +61,12 @@ interface Profile {
   wants?: string;
   dislikes?: string;
   workload?: string;
+  kana?: string;
+  grade?: string;
   hasDrips?: boolean;
   hasWorkload?: boolean;
+  hasKana?: boolean;
+  hasGrade?: boolean;
   hasCar?: boolean;
   hasPrefs?: boolean;
 }
@@ -83,12 +89,18 @@ export function importSurvey(m: Model, text: string): ImportResult {
   } else {
     const col = (...keys: string[]) => {
       for (const k of keys) {
-        const i = headers.findIndex((h) => h.includes(k));
+        const i = headers.findIndex((h, j) => h.includes(k) && !skip.includes(j));
         if (i >= 0) return i;
       }
       return -1;
     };
+    // ふりがなの列（「名前（ふりがな）」など）は氏名の列と取り違えないよう先に決めて、氏名を探すときは除く
+    const skip: number[] = [];
+    const kana = col("ふりがな", "フリガナ", "よみがな", "ヨミガナ", "読み", "かな", "カナ", "furigana", "kana", "reading", "yomi");
+    if (kana >= 0) skip.push(kana);
     const idx = {
+      kana,
+      grade: col("学年", "grade", "入学年度", "学籍"),
       name: col("氏名", "名前", "name", "staff"),
       status: col("ステータス", "status", "合格", "経験", "年目"),
       wants: col("やりたい", "希望役職", "want"),
@@ -121,12 +133,16 @@ export function importSurvey(m: Model, text: string): ImportResult {
       if (!p.wants && cell(r, "wants")) p.wants = cell(r, "wants");
       if (!p.dislikes && cell(r, "dislikes")) p.dislikes = cell(r, "dislikes");
       if (!p.workload && cell(r, "workload")) p.workload = cell(r, "workload");
+      if (!p.kana && cell(r, "kana")) p.kana = cell(r, "kana");
+      if (!p.grade && cell(r, "grade")) p.grade = cell(r, "grade");
     });
     Object.values(profiles).forEach((p) => {
       p.hasDrips = idx.drips >= 0;
       p.hasCar = idx.car >= 0;
       p.hasPrefs = idx.wants >= 0 || idx.dislikes >= 0;
       p.hasWorkload = idx.workload >= 0;
+      p.hasKana = idx.kana >= 0;
+      p.hasGrade = idx.grade >= 0;
     });
   }
   if (!data.length) throw Error("勤務可能時間を取得できませんでした。CSVの内容を確認してください。");
@@ -135,7 +151,8 @@ export function importSurvey(m: Model, text: string): ImportResult {
     badCars: string[] = [],
     badRoles = new Set<string>(),
     badIce: string[] = [],
-    badWorkload: string[] = [];
+    badWorkload: string[] = [],
+    badGrade: string[] = [];
   let reflected = 0;
   for (const [name, p] of Object.entries(profiles)) {
     if (p.status) {
@@ -178,6 +195,19 @@ export function importSurvey(m: Model, text: string): ImportResult {
         if (w === undefined) badWorkload.push(`${name}（${p.workload}）`);
       }
     }
+    if (p.hasKana) {
+      const k = parseKana(p.kana);
+      if (k) m.memberKana[name] = k;
+      else delete m.memberKana[name];
+    }
+    if (p.hasGrade) {
+      const g = parseGrade(p.grade);
+      if (typeof g === "number") m.memberGrade[name] = g;
+      else {
+        delete m.memberGrade[name];
+        if (g === undefined) badGrade.push(`${name}（${p.grade}）`);
+      }
+    }
     if (p.status || p.stores) reflected++;
   }
   m.availability = data;
@@ -190,7 +220,7 @@ export function importSurvey(m: Model, text: string): ImportResult {
     warns: string[] = [];
   messages.push(
     reflected
-      ? `ステータス・所属店舗${all.some((p) => p.hasDrips) ? "・アイス" : ""}${all.some((p) => p.hasCar) ? "・車の有無" : ""}${all.some((p) => p.hasPrefs) ? "・役職の希望" : ""}${all.some((p) => p.hasWorkload) ? "・働ける量" : ""}を${reflected}名分反映しました。`
+      ? `ステータス・所属店舗${all.some((p) => p.hasDrips) ? "・アイス" : ""}${all.some((p) => p.hasCar) ? "・車の有無" : ""}${all.some((p) => p.hasPrefs) ? "・役職の希望" : ""}${all.some((p) => p.hasWorkload) ? "・働ける量" : ""}${all.some((p) => p.hasKana) ? "・ふりがな" : ""}${all.some((p) => p.hasGrade) ? "・学年" : ""}を${reflected}名分反映しました。`
       : "CSVにステータス・所属店舗の列がないため、「メンバーのステータス」で設定してください。",
   );
   if (badStatus.length) warns.push(`ステータスを判別できなかった回答：${badStatus.join("、")}`);
@@ -198,6 +228,7 @@ export function importSurvey(m: Model, text: string): ImportResult {
   if (badCars.length) warns.push(`車の有無を判別できなかった回答（車なしとして扱います）：${badCars.join("、")}`);
   if (badWorkload.length)
     warns.push(`働ける量を判別できなかった回答（目安なしとして扱います）：${badWorkload.join("、")}`);
+  if (badGrade.length) warns.push(`学年を判別できなかった回答（未回答にしました。B1〜B4・M1〜M2・D1〜D3）：${badGrade.join("、")}`);
   if (badRoles.size) warns.push(`不明な役職名：${[...badRoles].join("、")}`);
   if (badStores.size) warns.push(`不明な店舗名：${[...badStores].join("、")}`);
   m.view = "shift";

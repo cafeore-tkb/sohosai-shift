@@ -50,6 +50,9 @@ import {
   setMemberStore,
   setMemberWants,
   setMemberWorkload,
+  setMemberKana,
+  setMemberGrade,
+  gradeCode,
   setRoleCounts,
   setRoleRequirement,
   setSlotCount,
@@ -524,6 +527,17 @@ export function changeMemberDislikes(name: string, text: string): void {
 /** 働ける量（"" は希望なし）。目安なので割当は外さない */
 export function changeMemberWorkload(name: string, workload: string): void {
   setMemberWorkload(M(), name, workload);
+  store.commit();
+}
+
+/** ふりがな（五十音順・検索に使う。割当には関係しない） */
+export function changeMemberKana(name: string, text: string): void {
+  setMemberKana(M(), name, text);
+  store.commit();
+}
+/** 学年（"B1"〜"D3"。"" は未回答） */
+export function changeMemberGrade(name: string, label: string): void {
+  setMemberGrade(M(), name, label ? gradeCode(label) : undefined);
   store.commit();
 }
 
