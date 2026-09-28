@@ -3,7 +3,7 @@
 
 import {
   AVAILABILITY_CHANGED,
-  MEMBER_SORTS,
+  memberSortLabel,
   allNames,
   memberMovedMessage,
   memberSortedMessage,
@@ -56,7 +56,7 @@ import {
   templateCsv,
   undoChanges,
 } from "../domain";
-import type { AvailabilityChanges, EditResult, GridMode, MemberSort, View } from "../domain";
+import type { AvailabilityChanges, EditResult, GridMode, MemberSort, SortDir, View } from "../domain";
 import { printShiftHtml } from "../print/printHtml";
 import { ask, download, openHtmlWindow, scrollToTop, tell } from "./browser";
 import { movingRange, store } from "./store";
@@ -536,11 +536,10 @@ function afterOrderChange(before: Record<string, number>, message: string): void
   });
 }
 
-/** 「学年順」「五十音順」「所属店舗順」：全員の並び順を書き換える */
-export function sortMembers(kind: MemberSort): void {
+/** 並べ替えボタン・メンバー表の列見出し：全員の並び順を書き換える */
+export function sortMembers(kind: MemberSort, dir: SortDir = "asc"): void {
   const m = M();
-  const label = MEMBER_SORTS.find((s) => s.value === kind)?.label ?? "";
-  afterOrderChange(setMemberOrder(m, sortedMembers(m, allNames(m), kind)), memberSortedMessage(label));
+  afterOrderChange(setMemberOrder(m, sortedMembers(m, allNames(m), kind, dir)), memberSortedMessage(memberSortLabel(kind, dir)));
 }
 
 /**

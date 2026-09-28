@@ -5,7 +5,8 @@
 // 共同編集はキーごとの差分・マージなので、1人を動かしたときは原則その人の番号だけを書き換える
 // （前後の人の番号のあいだの値）。番号のない人がいる・同じ番号がある・すき間がなくなったときだけ、全員に番号を振り直す。
 
-import { statusLevels, storeNames } from "./config";
+import { iceStatuses, statusLevels, storeNames, workloadLevels } from "./config";
+import { iceOf } from "./parse";
 import type { Model } from "./types";
 
 /** 五十音順（旧版の並び） */
@@ -28,26 +29,79 @@ export function orderedNames(m: Model, names: Iterable<string>): string[] {
   });
 }
 
-/** 並べ替えボタン */
-export type MemberSort = "status" | "kana" | "store";
+/** 並べ替え（ツールバーのボタンと、メンバー表の列見出し） */
+export type MemberSort = "status" | "kana" | "store" | "ice" | "car" | "work" | "want" | "dislike";
+export type SortDir = "asc" | "desc";
 export const MEMBER_SORTS: readonly { value: MemberSort; label: string; title: string }[] = [
   { value: "status", label: "学年順", title: "上級生 → 2年目合格 → 1年目合格 → 未合格 → 未設定（同じなら五十音順）" },
   { value: "kana", label: "五十音順", title: "氏名の五十音順" },
   { value: "store", label: "所属店舗順", title: "本店 → 2号店 → くれあ → 店舗未設定（複数なら先の店舗。同じなら五十音順）" },
 ];
+/** 列見出しで並べ替えたときの呼び名（トースト） */
+export const MEMBER_SORT_LABELS: Readonly<Record<MemberSort, string>> = {
+  kana: "五十音順",
+  status: "学年順",
+  store: "所属店舗順",
+  ice: "アイス順",
+  car: "車あり順",
+  work: "働ける量順",
+  want: "やりたい役職順",
+  dislike: "苦手な役職順",
+};
+export const memberSortLabel = (kind: MemberSort, dir: SortDir = "asc"): string => MEMBER_SORT_LABELS[kind] + (dir === "desc" ? "（逆順）" : "");
 
-/** 学年順・五十音順・所属店舗順に並べた名前（Model は変えない） */
-export function sortedMembers(m: Model, names: readonly string[], kind: MemberSort): string[] {
+/** 並べ替えのキー。unset（未設定・未入力）は向きに関わらずいちばん後ろ */
+type SortKey = { unset: boolean; k: number | string };
+
+function sortKeyOf(m: Model, kind: Exclude<MemberSort, "kana">): (n: string) => SortKey {
+  const text = (v: string[] | undefined): SortKey => {
+    const t = (v || []).join("、");
+    return { unset: !t, k: t };
+  };
+  switch (kind) {
+    case "status":
+      return (n) => {
+        const lv = statusLevels[m.memberStatuses[n] || "未設定"] ?? 0;
+        return { unset: !lv, k: -lv };
+      };
+    case "store":
+      return (n) => {
+        const idx = (m.memberStores[n] || []).map((s) => storeNames.indexOf(s)).filter((i) => i >= 0);
+        return { unset: !idx.length, k: idx.length ? Math.min(...idx) : 0 };
+      };
+    case "ice":
+      return (n) => {
+        const i = iceStatuses.indexOf(iceOf(m.memberDrips[n]));
+        return { unset: i < 0, k: i };
+      };
+    case "car":
+      return (n) => ({ unset: false, k: m.memberCars[n] ? 0 : 1 });
+    case "work":
+      // いっぱい → 5時間程度 → 少し → 未回答
+      return (n) => {
+        const i = workloadLevels.indexOf(m.memberWorkload[n] || "");
+        return { unset: i < 0, k: -i };
+      };
+    case "want":
+      return (n) => text(m.memberWants[n]);
+    case "dislike":
+      return (n) => text(m.memberDislikes[n]);
+  }
+}
+
+const cmpKey = (a: number | string, b: number | string): number =>
+  typeof a === "number" && typeof b === "number" ? a - b : byJa(String(a), String(b));
+
+/** 並べ替えた名前（Model は変えない）。同じなら五十音順。desc は逆順（未設定・未入力は後ろのまま） */
+export function sortedMembers(m: Model, names: readonly string[], kind: MemberSort, dir: SortDir = "asc"): string[] {
   const kana = [...new Set(names)].sort(byJa);
-  if (kind === "kana") return kana;
-  const key =
-    kind === "status"
-      ? (n: string) => -(statusLevels[m.memberStatuses[n] || "未設定"] ?? 0)
-      : (n: string) => {
-          const idx = (m.memberStores[n] || []).map((s) => storeNames.indexOf(s)).filter((i) => i >= 0);
-          return idx.length ? Math.min(...idx) : storeNames.length;
-        };
-  return kana.map((n, i) => ({ n, k: key(n), i })).sort((a, b) => a.k - b.k || a.i - b.i).map((x) => x.n);
+  if (kind === "kana") return dir === "desc" ? kana.reverse() : kana;
+  const key = sortKeyOf(m, kind),
+    sign = dir === "desc" ? -1 : 1;
+  return kana
+    .map((n, i) => ({ n, key: key(n), i }))
+    .sort((a, b) => Number(a.key.unset) - Number(b.key.unset) || sign * cmpKey(a.key.k, b.key.k) || a.i - b.i)
+    .map((x) => x.n);
 }
 
 /** その並びを番号にする（1, 2, 3 …） */

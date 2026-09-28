@@ -59,6 +59,24 @@ describe("sortedMembers", () => {
     expect(sortedMembers(m, kana, "store")).toEqual(["えもと", "おの", "いとう", "あべ", "うえだ"]);
   });
 
+  it("列見出し：アイス・車・働ける量・役職、逆順（未設定・未入力は向きに関わらず後ろ）", () => {
+    const m = model(kana);
+    m.memberDrips = { おの: ["1杯アイス", "2杯アイス"], いとう: [], あべ: ["2杯アイス"] };
+    expect(sortedMembers(m, kana, "ice")).toEqual(["おの", "あべ", "いとう", "うえだ", "えもと"]);
+    expect(sortedMembers(m, kana, "ice", "desc")).toEqual(["いとう", "あべ", "おの", "うえだ", "えもと"]);
+    m.memberCars = { えもと: true, いとう: true };
+    expect(sortedMembers(m, kana, "car")).toEqual(["いとう", "えもと", "あべ", "うえだ", "おの"]);
+    m.memberWorkload = { あべ: "少し", おの: "いっぱい", うえだ: "5時間程度" };
+    expect(sortedMembers(m, kana, "work")).toEqual(["おの", "うえだ", "あべ", "いとう", "えもと"]);
+    m.memberWants = { おの: ["ホール"], あべ: ["レジ"] };
+    expect(sortedMembers(m, kana, "want")).toEqual(["おの", "あべ", "いとう", "うえだ", "えもと"]);
+    m.memberDislikes = { うえだ: ["豆屋"] };
+    expect(sortedMembers(m, kana, "dislike", "desc")).toEqual(["うえだ", "あべ", "いとう", "えもと", "おの"]);
+    expect(sortedMembers(m, kana, "kana", "desc")).toEqual([...kana].reverse());
+    m.memberStatuses = { おの: "上級生", あべ: "未合格" };
+    expect(sortedMembers(m, kana, "status", "desc")).toEqual(["あべ", "おの", "いとう", "うえだ", "えもと"]);
+  });
+
   it("五十音順 and setMemberOrder writes ranks for everyone and returns the previous map", () => {
     const m = model(kana);
     m.memberOrder = { stale: 3 };

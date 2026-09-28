@@ -466,3 +466,44 @@
     padding-left: 30px;
   }
 }
+
+/* Column headers sort the shared member order (click again = reverse) */
+.sortHead {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: -3px -6px;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.sortHead:hover {
+  color: var(--ink);
+}
+.sortHead:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.sortIcon {
+  color: var(--ink-decorative);
+  opacity: 0;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.sortHead:hover .sortIcon,
+.sortHead:focus-visible .sortIcon {
+  opacity: 1;
+}
+.sorted {
+  color: var(--ink);
+}
+.sorted .sortIcon {
+  color: var(--accent);
+  opacity: 1;
+}
+.sortDesc {
+  transform: rotate(180deg);
+}

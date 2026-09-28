@@ -1,12 +1,12 @@
 // 3. メンバー：ステータス・所属店舗・アイス・車・やりたい／苦手な役職の編集
 // デスクトップは表、スマホ（≤640px）は同じ DOM（tr）を CSS でカードに並べ替える
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { MEMBER_SORTS, allNames, workloadLevels, filterMembers, iceOf, iceStatuses, memberStoreCounts, sortedMembers, storeNames } from "../../../domain";
-import type { Model } from "../../../domain";
+import { MEMBER_SORTS, MEMBER_SORT_LABELS, allNames, workloadLevels, filterMembers, iceOf, iceStatuses, memberStoreCounts, sortedMembers, storeNames } from "../../../domain";
+import type { MemberSort, Model, SortDir } from "../../../domain";
 import { actions, useModel, useModelVersion } from "../../../store";
-import { Button, Checkbox, Chip, ChipCount, ChipGroup, IconButton, Notice, Page, SearchInput, SegButton, Segmented, Select, ShopToggle, Spacer, cx, inputClassName, useEdgeFade } from "../../components";
+import { Button, Checkbox, Chip, ChipCount, ChipGroup, Icon, IconButton, Notice, Page, SearchInput, SegButton, Segmented, Select, ShopToggle, Spacer, cx, inputClassName, useEdgeFade } from "../../components";
 import { ChangeInput, StatusOptions, releaseFocus } from "../../components/inputs";
 import { attentionOf } from "./attention";
 import { useMemberDrag } from "./useMemberDrag";
@@ -40,6 +40,14 @@ function MembersContent() {
   const drag = useMemberDrag(tbody, names);
   const counts = memberStoreCounts(m, all);
   const needFix = all.filter((n) => attentionOf(m, n).length).length;
+  // 最後に押した並べ替え。並び順がまだそのままなら、その列見出しに向きを出す（もう一度押すと逆順）
+  const [lastSort, setLastSort] = useState<{ kind: MemberSort; dir: SortDir } | null>(null);
+  const active = lastSort && all.length > 1 && sortedMembers(m, all, lastSort.kind, lastSort.dir).join("\n") === allKey ? lastSort : null;
+  const sortBy = (kind: MemberSort, dir: SortDir) => {
+    setLastSort({ kind, dir });
+    actions.sortMembers(kind, dir);
+  };
+  const head = (kind: MemberSort) => ({ kind, dir: active?.kind === kind ? active.dir : null, onSort: sortBy });
   return (
     <>
       <div className={styles.toolbar}>
@@ -75,7 +83,7 @@ function MembersContent() {
               data-member-sort={s.value}
               pressed={sortedMembers(m, all, s.value).join("\n") === allKey}
               title={`${s.title}。並び順は共有され、勤務可能表・個人別・印刷にも反映されます`}
-              onClick={() => actions.sortMembers(s.value)}
+              onClick={() => sortBy(s.value, "asc")}
             >
               {s.label}
             </SegButton>
@@ -128,16 +136,30 @@ function MembersContent() {
           </colgroup>
           <thead>
             <tr>
-              <th scope="col" className={styles.nameHead}>
+              <SortHead {...head("kana")} className={styles.nameHead}>
                 スタッフ
-              </th>
-              <th scope="col">ステータス</th>
-              <th scope="col">所属店舗</th>
-              <th scope="col">アイス</th>
-              <th scope="col">車</th>
-              <th scope="col" title="アンケートの「働ける量」。自動割当の目安（超えても入れることがあります）">働ける量</th>
-              <th scope="col">やりたい役職</th>
-              <th scope="col">苦手な役職</th>
+              </SortHead>
+              <SortHead {...head("status")}>
+                ステータス
+              </SortHead>
+              <SortHead {...head("store")}>
+                所属店舗
+              </SortHead>
+              <SortHead {...head("ice")}>
+                アイス
+              </SortHead>
+              <SortHead {...head("car")}>
+                車
+              </SortHead>
+              <SortHead {...head("work")} note="アンケートの「働ける量」。自動割当の目安（超えても入れることがあります）">
+                働ける量
+              </SortHead>
+              <SortHead {...head("want")}>
+                やりたい役職
+              </SortHead>
+              <SortHead {...head("dislike")}>
+                苦手な役職
+              </SortHead>
             </tr>
           </thead>
           <tbody id="memberEditor" ref={tbody} className={styles.body}>
@@ -152,6 +174,39 @@ function MembersContent() {
         </table>
       </MemberFrame>
     </>
+  );
+}
+
+/** 列見出し：押すとその列で並べ替え（もう一度押すと逆順）。並び順は共有 */
+function SortHead({
+  kind,
+  dir,
+  onSort,
+  note,
+  className,
+  children,
+}: {
+  kind: MemberSort;
+  dir: SortDir | null;
+  onSort: (kind: MemberSort, dir: SortDir) => void;
+  note?: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  const next: SortDir = dir === "asc" ? "desc" : "asc";
+  return (
+    <th scope="col" className={className} aria-sort={dir === "asc" ? "ascending" : dir === "desc" ? "descending" : undefined}>
+      <button
+        type="button"
+        className={cx(styles.sortHead, dir && styles.sorted)}
+        data-member-col-sort={kind}
+        title={`${note ? `${note}\n` : ""}${MEMBER_SORT_LABELS[kind]}${next === "desc" ? "の逆" : ""}に並べ替え。並び順は共有され、勤務可能表・個人別・印刷にも反映されます`}
+        onClick={() => onSort(kind, next)}
+      >
+        {children}
+        <Icon name="chev" size={14} className={cx(styles.sortIcon, dir === "desc" && styles.sortDesc)} />
+      </button>
+    </th>
   );
 }
 
