@@ -16,7 +16,6 @@ import {
   snapshotAssignments,
   undoChanges,
 } from "./assign";
-import { refreshDerived } from "./model";
 import { flattened } from "./slots";
 import { item, tinyModel } from "../test/fixtures";
 
@@ -160,9 +159,10 @@ describe("runTargets / pickName / 候補", () => {
     m.assignments[item(m, "レジ", "10:30").key] = "A";
     expect(runTargets(m, x, "A", 3).map((y) => y.start)).toEqual(["10:00"]);
     // 別の番目が空いていれば、そちらに続ける
-    const h = item(m, "ホール", "10:00", 0);
-    m.assignments[item(m, "ホール", "10:30", 0).key] = "B";
-    expect(runTargets(m, h, "A", 2).map((y) => y.key)).toEqual([h.key, item(m, "ホール", "10:30", 1).key]);
+    const m2 = setup().m;
+    const h = item(m2, "ホール", "10:00", 0);
+    m2.assignments[item(m2, "ホール", "10:30", 0).key] = "B";
+    expect(runTargets(m2, h, "A", 2).map((y) => y.key)).toEqual([h.key, item(m2, "ホール", "10:30", 1).key]);
   });
 
   it("pickName：空いていれば続けて、勤務中ならそこから移す", () => {
