@@ -1,0 +1,131 @@
+/* === <ShiftPage>: work surface, grid frame, 3日分を一覧 day blocks, empty state (spec §2, §4) === */
+.surface {
+  min-width: 0;
+}
+
+/* Grid frame (paper, radius 10): the scroller + the KeyStrip pinned to its bottom */
+.frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs);
+  overflow: hidden;
+}
+/* 勤務状況チェック is non-modal (legacy parity): while it is open the frame ends left of the
+   drawer, so 「表で見る」 can bring any column into view and the grid stays editable. */
+@media (min-width: 900px) {
+  .surface[data-audit-open] .frame {
+    margin-right: calc(var(--drawer-w) - var(--sp-6) + var(--sp-4));
+  }
+}
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.scroll:focus-visible {
+  box-shadow: var(--focus-inset);
+}
+/* Fade on the right edge: more columns to the side */
+.edge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 34px;
+  width: 28px;
+  background: linear-gradient(90deg, transparent, var(--surface-paper));
+  opacity: 0.95;
+  pointer-events: none;
+  z-index: var(--z-grid-corner);
+}
+.empty {
+  flex: 1;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--sp-5);
+  text-align: center;
+  font-size: var(--fs-base);
+  color: var(--ink-muted);
+}
+.noSlots {
+  padding: var(--sp-8);
+  font-size: var(--fs-md);
+  color: var(--ink-muted);
+}
+
+/* 3日分を一覧: a sticky day title; the header rows re-stick under it (--rg-top) */
+.dayBlock {
+  --rg-top: 34px;
+  /* as wide as its table, so the day title's background spans the whole row */
+  width: max-content;
+  min-width: 100%;
+}
+.dayTitle {
+  position: sticky;
+  top: 0;
+  /* above the day's own sticky header cells, which slide under it at the end of the day */
+  z-index: calc(var(--z-grid-corner) + 1);
+  height: 34px;
+  background: var(--surface-canvas);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  white-space: nowrap;
+}
+/* the text stays at the left edge while the grid scrolls sideways */
+.dayTitleIn {
+  position: sticky;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  height: 100%;
+  padding: 0 14px;
+}
+.dayBlock:first-child .dayTitle {
+  border-top: 0;
+}
+.dayTitle small {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--ink-muted);
+}
+
+/* Short landscape screens: the page scrolls past the toolbar; the frame then fills the view */
+@media (max-height: 560px) and (min-width: 641px) {
+  .frame {
+    flex: none;
+    height: calc(100dvh - var(--appbar-h) - var(--statusbar-h) - var(--sp-4));
+    min-height: 240px;
+  }
+  :global(body.is-focus) .frame {
+    height: calc(100dvh - var(--sp-4) * 2);
+  }
+}
+
+@media (max-width: 640px) {
+  .frame {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .edge {
+    display: none;
+  }
+}
+
+/* Dragging a person (body.is-dragging, set by App while ui.moveMode === "dragging") */
+:global(body.is-dragging),
+:global(body.is-dragging) * {
+  cursor: grabbing !important;
+}

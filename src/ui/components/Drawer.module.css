@@ -1,0 +1,120 @@
+/* === <Drawer>: inside the page area (app bar and status bar stay visible) ===
+   Non-modal, like the legacy drawers: no scrim, the grid stays clickable while it is open
+   (the shift page reserves the drawer's width, see Shift.module.css). */
+.drawer {
+  position: fixed;
+  top: var(--appbar-h);
+  right: 0;
+  bottom: var(--statusbar-h);
+  z-index: calc(var(--z-drawer) + 1);
+  width: var(--drawer-w);
+  max-width: 100vw;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-paper);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--sh-lg);
+  animation: var(--anim-slidein);
+  /* landscape phones: keep the close button out of the notch (viewport-fit=cover) */
+  padding-right: env(safe-area-inset-right);
+}
+.wide {
+  width: var(--drawer-w-wide);
+}
+.drawer:focus-visible {
+  box-shadow: var(--sh-lg), var(--focus-inset);
+}
+/* Focus mode: no app bar / status bar */
+:global(body.is-focus) .drawer {
+  top: 0;
+  bottom: 0;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  padding: var(--sp-5) 14px var(--sp-5) 22px;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+  min-height: 56px;
+}
+.head > svg {
+  color: var(--ink-secondary);
+}
+.title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+}
+.extra {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex: 1;
+  min-width: 0;
+}
+.close {
+  margin-left: auto;
+}
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 18px 22px var(--sp-8);
+}
+.foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-6);
+  padding: 9px 22px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-subtle);
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  flex: none;
+}
+@media (max-width: 1279px) {
+  .wide {
+    width: 100vw;
+    padding-left: env(safe-area-inset-left);
+  }
+}
+/* Phone, and short landscape screens (a phone turned sideways, ≤ 560px high):
+   full-screen sheet over the app bar and status bar (Drawer.tsx SHEET) */
+@media (max-width: 640px), (max-height: 560px) {
+  .drawer,
+  .wide {
+    top: 0;
+    bottom: 0;
+    width: 100vw;
+    border-left: 0;
+    z-index: calc(var(--z-modal) - 1);
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+@media (max-height: 560px) and (min-width: 641px) {
+  .head {
+    min-height: 0;
+    padding-top: var(--sp-3);
+    padding-bottom: var(--sp-3);
+  }
+  .body {
+    padding-top: var(--sp-5);
+    padding-bottom: var(--sp-5);
+  }
+  /* the footer key (必要人数) would take a row of a 390px-high screen */
+  .foot {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  .head {
+    padding: var(--sp-4) var(--sp-4) var(--sp-4) var(--sp-6);
+    flex-wrap: wrap;
+  }
+  .body {
+    padding: var(--sp-6);
+  }
+}

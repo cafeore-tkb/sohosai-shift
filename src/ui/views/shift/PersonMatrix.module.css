@@ -1,0 +1,191 @@
+/* === <PersonGrid> (spec §4): members × 30-min rows, merged role blocks tinted by shop === */
+.pm {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  width: max-content;
+  font-size: var(--fs-sm);
+}
+.tc {
+  width: 64px;
+}
+.mc {
+  width: var(--person-col);
+}
+.pm thead th {
+  position: sticky;
+  top: var(--rg-top, 0px);
+  z-index: var(--z-grid-sticky-head);
+  height: 48px;
+  padding: 4px 4px 5px;
+  background: var(--surface-paper);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  line-height: 1.25;
+  vertical-align: bottom;
+  text-align: center;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line-hour);
+  border-right: 1px solid var(--line-grid);
+}
+.pm thead th.corner {
+  left: 0;
+  z-index: var(--z-grid-corner);
+  padding: 0 10px 6px;
+  text-align: left;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--ink-muted);
+  border-right: 0;
+  box-shadow: inset -1px 0 0 var(--line-strong);
+}
+.name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hours {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--ink-muted);
+  font-variant-numeric: var(--numeric);
+}
+.bar {
+  display: block;
+  height: 3px;
+  margin-top: 4px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--bar-fill);
+}
+.pm tbody th {
+  position: sticky;
+  left: 0;
+  z-index: var(--z-grid-sticky-col);
+  height: var(--person-row);
+  padding: 0 10px;
+  background: var(--surface-paper);
+  text-align: left;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  font-variant-numeric: var(--numeric);
+  box-shadow: inset -1px 0 0 var(--line-strong);
+  border-bottom: 1px solid var(--line-grid);
+}
+.pm tbody tr.half th {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--ink-muted);
+  border-bottom-color: var(--line-hour);
+}
+.pm tbody td {
+  height: var(--person-row);
+  padding: 2px;
+  text-align: center;
+  vertical-align: middle;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line-grid);
+  border-right: 1px solid var(--line-grid);
+}
+.pm tbody tr.half td {
+  border-bottom-color: var(--line-hour);
+}
+.pm tbody td.na {
+  background: var(--st-na-hatch);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 22px;
+  padding: 0 3px 0 5px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--sb);
+  color: var(--si);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  box-shadow: inset 3px 0 0 var(--sc);
+  cursor: pointer;
+  transition: box-shadow var(--dur-instant) var(--ease-standard);
+}
+.block:hover {
+  box-shadow:
+    inset 3px 0 0 var(--sc),
+    0 0 0 1.5px var(--sc);
+}
+.block:focus-visible {
+  box-shadow: var(--focus-inset);
+}
+.block[data-pm-state="conflict"] {
+  gap: 0;
+  background: var(--st-conflict-bg);
+  color: var(--st-conflict-ink);
+  font-size: var(--fs-xs);
+  line-height: 12px;
+  box-shadow: inset 0 0 0 1px var(--st-conflict-border);
+}
+.block[data-pm-state="off"] {
+  background: var(--st-off-hatch);
+  color: var(--st-off-ink);
+  box-shadow: inset 0 0 0 1px var(--st-off-border);
+}
+.block[data-pm-state="unfit"] {
+  background: var(--st-unfit-dots);
+  color: var(--st-unfit-ink);
+  box-shadow: inset 0 0 0 1px var(--st-unfit-border);
+}
+.block[data-pm-state="brk"] {
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+  font-weight: var(--fw-semibold);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.block.picking {
+  background: var(--surface-selected);
+  color: var(--ink);
+  box-shadow:
+    inset 3px 0 0 var(--sc),
+    0 0 0 1px var(--selected);
+}
+.flash {
+  animation: var(--anim-flash);
+}
+/* Focus (navy) and the flash ring (撫子) stay separate (spec §1): a focused cell shows both */
+.flash:focus-visible {
+  --flash-focus: var(--focus-inset);
+}
+/* Reduced motion: the flash is a location cue, not decoration — show it as a static highlight
+   for as long as the cell carries the class (store FLASH_MS), with no easing */
+@media (prefers-reduced-motion: reduce) {
+  .flash {
+    animation: none;
+    background: var(--st-flash-bg) !important;
+    box-shadow: 0 0 0 2px var(--accent) !important;
+  }
+  .flash:focus-visible {
+    box-shadow: var(--focus-inset), 0 0 0 2px var(--accent) !important;
+  }
+}

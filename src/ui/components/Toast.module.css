@@ -1,0 +1,136 @@
+/* === <ToastDock> / <Toast> / move-cancel ================================ */
+.dock {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--statusbar-h) + 18px);
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+}
+.dock > * {
+  pointer-events: auto;
+}
+:global(body.is-focus) .dock {
+  bottom: 18px;
+}
+/* 勤務状況チェック open beside the grid: centre in the page area left of the drawer */
+@media (min-width: 900px) {
+  .dock[data-beside-drawer] {
+    left: calc((100vw - var(--drawer-w)) / 2);
+    max-width: calc(100vw - var(--drawer-w) - 32px);
+  }
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  min-width: 0;
+  padding: 7px var(--sp-4) 7px 14px;
+  border-radius: var(--r-lg);
+  background: var(--surface-inverse);
+  color: var(--ink-inverse);
+  font-size: var(--fs-md);
+  line-height: var(--lh-snug);
+  box-shadow: var(--sh-lg);
+  animation: var(--anim-up);
+}
+.toast[hidden] {
+  display: none;
+}
+.icon {
+  color: var(--ink-inverse-icon);
+}
+.msg {
+  min-width: 0;
+}
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink-inverse-accent);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  flex: none;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+.action:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.close {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-inverse-muted);
+  flex: none;
+}
+.close:hover {
+  color: var(--ink-inverse);
+  background: rgba(255, 255, 255, 0.12);
+}
+@media (pointer: coarse) {
+  .close {
+    width: 36px;
+    height: 36px;
+  }
+}
+/* Move mode: paper + green border (no action; キャンセル sits outside #toast) */
+.move {
+  background: var(--surface-raised);
+  color: var(--ink);
+  border: 1px solid var(--st-drop-border);
+  box-shadow: var(--sh-md);
+  padding: var(--sp-4) 14px;
+}
+.move .icon {
+  color: var(--st-drop-strong);
+}
+.move .close {
+  color: var(--ink-muted);
+}
+.move .close:hover {
+  color: var(--ink);
+  background: var(--surface-hover);
+}
+.cancel {
+  box-shadow: var(--sh-md);
+}
+@media (min-width: 641px) {
+  .toast {
+    white-space: nowrap;
+  }
+}
+@media (max-width: 640px) {
+  .dock {
+    left: 12px;
+    right: 12px;
+    transform: none;
+    max-width: none;
+    bottom: calc(var(--tabbar-h-m) + env(safe-area-inset-bottom) + 12px);
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .toast {
+    gap: 10px;
+  }
+  .msg {
+    flex: 1;
+    line-height: 1.5;
+  }
+  .action {
+    height: 36px;
+  }
+}

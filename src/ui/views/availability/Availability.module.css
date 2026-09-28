@@ -1,0 +1,315 @@
+/* === <AvailabilityPage> (spec §3 「2. 勤務可能表」, §4 Availability) ======== */
+
+/* Toolbar: day segmented · spacer · add-member form */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  margin-bottom: var(--sp-5);
+}
+.days {
+  flex: none;
+}
+.addForm {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex: none;
+}
+.addField {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.addIcon {
+  position: absolute;
+  left: 10px;
+  color: var(--ink-decorative);
+  pointer-events: none;
+}
+.addInput {
+  width: 260px;
+  padding-left: 32px;
+}
+.hint {
+  margin-bottom: var(--sp-5);
+}
+
+/* Board: the card scrolls both ways; header rows and the name column stick */
+.frame {
+  position: relative;
+  overflow: auto;
+  /* the page chrome (app bar, page head, notice, toolbar, bottom padding, status bar) */
+  max-height: calc(100dvh - 351px);
+  min-height: 240px;
+  background: var(--surface-paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs);
+  overscroll-behavior: contain;
+}
+.av {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-md);
+}
+.av th,
+.av td {
+  min-width: 50px;
+  height: 30px;
+  padding: 0;
+  border-bottom: 1px solid var(--line-grid);
+  border-left: 1px solid var(--line-grid);
+  text-align: center;
+}
+.av tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+/* Sticky header: hours bold, :30 muted */
+.av thead th {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-grid-sticky-head);
+  height: 32px;
+  background: var(--surface-paper);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  font-variant-numeric: var(--numeric);
+  white-space: nowrap;
+}
+.av thead th.isHalf {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--ink-muted);
+}
+/* Sticky second header row: 勤務可能人数 N人 */
+.av thead .countRow th {
+  top: 32px;
+  height: 30px;
+  background: var(--surface-subtle);
+  color: var(--ink-secondary);
+  font-weight: var(--fw-medium);
+  border-bottom: 1px solid var(--line-hour);
+}
+.av thead .countRow th b {
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+}
+
+/* Sticky name column */
+.av .who {
+  position: sticky;
+  left: 0;
+  z-index: var(--z-grid-sticky-col);
+  min-width: 150px;
+  padding: 0 14px;
+  background: var(--surface-paper);
+  text-align: left;
+  font-weight: var(--fw-medium);
+  color: var(--ink);
+  white-space: nowrap;
+  box-shadow: inset -1px 0 0 var(--line);
+  border-left: 0;
+}
+.av thead .who {
+  z-index: var(--z-grid-corner);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+.av thead .countRow .who {
+  color: var(--ink-secondary);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+/* Hour rule: the :00 column starts with a stronger rule */
+.av .isHour {
+  border-left-color: var(--line-hour);
+}
+
+/* Cells: ○ / — */
+.av td {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  /* a finger scrolls the table; painting by touch starts after a long-press (usePaint) */
+  touch-action: manipulation;
+  /* keyboard focus never lands under the sticky header rows / name column */
+  scroll-margin: 64px 0 0 152px;
+  transition: background-color var(--dur-instant) var(--ease-standard);
+}
+.av td.isYes {
+  background: var(--avail-yes-bg);
+  color: var(--avail-yes-ink);
+  font-weight: var(--fw-bold);
+}
+.av td.isNo {
+  color: var(--avail-no-ink);
+}
+.av td:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-inset);
+}
+
+/* Row hover */
+.av tbody tr:hover > td,
+.av tbody tr:hover > th {
+  background-color: var(--surface-hover);
+}
+.av tbody tr:hover > td.isYes {
+  background-color: var(--avail-yes-hover);
+}
+
+/* Paint preview (classes are toggled on the td by usePaint while dragging).
+   The glyph shows the target value (○ / —), drawn over the current one. */
+.av td.toYes,
+.av td.toNo {
+  position: relative;
+  color: transparent;
+}
+.av td.toYes,
+.av tbody tr:hover > td.toYes {
+  background: var(--paint-yes-bg);
+  box-shadow: inset 0 0 0 1.5px var(--paint-yes-ring);
+}
+.av td.toNo,
+.av tbody tr:hover > td.toNo {
+  background: var(--paint-no-bg);
+  box-shadow: inset 0 0 0 1.5px var(--paint-no-ring);
+}
+.av td.toYes::after,
+.av td.toNo::after {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: var(--fw-bold);
+}
+.av td.toYes::after {
+  content: "○";
+  color: var(--avail-yes-ink);
+}
+.av td.toNo::after {
+  content: "—";
+  color: var(--paint-no-ink);
+}
+:global(body.is-painting),
+:global(body.is-painting) .av td {
+  cursor: crosshair;
+}
+
+.dayShort {
+  display: none;
+}
+
+/* Pointer tooltip 「— にする（4セル）・離すと確定」 */
+.paintTip {
+  z-index: var(--z-popover);
+}
+.paintTipAbove.paintTipAbove::before {
+  top: auto;
+  bottom: -4px;
+}
+
+/* === Tablet ============================================================== */
+@media (max-width: 1023px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+}
+
+/* === Phone (≤ 640px): the table stays, with a sticky name column ========== */
+@media (max-width: 640px) {
+  .toolbar {
+    gap: var(--sp-4);
+  }
+  .days {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .days::-webkit-scrollbar {
+    display: none;
+  }
+  /* 前日準備 → 準備, 本番1日目 → 1日目; the 10/31 sub-label hides (full date in title) */
+  .days small,
+  .dayFull {
+    display: none;
+  }
+  .dayShort {
+    display: inline;
+  }
+  .addForm {
+    flex: 1 1 100%;
+  }
+  .addField {
+    flex: 1;
+    min-width: 0;
+  }
+  .addInput {
+    width: 100%;
+  }
+  .addForm > button {
+    height: var(--touch-min);
+  }
+  .hint {
+    font-size: var(--fs-sm);
+  }
+  .frame {
+    /* shorter than the space between the app bar and the tab bar, so a strip of page stays
+       above/below it to swipe on, and the frame never slides under the app bar */
+    max-height: calc(100dvh - var(--appbar-h) - var(--tabbar-h-m) - env(safe-area-inset-bottom) - 56px);
+    /* a vertical swipe past the table's top/bottom scrolls the page (back to the day tabs) */
+    overscroll-behavior-y: auto;
+    margin: 0 calc(-1 * var(--sp-6));
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+  .av th,
+  .av td {
+    min-width: 46px;
+    height: 36px;
+  }
+  .av thead tr:first-child th {
+    height: 40px;
+  }
+  .av thead .countRow th {
+    top: 40px;
+  }
+  .whoCount {
+    display: block;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    color: var(--ink-muted);
+    line-height: 1.2;
+  }
+  .av .who {
+    min-width: 0;
+    width: 104px;
+    max-width: 104px;
+    padding: 0 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Touch: painting a range needs a long-press first (usePaint) */
+.touchHint {
+  display: none;
+}
+@media (pointer: coarse) {
+  .touchHint {
+    display: inline;
+  }
+  /* ≥ 36px targets on touch tablets / landscape phones too (the phone rule above already does this) */
+  .av th,
+  .av td {
+    height: 36px;
+  }
+}

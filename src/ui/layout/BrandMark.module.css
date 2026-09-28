@@ -1,0 +1,28 @@
+/* === <BrandMark> / <BrandTile> ========================================== */
+.mark {
+  display: block;
+  flex: none;
+}
+.rim {
+  fill: var(--illus-mark-rim);
+}
+.latte {
+  fill: var(--illus-mark-latte);
+}
+.heart {
+  fill: var(--illus-mark-heart);
+}
+.handle {
+  fill: none;
+  stroke: var(--illus-mark-rim);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.tile {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 9px;
+  background: var(--brand-tile);
+  box-shadow: inset 0 -2px 0 rgba(23, 32, 44, 0.18);
+}

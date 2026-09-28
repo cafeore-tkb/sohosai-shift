@@ -1,0 +1,408 @@
+/* ==========================================================================
+   Shift Maker — design tokens (final, "Steel & Nadeshiko" — 雙峰祭 2026)
+   --------------------------------------------------------------------------
+   Copied verbatim into the React app as src/styles/tokens.css and imported
+   once globally. CSS Modules consume ONLY the semantic roles (sections
+   "Surfaces" and below). The raw palette exists so the roles can be tuned in
+   one place; components must not reference --slate-*, --steel-* or
+   --nadeshiko-* directly (the brand mark / illustration tokens --illus-* are
+   already semantic).
+
+   Base colours = this year's festival theme colours:
+     steel blue  #4682B4 (CSS steelblue)      -> --steel-500
+     撫子色      #EEBBCB (和色大辞典 nadeshiko) -> --nadeshiko-300
+                 #DC9FB4 (nipponcolors NADESHIKO) -> --nadeshiko-400
+   The pure values are too light for text on white (steelblue 4.1:1, 撫子
+   1.7:1), so text and text-on-fill use deeper shades of the same hues.
+
+   Colour rules (see spec §1):
+   * Steel     = structure & action: primary buttons, "current / selected"
+                 (tabs, segmented, pressed chips = filled steel pill, switch,
+                 open-picker cell, active picker row), links, live
+                 co-editing, the fill-rate meter, the brand tile (pure
+                 steelblue #4682B4).
+   * Keyboard focus = deep steel-navy (--steel-900), set apart from the
+                 mid-steel selection by lightness, always with a paper gap.
+   * 撫子 (nadeshiko) = warmth & data emphasis: ★ やりたい役職, values
+                 changed from the default ("set" = 撫子 fill + bold 撫子 text
+                 inside a neutral control border), the change-flash ring,
+                 上級 / 2年↑ tags (the real 撫子色 #EEBBCB), hours bars, the
+                 brand-mark heart, toast accent, page eyebrows + brand caption.
+   * Change flash = steel wash (--steel-100) + 2px 撫子 ring — never a pink
+     wash, which would read as a pale 重複.
+   * Neutrals are cool slate (a trace of steel), never warm/brown.
+   * Status hues (orange / amber / red / purple / grey / green) are reserved
+     for the cell states users already know and never used for decoration.
+     Shop hues are pushed away from the base colours: 本店 = saturated
+     cobalt (not steel), 美化 = fuchsia (not 撫子).
+   Every text pair below is checked by contrast.mjs (≥ 4.5:1 unless marked
+   "decorative" or "disabled"; UI boundaries / focus ≥ 3:1).
+   ========================================================================== */
+
+:root {
+  /* ---------- Raw palette ------------------------------------------------ */
+  /* Slate neutrals — cool greys with a trace of steel (never brown) */
+  --slate-0:   #FCFDFE;  /* paper */
+  --slate-50:  #F7F9FB;
+  --slate-100: #F0F3F7;  /* canvas */
+  --slate-150: #E8EDF2;
+  --slate-200: #DEE4EB;  /* hairline */
+  --slate-250: #D2DAE3;
+  --slate-300: #C7D0DB;  /* strong line */
+  --slate-400: #A3AFBD;
+  --slate-450: #7A8797;  /* control boundary — 3.6:1 paper, 3.3 canvas, 3.1 on accent-bg */
+  --slate-500: #6E7C8C;  /* decorative only (icons at rest) — 4.2:1 */
+  --slate-550: #5F6D7D;  /* placeholders, faint text — 5.2:1 on paper */
+  --slate-600: #516072;  /* muted text — 6.3:1 on paper */
+  --slate-700: #3B4859;  /* secondary text — 9.5:1 */
+  --slate-800: #263241;
+  --slate-900: #17202C;  /* ink — 16:1 */
+  --slate-950: #0E151E;
+  /* Steel blue — festival colour #1 (500 = CSS steelblue) */
+  --steel-50:  #EEF4FA;
+  --steel-100: #DDE9F4;
+  --steel-200: #C0D6EA;
+  --steel-300: #93B8DA;
+  --steel-400: #6A9BC8;
+  --steel-500: #4682B4;  /* steelblue — brand tile, illustration (white 4.1:1, graphics only) */
+  --steel-600: #3A73A6;  /* primary / selected fill — white text 5.0:1, ring 4.5:1 on canvas */
+  --steel-700: #2A5883;
+  --steel-800: #22476B;
+  --steel-900: #183350;
+  /* 撫子色 nadeshiko — festival colour #2 (300 = 撫子色, 400 = NADESHIKO) */
+  --nadeshiko-50:  #FDF3F6;
+  --nadeshiko-100: #FAE6ED;
+  --nadeshiko-200: #F5D2DE;
+  --nadeshiko-300: #EEBBCB;
+  --nadeshiko-400: #DC9FB4;
+  --nadeshiko-500: #BD6F8C;  /* hours bars, brand heart (graphics only) */
+  --nadeshiko-600: #A8436B;  /* ★ / accent marks / eyebrows — 5.6:1 on paper, 5.1 on canvas */
+  --nadeshiko-700: #8A3F60;  /* accent text on tints */
+  --nadeshiko-800: #733552;
+  --nadeshiko-900: #55263C;
+
+  /* ---------- Surfaces --------------------------------------------------- */
+  --surface-canvas:   var(--slate-100);   /* page background */
+  --surface-paper:    var(--slate-0);     /* cards, grid, sheets */
+  --surface-raised:   #FFFFFF;            /* popovers, menus, dialogs */
+  --surface-sunken:   var(--slate-150);   /* segmented tracks, status bar */
+  --surface-subtle:   var(--slate-50);    /* table heads, card footers, dropzone */
+  --surface-hover:    #EEF2F6;
+  --surface-pressed:  #E2E8EF;
+  --surface-selected: var(--steel-50);    /* open-picker cell, active picker row */
+  --surface-inverse:  #1B2735;            /* toast, drag ghost, tooltips (deep steel-slate) */
+  --scrim:            rgba(23, 32, 44, 0.32);
+
+  /* ---------- Ink -------------------------------------------------------- */
+  --ink:             var(--slate-900);
+  --ink-secondary:   var(--slate-700);
+  --ink-muted:       var(--slate-600);
+  --ink-placeholder: var(--slate-550);  /* placeholders, "—", "なし" */
+  --ink-decorative:  var(--slate-500);  /* resting icons only, never text */
+  --ink-inverse:     #F4F7FB;
+  --ink-inverse-muted: #B4C0CE;
+  --ink-inverse-accent: var(--nadeshiko-300); /* toast 元に戻す, ghost target — 9.1:1 on inverse */
+  --ink-inverse-icon:   var(--steel-300);     /* toast check icon */
+  --ink-inverse-warn:   #FFD08A;              /* drag ghost: 条件外 etc. after the drop — 10.5:1 on inverse */
+  --ink-link:        var(--steel-700);
+  --ink-eyebrow:     var(--nadeshiko-600); /* STEP n / 5, REFERENCE, brand caption — 5.1:1 on canvas */
+
+  /* ---------- Lines ------------------------------------------------------ */
+  --line:          var(--slate-200);
+  --line-strong:   var(--slate-300);
+  --line-control:  var(--slate-450);  /* resting boundary of every form control (input, select,
+                                         possel, count input, checkbox) — ≥ 3:1 */
+  --line-control-hover: var(--slate-600);
+  --line-grid:     #EAEEF3;   /* half-hour rows, in-group columns */
+  --line-hour:     #BCC6D2;   /* hour rows — clearly stronger than half-hour */
+  --line-group:    #CCD4DE;   /* role-group boundaries (vertical) */
+  --line-shop:     var(--slate-400); /* shop boundaries (vertical, 2px) */
+  --stint-rail:    #C3CDD9;   /* left rail joining one person's consecutive rows */
+  --dropzone-border: var(--slate-400);
+
+  /* ---------- Actions ---------------------------------------------------- */
+  --primary:          var(--steel-600);
+  --primary-hover:    var(--steel-700);
+  --primary-pressed:  var(--steel-800);
+  --primary-shadow:   rgba(34, 71, 107, 0.30);
+  --on-primary:       #FFFFFF;          /* 5.0:1 on primary / selected */
+  --on-color:         #FFFFFF;          /* text/marks on saturated fills (count dot, avatar, swap tag, switch thumb) */
+  --on-primary-icon:  var(--nadeshiko-200); /* icons inside primary buttons (3.6:1, non-text) */
+  --secondary-bg:     var(--surface-paper);
+  --secondary-border: var(--slate-300);
+  --secondary-hover:  var(--surface-hover);
+  --danger:           #B3261E;          /* 6.5:1 on paper */
+  --danger-bg:        #FCEBE8;
+  --danger-hover:     #F8DAD5;
+  --danger-border:    #EBC4BE;
+  --selected:         var(--steel-600); /* selection ring, tab disc, switch on, pressed-chip fill */
+  --selected-hover:   var(--steel-700); /* pressed chip hover */
+  --selected-ink:     var(--steel-800);
+  --control-track:    var(--slate-450); /* switch off */
+  --accent:           var(--nadeshiko-600);
+  --accent-strong:    var(--nadeshiko-700);
+  --accent-bg:        var(--nadeshiko-100); /* "set" fill (select--set, possel.is-set, ci.is-changed), pill--accent */
+  --accent-bg-strong: var(--nadeshiko-200);
+  --accent-border:    var(--nadeshiko-300); /* divider inside a set control; the boundary stays --line-control */
+  --live-bg:          var(--steel-50);   /* co-editing badge */
+  --live-ink:         var(--steel-700);
+  --live-halo:        var(--steel-200);
+  --disabled-ink:     #9AA5B2;          /* disabled — exempt */
+  --disabled-bg:      var(--slate-150);
+
+  /* ---------- Focus ------------------------------------------------------ */
+  /* Deep steel-navy: separated from the mid-steel selection by lightness
+     (ΔE2000 22 vs --selected) and ≥ 9:1 on every cell background. */
+  --focus-color:  var(--steel-900);
+  --focus-halo:   var(--steel-100);     /* input/select focus glow */
+  --focus-ring:   0 0 0 2px var(--surface-paper), 0 0 0 4px var(--focus-color);
+  --focus-inset:  inset 0 0 0 2px var(--focus-color), inset 0 0 0 3px var(--surface-paper); /* grid cells */
+
+  /* ---------- Cell states (semantics users already know) ----------------- */
+  /* 空き — open slot: orange dashed */
+  --st-open-border: #DD7A26;
+  --st-open-bg:     #FFF3E6;
+  --st-open-hover:  #FFE7CE;
+  --st-open-ink:    #9C4A0C;   /* 5.7:1 on its bg */
+  /* 候補なし — nobody eligible: grey dashed */
+  --st-none-border: #9DA8B5;
+  --st-none-bg:     #EEF1F4;
+  --st-none-ink:    #525E6B;   /* 5.8:1 */
+  /* 苦手な役職 — disliked role: amber/yellow */
+  --st-dislike-border: #DDA20C;
+  --st-dislike-bg:     #FFF1C7;
+  --st-dislike-ink:    #5E4300; /* 8.2:1 */
+  --st-dislike-mark:   #8A6400; /* △ glyph, 5.0:1 on paper */
+  /* 重複 — double-booked: red */
+  --st-conflict-border: #D0362B;
+  --st-conflict-bg:     #FDE6E3;
+  --st-conflict-ink:    #A1221A; /* 6.4:1 */
+  /* 勤務できない時間 — outside availability: purple hatched with × */
+  --st-off-border: #7B4CC9;
+  --st-off-a:      #F3ECFC;
+  --st-off-b:      #E4D7F7;
+  --st-off-ink:    #52259A;   /* 7.4:1 on the darker stripe */
+  --st-off-hatch:  repeating-linear-gradient(135deg, var(--st-off-a) 0 5px, var(--st-off-b) 5px 9px);
+  /* 条件外 — placed by hand against 所属店舗・ステータス・車 (fitsSlot false): teal
+     dots with ≠. Added after the final spec (manual moves go anywhere). Teal is
+     away from every state hue and from steel / 撫子; the dots keep it apart from
+     the pale green 移動先 and 準備 tints (bg ΔE2000 ≥ 9 to both). */
+  --st-unfit-border: #12808A;   /* 4.6:1 on paper, 3.7:1 on its bg (boundary) */
+  --st-unfit-bg:     #C4ECEF;
+  --st-unfit-dot:    #9FD9DE;
+  --st-unfit-ink:    #0B5960;   /* 6.3:1 on bg, 5.2:1 on the dots */
+  --st-unfit-mark:   #0E6870;   /* ≠ glyph on paper 6.4:1 (in cells the mark uses --st-unfit-ink) */
+  --st-unfit-dots:   radial-gradient(circle at 1.5px 1.5px, var(--st-unfit-dot) 1.2px, transparent 1.7px) 0 0 / 5px 5px, var(--st-unfit-bg);
+  /* 不要な時間 — position not needed: light diagonal hatch (clickable) */
+  --st-na-a:     #F3F5F8;
+  --st-na-b:     #DCE2E9;
+  --st-na-hatch: repeating-linear-gradient(135deg, var(--st-na-a) 0 5px, var(--st-na-b) 5px 7px);
+  --st-na-hover-ink: var(--ink-muted);
+  /* ★ やりたい役職 — 撫子, never a warning hue */
+  --st-want: var(--accent);
+  /* ⚠ 別の枠で勤務中 (picker) */
+  --st-busy-ink: #9C4A0C;
+  /* Drag & drop / move targets: green dashed */
+  --st-drop-border: #2E9258;
+  --st-drop-bg:     #EAF6EE;
+  --st-drop-hover:  #D4EEDD;
+  --st-drop-strong: #1F7A45;   /* 4.8:1 on drop-bg */
+  --st-drop-shadow: rgba(31, 122, 69, 0.2);
+  --st-drag-dim:    0.55;      /* opacity of cells that are not green targets while moving */
+  /* Move footprint (added): every cell the moving range would land in. Green (above)
+     when the target fits; slate when it would break a condition (still allowed);
+     red dashed when the range does not fit that column (the drop is refused). */
+  --st-drop-warn-border: var(--slate-700);   /* 9.3:1 on white; the 入替 tag is white on it */
+  --st-drop-warn-bg:     var(--surface-hover);
+  --st-nodrop-border:    var(--danger);      /* the 入りません tag is white on it, 6.5:1 */
+  --st-nodrop-bg:        rgba(179, 38, 30, 0.10);
+  /* Range selection (Shift+click): steel ring + light steel wash over the cell's own state colour */
+  --sel-range-ring: var(--selected);
+  --sel-range-tint: rgba(58, 115, 166, 0.14);
+  /* Change flash (assignment changed / "表で見る" target): steel wash + 2px
+     --accent (撫子) ring. Not a pink wash: that read as a pale 重複. */
+  --st-flash-bg:    var(--steel-100);
+
+  /* ---------- Generic feedback ------------------------------------------ */
+  --ok-ink: #22703F;   --ok-bg: #E5F4EA;   --ok-border: #9FD2B1;
+  --warn-ink: #8A4A0B; --warn-bg: #FFF1E0; --warn-border: #F1C08E;
+  --attention-row-bg: #FFF8EC;   /* members rows needing a fix */
+  --attention-tag-border: #F4C79E;
+
+  /* ---------- Availability (勤務可能表) ---------------------------------- */
+  --avail-yes-bg:    #E3F3E8;
+  --avail-yes-hover: #D8EEDF;
+  --avail-yes-ink:   #1B6E3C;   /* 5.5:1 */
+  --avail-no-ink:    var(--ink-placeholder);
+  --paint-yes-bg:    #D3EEDC;
+  --paint-yes-ring:  var(--st-drop-border);
+  --paint-no-bg:     #F6E7E4;
+  --paint-no-ring:   #E3A49C;
+  --paint-no-ink:    var(--danger);
+
+  /* ---------- Fill-rate pills & meters ---------------------------------- */
+  --fill-full-bg: #E2F3E7;   --fill-full-ink: #1F6B3A;
+  --fill-part-bg: #FFEBD6;   --fill-part-ink: #8E440B;
+  --fill-empty-bg: #FCE3DF;  --fill-empty-ink: #A1221A;
+  --meter-track: var(--slate-250);
+  /* Meter stays steel to its end (end 3.6:1 on the track). No pink/red tip:
+     it would read as "over limit" next to 重複. */
+  --meter-fill:  linear-gradient(90deg, var(--steel-700), var(--steel-600));
+  --bar-fill:    var(--nadeshiko-500);  /* hours bars (個人別 header, 勤務状況) — value also shown as "Nh" */
+
+  /* ---------- Drip marks (after dripper names) -------------------------- */
+  --drip-both: var(--slate-600);  /* ○ */
+  --drip-ice:  #2356BE;           /* 1 / 2 */
+  --drip-hot:  #C22D25;           /* H  */
+
+  /* ---------- Tags ------------------------------------------------------- */
+  --tag-top-bg:  var(--nadeshiko-300);   /* 上級 / 2年↑ / status 上級 — the real 撫子色 */
+  --tag-top-ink: var(--nadeshiko-900);
+  --ladder-1-bg: var(--steel-50);
+  --ladder-2-bg: var(--steel-100);
+
+  /* ---------- Shop colours (hue families fixed by the brief) ------------ */
+  /* 本店 = cobalt (bluer & more saturated than steel); 美化 = fuchsia (not 撫子) */
+  --shop-honten: #2452D6;  --shop-honten-bg: #E8EDFD;  --shop-honten-ink: #1A3FA8;
+  --shop-nigo:   #D8661E;  --shop-nigo-bg:   #FDEEE3;  --shop-nigo-ink:   #994210;
+  --shop-crea:   #8250CC;  --shop-crea-bg:   #F2EBFB;  --shop-crea-ink:   #5E2DA5;
+  --shop-bika:   #C8229A;  --shop-bika-bg:   #FCE7F5;  --shop-bika-ink:   #96166B;
+  --shop-prep:   #2B8753;  --shop-prep-bg:   #E5F3EA;  --shop-prep-ink:   #1E6A3F;
+  --shop-none:   var(--slate-500); --shop-none-bg: var(--slate-150); --shop-none-ink: var(--slate-700);
+
+  /* ---------- People (co-editing avatars) ------------------------------- */
+  --avatar-1: var(--steel-600);
+  --avatar-2: var(--nadeshiko-600);
+  --avatar-3: var(--slate-600);
+
+  /* ---------- Brand mark & illustration --------------------------------- */
+  /* Mark: white cup + pale latte + 撫子 heart on a pure steelblue tile */
+  --brand-tile:       var(--steel-500);
+  --illus-mark-rim:   #FFFFFF;
+  --illus-mark-latte: var(--nadeshiko-50);
+  --illus-mark-heart: var(--nadeshiko-500);
+  /* Import illustration: pour-over on a 撫子 disc, steel line work; the
+     mini-grid bars use only the two festival colours (no shop/status hues) */
+  --illus-bg:     var(--nadeshiko-100);
+  --illus-line:   var(--steel-700);
+  --illus-drip:   var(--steel-500);
+  --illus-accent: var(--nadeshiko-500);
+  --illus-bar-1:  var(--steel-400);
+  --illus-bar-2:  var(--nadeshiko-400);
+  --illus-bar-3:  var(--steel-200);
+
+  /* ---------- Typography ------------------------------------------------- */
+  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Noto Sans JP", Meiryo, system-ui, sans-serif;
+  --font-brand: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fs-2xs: 10.5px;  /* tags inside grid headers, kbd */
+  --fs-xs:  11px;    /* meta, captions, car chips */
+  --fs-sm:  12px;    /* secondary UI, table heads */
+  --fs-md:  13px;    /* base UI + grid cells */
+  --fs-base:14px;    /* body copy, inputs */
+  --fs-lg:  16px;    /* dialog titles */
+  --fs-xl:  20px;    /* page titles */
+  --fs-2xl: 22px;    /* empty-state headline */
+  --lh-tight: 1.25;
+  --lh-snug:  1.4;
+  --lh-body:  1.65;
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semibold:600;
+  --fw-bold:    700;
+  --tracking-caps:  0.06em;
+  --numeric: tabular-nums;
+
+  /* ---------- Spacing (4px base, 2px half-step) -------------------------- */
+  --sp-0: 0;
+  --sp-1: 2px;
+  --sp-2: 4px;
+  --sp-3: 6px;
+  --sp-4: 8px;
+  --sp-5: 12px;
+  --sp-6: 16px;
+  --sp-7: 20px;
+  --sp-8: 24px;
+  --sp-9: 32px;
+  --sp-10: 40px;
+  --sp-11: 56px;
+
+  /* ---------- Sizes ------------------------------------------------------ */
+  --appbar-h: 52px;
+  --statusbar-h: 28px;
+  --tabbar-h-m: 58px;       /* phone bottom tab bar (+ safe area) */
+  --control-h-sm: 28px;
+  --control-h: 32px;
+  --control-h-lg: 40px;
+  --touch-min: 44px;
+  --grid-col: 96px;         /* role grid position column (desktop) */
+  --grid-row: 29px;         /* role grid 30-min row (desktop; renders 30px with the 1px rule) */
+  --grid-head-row: 24px;    /* each of the 3 sticky header rows */
+  --grid-time-col: 84px;
+  --grid-col-m: 84px;
+  --grid-row-m: 36px;
+  --grid-time-col-m: 60px;
+  --person-col: 74px;
+  --person-row: 30px;
+  --drawer-w: 480px;
+  --drawer-w-wide: min(1100px, 94vw);
+  --picker-w: 372px;
+
+  /* ---------- Radii ------------------------------------------------------ */
+  --r-xs: 3px;
+  --r-sm: 5px;   /* grid cells, tags */
+  --r-md: 7px;   /* buttons, inputs */
+  --r-lg: 10px;  /* cards, grid frame */
+  --r-xl: 14px;  /* popovers, dialogs, sheets */
+  --r-pill: 999px;
+
+  /* ---------- Shadows (cool slate-tinted) ------------------------------ */
+  --sh-xs: 0 1px 0 rgba(23, 32, 44, 0.04);
+  --sh-sm: 0 1px 2px rgba(23, 32, 44, 0.08), 0 0 0 1px rgba(23, 32, 44, 0.04);
+  --sh-md: 0 4px 12px -2px rgba(23, 32, 44, 0.12), 0 1px 3px rgba(23, 32, 44, 0.08);
+  --sh-lg: 0 16px 40px -8px rgba(23, 32, 44, 0.22), 0 2px 8px rgba(23, 32, 44, 0.08);
+  --sh-sticky-x: 6px 0 8px -6px rgba(23, 32, 44, 0.16);
+  --sh-sticky-y: 0 6px 8px -6px rgba(23, 32, 44, 0.14);
+
+  /* ---------- Z-index layers -------------------------------------------- */
+  --z-grid-cell: 1;
+  --z-grid-sticky-col: 2;
+  --z-grid-sticky-head: 3;
+  --z-grid-corner: 4;
+  --z-appbar: 20;
+  --z-statusbar: 20;
+  --z-dropdown: 30;
+  --z-popover: 40;    /* picker, help, menus */
+  --z-drawer: 50;
+  --z-modal: 60;
+  --z-toast: 70;
+  --z-drag-ghost: 80;
+
+  /* ---------- Motion ----------------------------------------------------- */
+  --dur-instant: 80ms;
+  --dur-fast: 140ms;
+  --dur-base: 200ms;
+  --dur-slow: 280ms;
+  --dur-flash: 900ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --grid-col: var(--grid-col-m);
+    --grid-row: var(--grid-row-m);
+    --grid-time-col: var(--grid-time-col-m);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 0ms;
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+    --dur-flash: 0ms;
+  }
+}

@@ -1,0 +1,620 @@
+/* === <ImportPage>: Dropzone, TryCard, Steps, ImportResult, FormatHelp (spec §3 「1. 読み込み」, §4 Import components) === */
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-areas:
+    "drop try"
+    "main try";
+  column-gap: var(--sp-6);
+  align-items: start;
+}
+.aDrop {
+  grid-area: drop;
+  min-width: 0;
+}
+.aTry {
+  grid-area: try;
+}
+.aMain {
+  grid-area: main;
+  min-width: 0;
+}
+
+/* ---------- Dropzone (label[for=csvInput][data-dropzone]) ---------- */
+.dropzone {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+  padding: 34px 40px;
+  border: 1.5px dashed var(--dropzone-border);
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, var(--surface-subtle), var(--surface-paper));
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+.dropzone:hover,
+.isOver {
+  border-color: var(--selected);
+  border-style: solid;
+  background: var(--surface-subtle);
+}
+/* The real file input stays focusable (keyboard) but invisible; the whole zone shows the focus ring. */
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.dropzone:has(.fileInput:focus-visible) {
+  border-color: var(--selected);
+  border-style: solid;
+  box-shadow: var(--focus-ring);
+}
+.dzText {
+  display: block;
+  min-width: 0;
+}
+.dzTitle {
+  display: block;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  font-feature-settings: "palt";
+}
+.dzSub {
+  display: block;
+  margin-top: var(--sp-4);
+  font-size: var(--fs-base);
+  line-height: var(--lh-body);
+  color: var(--ink-secondary);
+}
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: 14px;
+}
+.fields > span {
+  padding: 3px 7px;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-secondary);
+}
+.dzActions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  margin-top: 18px;
+  font-size: var(--fs-md);
+  color: var(--ink-muted);
+}
+/* Looks like a secondary <Button>, but it is text inside the label (a real button would not open the file picker). */
+.fakeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  height: var(--control-h);
+  padding: 0 var(--sp-5);
+  border: 1px solid var(--secondary-border);
+  border-radius: var(--r-md);
+  background: var(--secondary-bg);
+  box-shadow: var(--sh-xs);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+  flex: none;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+.dropzone:hover .fakeBtn {
+  background: var(--secondary-hover);
+}
+.dropzone:active .fakeBtn {
+  background: var(--surface-pressed);
+}
+
+/* Compact file row once data is loaded */
+.compact {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--sp-6);
+  padding: var(--sp-6) var(--sp-7);
+}
+.compact .dzTitle {
+  font-size: var(--fs-lg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.compact .dzSub {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-md);
+}
+.fileIcon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-lg);
+  background: var(--surface-sunken);
+  color: var(--ink-secondary);
+}
+
+/* Co-editing lock (not an admin): same behaviour as legacy (no pointer input), looks disabled */
+.isLocked,
+.isLocked:hover {
+  cursor: not-allowed;
+  pointer-events: none;
+  border-style: dashed;
+  border-color: var(--line-strong);
+  background: var(--surface-subtle);
+}
+.isLocked .dzTitle,
+.isLocked .dzSub {
+  color: var(--disabled-ink);
+}
+.isLocked .fakeBtn {
+  background: var(--surface-subtle);
+  border-color: var(--line);
+  box-shadow: none;
+  color: var(--disabled-ink);
+}
+.isLocked .illus {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+.lock {
+  margin-top: var(--sp-5);
+}
+
+/* Pour-over illustration (two festival colours + neutrals only) */
+.illus {
+  flex: none;
+  display: block;
+}
+.iBg {
+  fill: var(--illus-bg);
+}
+.iPaper {
+  fill: var(--surface-paper);
+  stroke: var(--illus-line);
+}
+.iLine {
+  stroke: var(--illus-line);
+}
+.iSteam {
+  stroke: var(--illus-accent);
+}
+.iDrop {
+  fill: var(--illus-drip);
+}
+.iDrip {
+  stroke: var(--illus-drip);
+}
+.iGrid {
+  stroke: var(--line-strong);
+}
+.iText {
+  fill: var(--ink-muted);
+  font-family: var(--font-mono);
+}
+.iB1 {
+  fill: var(--illus-bar-1);
+}
+.iB2 {
+  fill: var(--illus-bar-2);
+}
+.iB3 {
+  fill: var(--illus-bar-3);
+}
+
+/* ---------- TryCard ---------- */
+.try {
+  padding: var(--sp-7);
+}
+.tryTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+.tryText {
+  margin: var(--sp-3) 0 14px;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+.tryBtns {
+  display: grid;
+  gap: var(--sp-4);
+}
+.tryBtns > button {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  /* 長い文言でもカードからはみ出さない（入りきらなければ2行に折り返す） */
+  height: auto;
+  min-height: var(--control-h);
+  padding-block: var(--sp-2);
+  white-space: normal;
+  line-height: 1.3;
+  text-align: center;
+}
+/* 折り返すときは文節で、2行の長さをそろえる（「2025年ベースの／サンプルを読み込む」） */
+.tryBtns > button > span {
+  min-width: 0;
+  text-wrap: balance;
+  word-break: auto-phrase;
+}
+.tryBtns > button.tryBtnLg {
+  min-height: var(--control-h-lg);
+}
+.lockedBtn {
+  pointer-events: none;
+}
+.tryNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+.tryNote > svg {
+  margin-top: 2px;
+  flex: none;
+}
+
+/* ---------- Steps (first run) ---------- */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-5);
+  margin: var(--sp-6) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.step {
+  display: flex;
+  gap: var(--sp-5);
+  padding: 14px var(--sp-6);
+  background: var(--surface-paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs);
+}
+.stepNo {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: var(--numeric);
+  color: var(--ink-secondary);
+}
+.step b {
+  display: block;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+.step b + span {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+
+/* ---------- ImportResult (#importStatus) ---------- */
+.result {
+  margin-top: var(--sp-6);
+  padding: 18px var(--sp-7);
+}
+.resultHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.resultTitle {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+.push {
+  margin-left: auto;
+}
+.lines {
+  display: grid;
+  gap: var(--sp-3);
+  margin: var(--sp-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lines li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: var(--fs-md);
+  line-height: 1.6;
+  color: var(--ink-secondary);
+}
+.lines li > svg {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-top: 3px;
+}
+.isOk > svg {
+  color: var(--ok-ink);
+}
+.lines .isWarn {
+  color: var(--warn-ink);
+}
+.isWarn b {
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+.resultFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-5);
+  margin-top: var(--sp-6);
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.resultFoot small {
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+.nextHint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+  margin-top: 10px;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+.nextHint b {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+
+/* ---------- FormatHelp ---------- */
+.format {
+  margin-top: var(--sp-6);
+  padding: var(--sp-3) var(--sp-7) 18px;
+}
+.formatText {
+  margin: var(--sp-2) 0 var(--sp-5);
+  font-size: var(--fs-md);
+  line-height: var(--lh-body);
+  color: var(--ink-secondary);
+}
+.tableWrap {
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-md);
+}
+.table thead th {
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--surface-subtle);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  text-align: left;
+  color: var(--ink-muted);
+}
+.table tbody th,
+.table td {
+  padding: 9px var(--sp-5);
+  border-bottom: 1px solid var(--line-grid);
+  vertical-align: top;
+  line-height: 1.6;
+  text-align: left;
+  color: var(--ink);
+}
+.table td {
+  color: var(--ink-secondary);
+}
+.table tbody th {
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.colName {
+  width: 190px;
+}
+.colEx {
+  width: 200px;
+}
+.table code {
+  padding: 2px 6px;
+  border-radius: var(--r-xs);
+  background: var(--surface-sunken);
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  color: var(--ink-secondary);
+  white-space: nowrap;
+}
+
+/* ---------- Narrower laptops / tablets ---------- */
+@media (max-width: 1100px) and (min-width: 641px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+  .dropzone {
+    gap: var(--sp-7);
+    padding: 28px;
+  }
+  .compact {
+    padding: var(--sp-6) var(--sp-7);
+  }
+  .steps {
+    grid-template-columns: 1fr;
+    gap: var(--sp-4);
+  }
+  .colName {
+    width: 150px;
+  }
+  .colEx {
+    width: 160px;
+  }
+}
+@media (max-width: 1023px) and (min-width: 641px) {
+  /* The format table and the steps take the full width under both cards */
+  .grid {
+    grid-template-areas:
+      "drop try"
+      "main main";
+  }
+  .steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .table code {
+    white-space: normal;
+  }
+}
+@media (max-width: 900px) and (min-width: 641px) {
+  .dropzone:not(.compact) {
+    grid-template-columns: 1fr;
+  }
+  .dropzone:not(.compact) .illus {
+    width: 84px;
+    height: 84px;
+  }
+  .compact {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .compact .fakeBtn {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+/* ---------- Phone: dropzone → try card → steps → format ---------- */
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "drop"
+      "try"
+      "main";
+    row-gap: 14px;
+  }
+  .dropzone {
+    grid-template-columns: 1fr;
+    gap: var(--sp-5);
+    padding: var(--sp-7) 18px;
+  }
+  .illus {
+    width: 84px;
+    height: 84px;
+  }
+  .dzTitle {
+    font-size: 19px;
+  }
+  .dzActions .or {
+    display: none;
+  }
+  .dzActions .fakeBtn {
+    flex: 1;
+    height: var(--touch-min);
+    font-size: var(--fs-base);
+  }
+  .compact {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: var(--sp-6);
+  }
+  .compact .fakeBtn {
+    grid-column: 1 / -1;
+    height: var(--touch-min);
+    font-size: var(--fs-base);
+  }
+  .try {
+    padding: 18px;
+  }
+  .tryBtns > button {
+    height: auto;
+    min-height: var(--touch-min);
+    font-size: var(--fs-base);
+  }
+  .steps {
+    grid-template-columns: 1fr;
+    gap: var(--sp-4);
+    margin-top: 0;
+  }
+  .format {
+    margin-top: 14px;
+    padding: var(--sp-2) var(--sp-6) var(--sp-5);
+  }
+  .result {
+    padding: var(--sp-6);
+  }
+  .resultFoot > button:last-child {
+    width: 100%;
+    height: var(--touch-min);
+  }
+  .nextHint {
+    justify-content: flex-start;
+  }
+  /* The format table becomes one block per column name */
+  .table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .table tr {
+    display: grid;
+    gap: var(--sp-2);
+    padding: 10px var(--sp-5);
+    border-bottom: 1px solid var(--line-grid);
+  }
+  .table tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .table tbody th,
+  .table td {
+    padding: 0;
+    border: 0;
+    white-space: normal;
+  }
+}

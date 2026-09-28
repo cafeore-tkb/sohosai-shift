@@ -1,0 +1,19 @@
+/* === App shell: the page area between the app bar and the status bar ====== */
+/* Tabs 1–4 centre their content with <Page>; tab 5 fills this area with <WorkSurface>.
+   The status bar (desktop) and the bottom tab bar (phone) are fixed, so the page
+   reserves their height at the bottom. */
+.main {
+  position: relative;
+  display: block;
+  min-height: calc(100dvh - var(--appbar-h));
+  padding-bottom: var(--statusbar-h);
+}
+:global(body.is-focus) .main {
+  min-height: 100dvh;
+  padding-bottom: 0;
+}
+@media (max-width: 640px) {
+  .main {
+    padding-bottom: calc(var(--tabbar-h-m) + env(safe-area-inset-bottom));
+  }
+}

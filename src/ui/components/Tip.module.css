@@ -1,0 +1,30 @@
+/* === <Tip> (inverse bubble, spec mockup .tip) ============================ */
+.tip {
+  position: fixed;
+  z-index: var(--z-popover);
+  padding: 6px 9px;
+  border-radius: var(--r-md);
+  background: var(--surface-inverse);
+  color: var(--ink-inverse);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  line-height: 1.45;
+  white-space: nowrap;
+  box-shadow: var(--sh-md);
+  pointer-events: none;
+}
+.tip::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: var(--tip-x, 20px);
+  width: 8px;
+  height: 8px;
+  background: var(--surface-inverse);
+  transform: rotate(45deg);
+}
+.sub {
+  display: block;
+  color: var(--ink-inverse-muted);
+  font-size: var(--fs-xs);
+}

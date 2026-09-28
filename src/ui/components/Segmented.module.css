@@ -1,0 +1,86 @@
+/* === <Segmented> ======================================================== */
+.seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-sunken);
+  border-radius: 9px;
+  flex: none;
+  max-width: 100%;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+  flex: none;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+.btn:hover {
+  color: var(--ink);
+  background: var(--surface-hover);
+}
+.btn[aria-pressed="true"] {
+  background: var(--surface-paper);
+  color: var(--selected-ink);
+  /* the paper fill alone is 1.2:1 against the track: a steel underline (like the selected tab)
+     marks the pressed item at ≥ 3:1 (WCAG 1.4.11) */
+  box-shadow:
+    var(--sh-sm),
+    inset 0 -2px 0 var(--selected);
+}
+.btn:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+.btn:disabled {
+  color: var(--disabled-ink);
+  background: transparent;
+}
+.sub {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--ink-muted);
+  font-variant-numeric: var(--numeric);
+}
+.sm .btn {
+  height: 26px;
+  padding: 0 10px;
+  font-size: var(--fs-sm);
+}
+.sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--line-strong);
+  flex: none;
+}
+/* Phone: taller touch targets, scroll instead of wrapping. */
+@media (max-width: 640px) {
+  .btn {
+    height: 36px;
+    padding: 0 11px;
+  }
+  .sm .btn {
+    height: 36px;
+  }
+}
+/* Touch tablets: ≥ 36px targets */
+@media (pointer: coarse) {
+  .btn,
+  .sm .btn {
+    height: 36px;
+  }
+}

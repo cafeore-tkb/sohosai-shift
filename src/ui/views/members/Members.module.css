@@ -1,0 +1,468 @@
+/* === <MembersPage>: MemberTable, ShopToggle, MemberCard (spec §3 「3. メンバー」) === */
+
+/* Toolbar: search · filter chips · spacer · 「50名を表示・要確認 2名」 */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  margin-bottom: var(--sp-5);
+}
+.search {
+  width: 240px;
+  flex: none;
+}
+.chips {
+  min-width: 0;
+}
+.shown {
+  flex: none;
+  font-size: var(--fs-md);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.shown b {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+.shown b.hot {
+  color: var(--st-open-ink);
+}
+.sep {
+  margin: 0 var(--sp-3);
+}
+
+/* Table card: scrolls inside, header sticks */
+.frame {
+  overflow: auto;
+  /* the page chrome above and below (app bar, page head, toolbar, bottom padding, status bar):
+     the card fills the rest, so the page itself does not scroll at common heights. It never gets
+     shorter than 200px, and it hugs a short (filtered) list instead of leaving a blank area. */
+  max-height: max(200px, calc(100dvh - 292px));
+  background: var(--surface-paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs);
+  overscroll-behavior: contain;
+  /* Tab never leaves a control under the sticky header row or the sticky name column,
+     nor in the faded right edge (useEdgeFade, 32px) */
+  scroll-padding: 40px 48px 0 190px;
+}
+/* The fade would dim the focus ring of a control at the right edge: drop it while focus is inside */
+.frame:focus-within {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.mt {
+  width: 100%;
+  /* fixed columns: filtering or searching never reflows them; narrower screens scroll the card */
+  table-layout: fixed;
+  min-width: 1180px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-md);
+}
+.colName {
+  width: 190px;
+}
+.colStatus {
+  width: 128px;
+}
+.colStores {
+  width: 262px;
+}
+.colIce {
+  width: 112px;
+}
+.colCar {
+  width: 64px;
+}
+.colWork {
+  width: 120px;
+}
+.workSelect {
+  width: 112px;
+}
+.mt thead th {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-grid-sticky-head);
+  padding: 9px 10px;
+  background: var(--surface-subtle);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-muted);
+  text-align: left;
+  white-space: nowrap;
+}
+.mt thead th.nameHead {
+  padding-left: 16px;
+}
+.mt tbody > tr > * {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line-grid);
+  vertical-align: middle;
+  white-space: nowrap;
+  text-align: left;
+}
+.mt tbody > tr:last-child > * {
+  border-bottom: 0;
+}
+.mt tbody > tr:hover > * {
+  background: var(--surface-subtle);
+}
+
+/* Name cell (row header) + needs-attention tags. The name column sticks when
+   the table scrolls sideways (tablet widths). */
+.mt thead th.nameHead {
+  left: 0;
+  z-index: var(--z-grid-corner);
+}
+.mt .name {
+  position: sticky;
+  left: 0;
+  z-index: var(--z-grid-sticky-col);
+  background: var(--surface-paper);
+  padding-left: 16px;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+.needTag {
+  display: inline-block;
+  margin-left: var(--sp-3);
+  padding: 1px 5px;
+  border: 1px solid var(--attention-tag-border);
+  border-radius: var(--r-xs);
+  background: var(--st-open-bg);
+  color: var(--st-open-ink);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
+  line-height: 1.5;
+  vertical-align: 1px;
+}
+.mt tbody > tr.needsFix > *,
+.mt tbody > tr.needsFix:hover > * {
+  background: var(--attention-row-bg);
+}
+.mt tbody > tr.needsFix > .name {
+  box-shadow: inset 3px 0 0 var(--st-open-border);
+}
+
+/* Controls */
+.statusSelect {
+  width: 98px;
+}
+.iceSelect {
+  width: 84px;
+}
+.toggles {
+  display: inline-flex;
+  gap: var(--sp-2);
+}
+.prefInput {
+  width: 100%;
+  min-width: 140px;
+}
+.pref {
+  display: block;
+}
+.cellLabel {
+  display: none;
+}
+.emptyRow > td {
+  padding: var(--sp-9) var(--sp-6) !important;
+  text-align: center !important;
+  color: var(--ink-muted);
+}
+
+/* ≤ 1279: the toolbar may wrap (chips keep one line and scroll) */
+@media (max-width: 1279px) and (min-width: 641px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+  .chips {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+}
+
+/* === Phone (≤ 640px): each row becomes a card (same DOM, CSS grid) ======== */
+@media (max-width: 640px) {
+  .toolbar {
+    flex-wrap: wrap;
+    gap: var(--sp-4);
+  }
+  .search {
+    width: 100%;
+  }
+  .chips {
+    width: calc(100% + 2 * var(--sp-6));
+    margin: 0 calc(-1 * var(--sp-6));
+    padding: 0 var(--sp-6);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar {
+    display: none;
+  }
+  .toolbar > :global(span[aria-hidden]) {
+    display: none;
+  }
+  .shown {
+    flex: 1 1 100%;
+    text-align: right;
+    font-size: var(--fs-sm);
+  }
+
+  .frame {
+    overflow: visible;
+    max-height: none;
+    min-height: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .mt,
+  .mt tbody {
+    display: block;
+    min-width: 0;
+  }
+  .mt thead,
+  .mt colgroup {
+    display: none;
+  }
+  .mt tbody {
+    display: grid;
+    gap: 10px;
+  }
+  .mt tbody > tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "top top"
+      "stores stores"
+      "ice car"
+      "work work"
+      "want dislike";
+    column-gap: var(--sp-4);
+    row-gap: 10px;
+    padding: 12px 14px 14px;
+    background: var(--surface-paper);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--sh-xs);
+  }
+  .mt tbody > tr > *,
+  .mt tbody > tr:hover > *,
+  .mt tbody > tr.needsFix > *,
+  .mt tbody > tr.needsFix:hover > * {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    white-space: normal;
+  }
+  .mt tbody > tr.needsFix {
+    background: var(--attention-row-bg);
+    box-shadow:
+      inset 3px 0 0 var(--st-open-border),
+      var(--sh-xs);
+  }
+  .mt tbody > tr.needsFix > .name {
+    box-shadow: none;
+  }
+  .mt .name {
+    position: static;
+    z-index: auto;
+    background: none;
+    padding-left: 0;
+    grid-area: top;
+    min-height: 36px;
+    padding-right: 132px !important;
+    flex-wrap: wrap;
+    gap: var(--sp-2) 0;
+    font-size: 16px;
+  }
+  .nameText {
+    margin-right: var(--sp-1);
+  }
+  .needTag {
+    font-size: var(--fs-xs);
+  }
+  .status {
+    grid-area: top;
+    justify-self: end;
+    align-self: start;
+  }
+  .statusSelect {
+    width: 120px;
+  }
+  .stores {
+    grid-area: stores;
+  }
+  .toggles {
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+  }
+  .ice {
+    grid-area: ice;
+    gap: var(--sp-4);
+  }
+  .iceSelect {
+    width: 112px;
+  }
+  .work {
+    grid-area: work;
+    gap: var(--sp-4);
+  }
+  .work > .cellLabel {
+    font-size: var(--fs-sm);
+    white-space: nowrap;
+    flex: none;
+  }
+  .car {
+    grid-area: car;
+    justify-content: flex-end;
+  }
+  .car > label {
+    min-height: 36px;
+  }
+  .want {
+    grid-area: want;
+  }
+  .dislike {
+    grid-area: dislike;
+  }
+  .want > .pref,
+  .dislike > .pref {
+    width: 100%;
+  }
+  .cellLabel {
+    display: block;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    color: var(--ink-muted);
+  }
+  .ice > .cellLabel {
+    font-size: var(--fs-sm);
+    white-space: nowrap;
+    flex: none;
+  }
+  .pref > .cellLabel {
+    margin-bottom: 3px;
+  }
+  .prefInput {
+    min-width: 0;
+    height: 40px;
+  }
+  .emptyRow {
+    display: block !important;
+  }
+  .emptyRow > td {
+    display: block !important;
+  }
+}
+
+/* === Member order: sort buttons, drag handle, drop line ================== */
+.sorts {
+  flex: none;
+}
+/* The handle sits in the sticky name cell, left of the name */
+.mt thead th.nameHead {
+  padding-left: 40px;
+}
+.mt .name {
+  padding-left: 6px;
+}
+.handle {
+  margin-right: var(--sp-2);
+  color: var(--ink-muted);
+  cursor: grab;
+  /* a touch on the handle never scrolls: a long press starts the drag */
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  vertical-align: middle;
+}
+.handle:hover {
+  color: var(--ink);
+}
+.body[data-reordering],
+.body[data-reordering] * {
+  cursor: grabbing !important;
+}
+/* the row being moved */
+.mt tbody > tr[data-member-dragging] > * {
+  opacity: 0.45;
+}
+/* drop line: above (before) / below (after) the row it lands next to */
+.mt tbody > tr[data-member-drop="before"] > * {
+  box-shadow: inset 0 3px 0 var(--primary);
+}
+.mt tbody > tr[data-member-drop="after"] > * {
+  box-shadow: inset 0 -3px 0 var(--primary);
+}
+
+@media (max-width: 640px) {
+  .sorts {
+    flex: 1 1 auto;
+  }
+  .mt .name {
+    padding-left: 0;
+  }
+  .handle {
+    margin-left: -6px;
+    margin-right: var(--sp-1);
+  }
+  .mt tbody > tr[data-member-dragging] {
+    opacity: 0.45;
+  }
+  .mt tbody > tr[data-member-dragging] > * {
+    opacity: 1;
+  }
+  .mt tbody > tr[data-member-drop] > * {
+    box-shadow: none;
+  }
+  .mt tbody > tr[data-member-drop="before"] {
+    box-shadow:
+      0 -6px 0 -3px var(--primary),
+      var(--sh-xs);
+  }
+  .mt tbody > tr[data-member-drop="after"] {
+    box-shadow:
+      0 6px 0 -3px var(--primary),
+      var(--sh-xs);
+  }
+}
+
+/* 要確認：件数の案内（表の上）と、名前の下に並ぶタグ */
+.needNotice {
+  margin-bottom: var(--sp-4);
+  align-items: center;
+}
+.needNotice > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3) var(--sp-5);
+}
+.needTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+.needTags .needTag {
+  margin-left: 0;
+}
+@media (min-width: 641px) {
+  .needTags {
+    /* ハンドルの幅ぶん下げて、名前の頭にそろえる */
+    padding-left: 30px;
+  }
+}

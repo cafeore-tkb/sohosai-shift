@@ -1,0 +1,464 @@
+/* === <Picker> (#picker): popover anchored to the cell; bottom sheet ≤640px wide or ≤560px high === */
+
+/* The root (#picker, role=dialog) is only a positioned box; the visuals live on .panel so that
+   the phone scrim (a child of #picker, so outside clicks never fall through to the grid) is not
+   affected by the panel's enter transform. */
+.root {
+  position: fixed;
+  /* above the non-modal drawers: the picker is opened from the grid next to them */
+  z-index: calc(var(--z-drawer) + 2);
+  width: var(--picker-w);
+  max-width: calc(100vw - 16px);
+  display: flex;
+  flex-direction: column;
+}
+.root[hidden] {
+  display: none;
+}
+.scrim {
+  display: none;
+}
+.panel {
+  position: relative;
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-lg);
+  animation: var(--anim-pop);
+}
+/* focused on open on touch devices (no keyboard pops up); the panel itself needs no ring */
+.panel:focus {
+  outline: none;
+}
+/* Caret pointing at the cell */
+.panel::before {
+  content: "";
+  position: absolute;
+  left: var(--caret, 40px);
+  width: 12px;
+  height: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  transform: rotate(45deg);
+  display: none;
+}
+.root[data-place="below"] .panel::before {
+  display: block;
+  top: -7px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.root[data-place="above"] .panel::before {
+  display: block;
+  bottom: -7px;
+  border-left: 0;
+  border-top: 0;
+  background: var(--surface-subtle);
+}
+.root[data-place="right"] .panel::before,
+.root[data-place="left"] .panel::before {
+  display: block;
+  top: var(--caret-y, 40px);
+}
+.root[data-place="right"] .panel::before {
+  left: -7px;
+  border-top: 0;
+  border-right: 0;
+}
+.root[data-place="left"] .panel::before {
+  left: auto;
+  right: -7px;
+  border-bottom: 0;
+  border-left: 0;
+}
+.handle {
+  display: none;
+}
+
+/* Head: shop tag + title + sub + close */
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px var(--sp-5) 10px var(--sp-6);
+  flex: none;
+}
+.shop {
+  margin-top: 1px;
+  flex: none;
+}
+.headText {
+  min-width: 0;
+  flex: 1;
+}
+.title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: 0.01em;
+}
+.sub {
+  margin-top: 3px;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  font-variant-numeric: var(--numeric);
+}
+.close {
+  flex: none;
+  margin: -2px 0 0 auto;
+}
+
+/* Current assignee */
+.current {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5) var(--sp-4) var(--sp-6);
+  background: var(--surface-subtle);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-md);
+  flex: none;
+}
+.currentLabel {
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.currentLabel b {
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+  margin-left: var(--sp-2);
+}
+.grow {
+  flex: 1;
+}
+/* 重複・勤務できない時間・条件外・苦手 (same order as the grid colours) */
+.issue {
+  flex: none;
+}
+/* 選択中 Nコマ (the cell is inside a Shift+click range: 移動… moves the range) */
+.range {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: var(--sp-3) var(--sp-5) var(--sp-3) var(--sp-6);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-selected);
+  color: var(--selected-ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  flex: none;
+}
+
+/* Tools: search + length */
+.tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: 10px var(--sp-6);
+  flex: none;
+}
+@media (min-width: 641px) {
+  .tools .search {
+    height: 34px;
+  }
+}
+.runs {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-muted);
+}
+.runsLabel {
+  flex: none;
+}
+.runSeg {
+  min-width: 0;
+}
+
+/* Candidate list */
+.list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--sp-3) var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+.sec {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px 10px var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  color: var(--ink-muted);
+  letter-spacing: 0.04em;
+  background: var(--surface-raised);
+}
+.sec em {
+  font-style: normal;
+  font-variant-numeric: var(--numeric);
+  background: var(--surface-sunken);
+  border-radius: 9px;
+  padding: 0 var(--sp-3);
+  color: var(--ink-secondary);
+}
+.secBusy > svg {
+  color: var(--st-busy-ink);
+}
+.item {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  column-gap: var(--sp-2);
+  width: 100%;
+  text-align: left;
+  padding: var(--sp-3) 10px 7px var(--sp-3);
+  border: 0;
+  border-radius: var(--r-lg);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+.item:hover {
+  background: var(--surface-hover);
+}
+.item.active {
+  background: var(--surface-selected);
+  box-shadow: inset 3px 0 0 var(--selected);
+}
+.item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-inset);
+}
+.gut {
+  grid-row: 1;
+  grid-column: 1;
+  text-align: center;
+  padding-top: 2px;
+}
+.gut > i {
+  font-size: var(--fs-xs);
+}
+.line {
+  grid-row: 1;
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+}
+.name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.hours {
+  grid-row: 1;
+  grid-column: 3;
+  align-self: center;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-secondary);
+  font-variant-numeric: var(--numeric);
+}
+.meta {
+  grid-column: 2 / 4;
+  margin-top: var(--sp-1);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  font-variant-numeric: var(--numeric);
+}
+.meta b {
+  font-weight: var(--fw-bold);
+}
+/* wrap between phrases, never inside one */
+.unit {
+  white-space: nowrap;
+}
+.metaText {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--sp-2);
+  min-width: 0;
+}
+.to {
+  color: var(--ink);
+}
+.toShort {
+  color: var(--st-open-ink);
+}
+.busy .meta {
+  color: var(--st-busy-ink);
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+.busy .meta > svg {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  margin-top: 2px;
+}
+.empty {
+  padding: var(--sp-8) var(--sp-6);
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: var(--fs-md);
+  line-height: var(--lh-body);
+}
+.empty small {
+  display: block;
+  margin-top: var(--sp-2);
+  font-size: var(--fs-sm);
+}
+
+/* Keycap footer (desktop only) */
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  padding: var(--sp-4) var(--sp-6);
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+  background: var(--surface-subtle);
+  border-radius: 0 0 var(--r-xl) var(--r-xl);
+  flex: none;
+}
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+.legend .legendMark {
+  font-size: var(--fs-sm);
+}
+
+/* Keycaps do nothing on a touch-only device */
+@media (pointer: coarse) {
+  .foot {
+    display: none;
+  }
+  .tools .search {
+    height: var(--control-h);
+  }
+}
+
+/* ---------- Phone (and short landscape screens): bottom sheet ---------- */
+@media (max-width: 640px), (max-height: 560px) {
+  .root {
+    inset: 0;
+    width: auto;
+    max-width: none;
+    max-height: none !important;
+    justify-content: flex-end;
+  }
+  .scrim {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: var(--scrim);
+    animation: var(--anim-fade);
+  }
+  .panel {
+    max-height: 80vh;
+    border: 0;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    animation: var(--anim-up);
+    transition: transform var(--dur-base) var(--ease-standard);
+  }
+  .panel::before {
+    display: none !important;
+  }
+  .handle {
+    display: block;
+    flex: none;
+    width: 40px;
+    height: 5px;
+    margin: var(--sp-4) auto 0;
+    border-radius: 3px;
+    background: var(--line-strong);
+    touch-action: none;
+  }
+  .handle::after {
+    /* larger grab area */
+    content: "";
+    display: block;
+    height: 5px;
+    margin-top: 5px;
+  }
+  .head {
+    padding-top: 10px;
+    touch-action: none;
+  }
+  /* .panel: beats the IconButton sm size (width 28px) */
+  .panel .close {
+    width: var(--control-h-lg);
+    height: var(--control-h-lg);
+  }
+  .current :is(button) {
+    height: 36px;
+  }
+  .runSeg {
+    overflow-x: auto;
+  }
+  .runBtn {
+    padding: 0 9px;
+  }
+  .item {
+    padding: 10px var(--sp-5) 10px var(--sp-3);
+  }
+  .foot {
+    display: none;
+  }
+}
+
+/* Short landscape screens (a phone turned sideways): a centred sheet almost as tall as the
+   screen, with search and 長さ on one line, so about three candidates stay visible */
+@media (max-height: 560px) and (min-width: 641px) {
+  .panel {
+    width: min(100%, 560px);
+    margin: 0 auto;
+    max-height: calc(100dvh - var(--sp-4));
+  }
+  .handle {
+    margin-top: var(--sp-3);
+  }
+  .head {
+    padding-top: var(--sp-3);
+    padding-bottom: var(--sp-3);
+  }
+  .tools {
+    flex-direction: row;
+    align-items: center;
+    padding-top: var(--sp-3);
+    padding-bottom: var(--sp-3);
+  }
+  .searchWrap {
+    flex: 1;
+    min-width: 0;
+  }
+}

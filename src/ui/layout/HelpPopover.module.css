@@ -1,0 +1,90 @@
+/* === <HelpPopover> 凡例と操作ヘルプ (spec §4 Popover) ===================== */
+.pop {
+  width: 470px;
+  max-height: calc(100vh - 150px);
+}
+.h {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin: 0 0 10px;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.h > svg {
+  color: var(--ink-muted);
+}
+.close {
+  margin-left: auto;
+  margin-top: -4px;
+}
+.kv {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  font-size: var(--fs-md);
+  color: var(--ink-secondary);
+}
+.row {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+.row > dt {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+.row > dd {
+  margin: 0;
+}
+.row b {
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+}
+.busy {
+  color: var(--st-busy-ink);
+}
+.drips {
+  gap: 3px;
+}
+.hint {
+  margin-top: 10px;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+.hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 14px 0;
+}
+.tips {
+  margin: 0;
+  padding-left: 20px;
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+  color: var(--ink-secondary);
+}
+.tips > li + li {
+  margin-top: 4px;
+}
+.keys {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 7px 12px;
+  align-items: center;
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-secondary);
+}
+.keys > dd {
+  margin: 0;
+}
+.range {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}

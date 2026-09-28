@@ -1,0 +1,196 @@
+/* === <AuditDrawer> (勤務状況チェック) — body of the <Drawer> === */
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+.sec {
+  margin-top: 18px;
+}
+.h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+
+/* Issue cards */
+.item {
+  display: flex;
+  gap: 10px;
+  margin-top: var(--sp-3);
+  padding: 10px var(--sp-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-subtle);
+  font-size: var(--fs-md);
+  line-height: 1.6;
+  color: var(--ink-secondary);
+}
+.item b {
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+}
+.sw {
+  flex: none;
+  margin-top: 4px;
+}
+.itemBody {
+  flex: 1;
+  min-width: 0;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+  margin-top: var(--sp-2);
+}
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: none;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--ink-link);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.link:hover {
+  text-decoration: underline;
+}
+.link > svg {
+  transition: transform var(--dur-fast) var(--ease-standard);
+}
+.link:hover > svg {
+  transform: translateX(2px);
+}
+
+/* やりたい役職が入っていない人 */
+.wants {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.wants li {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  gap: var(--sp-4);
+  align-items: center;
+  padding: var(--sp-3) var(--sp-5);
+  font-size: var(--fs-md);
+  border-bottom: 1px solid var(--line-grid);
+}
+.wants li:last-child {
+  border-bottom: 0;
+}
+.wants li b {
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wantText {
+  color: var(--ink-muted);
+}
+
+/* 勤務時間 */
+.hours {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-md);
+  font-variant-numeric: var(--numeric);
+}
+.hours thead th {
+  position: sticky;
+  /* the drawer body has 18px top padding */
+  top: -18px;
+  z-index: 1;
+  padding: 7px 10px;
+  background: var(--surface-subtle);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+.hours td,
+.hours tbody th {
+  padding: var(--sp-3) 10px;
+  border-bottom: 1px solid var(--line-grid);
+  text-align: right;
+  white-space: nowrap;
+}
+.hours thead th:first-child,
+.hours tbody th {
+  text-align: left;
+}
+.hours tbody th {
+  font-weight: var(--fw-regular);
+  color: var(--ink);
+}
+.hours tbody tr:hover > * {
+  background: var(--surface-hover);
+}
+.zero {
+  color: var(--ink-muted);
+}
+.dash {
+  color: var(--ink-placeholder);
+}
+.total {
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+.bar {
+  display: inline-block;
+  height: 4px;
+  margin-right: var(--sp-3);
+  border-radius: 2px;
+  background: var(--bar-fill);
+  vertical-align: middle;
+}
+.note {
+  margin-top: var(--sp-5);
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+
+@media (max-width: 640px) {
+  .hours thead th {
+    top: calc(-1 * var(--sp-6));
+  }
+  .wants li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .wantText {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: var(--fs-sm);
+  }
+  .wants li > button {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    min-height: var(--touch-min);
+  }
+  .link {
+    min-height: 32px;
+  }
+}
+
+/* Touch devices: 表で見る / 個人別で見る are the drawer's main actions (≥ 36px targets) */
+@media (pointer: coarse) {
+  .link {
+    min-height: 36px;
+  }
+}

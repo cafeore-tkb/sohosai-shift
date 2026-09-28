@@ -1,0 +1,199 @@
+/* === <Button> / <IconButton> ============================================ */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  height: var(--control-h);
+  padding: 0 var(--sp-5);
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  flex: none;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+.primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: var(--sh-sm);
+}
+.primary:hover {
+  background: var(--primary-hover);
+}
+.primary:active {
+  background: var(--primary-pressed);
+}
+.primary .ic {
+  color: var(--on-primary-icon);
+}
+.secondary {
+  background: var(--secondary-bg);
+  border-color: var(--secondary-border);
+  color: var(--ink);
+  box-shadow: var(--sh-xs);
+}
+.secondary:hover {
+  background: var(--secondary-hover);
+}
+.secondary:active,
+.secondary[aria-pressed="true"],
+.secondary[aria-expanded="true"] {
+  background: var(--surface-pressed);
+}
+.ghost {
+  color: var(--ink-secondary);
+}
+.ghost:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+.ghost:active,
+.ghost[aria-expanded="true"] {
+  background: var(--surface-pressed);
+  color: var(--ink);
+}
+.danger,
+.danger:hover {
+  color: var(--danger);
+}
+.danger:hover {
+  background: var(--danger-hover);
+}
+.danger.secondary {
+  border-color: var(--danger-border);
+}
+.sm {
+  height: var(--control-h-sm);
+  padding: 0 var(--sp-4);
+  font-size: var(--fs-sm);
+  border-radius: 6px;
+}
+.lg {
+  height: var(--control-h-lg);
+  padding: 0 var(--sp-6);
+  font-size: var(--fs-base);
+  border-radius: 8px;
+}
+.btn:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  color: var(--disabled-ink);
+  background: var(--disabled-bg);
+  border-color: transparent;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.btn:disabled .ic {
+  color: var(--disabled-ink);
+}
+.ghost:disabled,
+.ghost[aria-disabled="true"] {
+  background: transparent;
+}
+
+/* Icon-only (square). Label kept as visually hidden text. */
+.iconOnly {
+  width: var(--control-h);
+  padding: 0;
+}
+.iconOnly.sm {
+  width: var(--control-h-sm);
+}
+.iconOnly.lg {
+  width: var(--control-h-lg);
+}
+.iconOnly > .label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Trailing keycaps (decoration). */
+.keys {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 2px;
+}
+/* Keycaps do nothing on a touch-only device */
+@media (pointer: coarse) {
+  .keys {
+    display: none;
+  }
+}
+
+/* Count dot on an icon button (phone 勤務状況チェック). */
+.dot {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--st-conflict-border);
+  color: var(--on-color);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: var(--numeric);
+  box-shadow: 0 0 0 2px var(--surface-canvas);
+}
+
+/* ---- Label swaps (.lbl-full / .lbl-short) ---- */
+.short {
+  display: none;
+}
+@media (max-width: 1320px) and (min-width: 641px) {
+  .swap1320 > .label > .full { display: none; }
+  .swap1320 > .label > .short { display: inline; }
+}
+@media (max-width: 1279px) and (min-width: 641px) {
+  .swap1279 > .label > .full { display: none; }
+  .swap1279 > .label > .short { display: inline; }
+}
+@media (max-width: 1023px) {
+  .swap1023 > .label > .full { display: none; }
+  .swap1023 > .label > .short { display: inline; }
+}
+@media (max-width: 640px) {
+  .swap640 > .label > .full { display: none; }
+  .swap640 > .label > .short { display: inline; }
+}
+
+/* ---- Responsive icon-only ---- */
+@media (max-width: 1439px) and (min-width: 641px) {
+  .io1439 { width: var(--control-h); padding: 0; }
+  .io1439 > .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+@media (max-width: 1023px) {
+  .io1023 { width: var(--control-h); padding: 0; }
+}
+@media (max-width: 640px) {
+  .io1023 { width: var(--control-h-lg); height: var(--control-h-lg); }
+}
+@media (max-width: 1023px) {
+  .io1023 > .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+@media (max-width: 640px) {
+  .io640 { width: var(--touch-min); height: var(--control-h-lg); padding: 0; }
+  .io640 > .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .iconOnly { width: var(--control-h-lg); height: var(--control-h-lg); }
+}

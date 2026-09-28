@@ -1,0 +1,260 @@
+/* ==========================================================================
+   Global base (imported once in main.tsx, after tokens.css).
+   Only element resets, typography, focus, a few utilities and the shared
+   motion keyframes live here. Everything else is a CSS Module next to its
+   component. Colours / spacing / motion come from tokens.css only.
+   ========================================================================== */
+
+/* ---------- Reset -------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Keyboard focus never lands under the sticky app bar (+ a sticky table header such as the
+     rules table's) or the fixed status bar (WCAG 2.4.11) */
+  scroll-padding-top: calc(var(--appbar-h) + 40px);
+  scroll-padding-bottom: calc(var(--statusbar-h) + 8px);
+}
+@media (max-width: 640px) {
+  html {
+    scroll-padding-bottom: calc(var(--tabbar-h-m) + env(safe-area-inset-bottom) + 8px);
+  }
+}
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+body {
+  /* viewport-fit=cover (index.html): keep content out of the notch on landscape phones */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  background: var(--surface-canvas);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+img {
+  display: block;
+  max-width: 100%;
+}
+[hidden] {
+  display: none !important;
+}
+dialog {
+  color: inherit;
+}
+::selection {
+  background: var(--accent-bg-strong);
+}
+
+/* ---------- Focus -------------------------------------------------------- */
+/* Every interactive element gets the deep steel-navy ring (paper gap + --focus-color); grid cells override it with --focus-inset. */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ---------- Utilities ---------------------------------------------------- */
+/* Tabular numbers for any count / time / percentage. */
+.num {
+  font-variant-numeric: var(--numeric);
+}
+/* Visually hidden, still read by screen readers (labels of icon-only buttons). */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+/* Phone-only / desktop-only content (breakpoint 640px, see docs/design-system.md). */
+@media (min-width: 641px) {
+  .m-only {
+    display: none !important;
+  }
+}
+@media (max-width: 640px) {
+  .d-only {
+    display: none !important;
+  }
+}
+
+/* ---------- Shop colour classes ------------------------------------------ */
+/* One class sets --sc (rule / dot), --sb (tint), --si (ink) so a single rule serves every shop.
+   Get the class for a shop name with shopClass() from ui/components/shop.ts. */
+.s-honten {
+  --sc: var(--shop-honten);
+  --sb: var(--shop-honten-bg);
+  --si: var(--shop-honten-ink);
+}
+.s-nigo {
+  --sc: var(--shop-nigo);
+  --sb: var(--shop-nigo-bg);
+  --si: var(--shop-nigo-ink);
+}
+.s-crea {
+  --sc: var(--shop-crea);
+  --sb: var(--shop-crea-bg);
+  --si: var(--shop-crea-ink);
+}
+.s-bika {
+  --sc: var(--shop-bika);
+  --sb: var(--shop-bika-bg);
+  --si: var(--shop-bika-ink);
+}
+.s-prep {
+  --sc: var(--shop-prep);
+  --sb: var(--shop-prep-bg);
+  --si: var(--shop-prep-ink);
+}
+.s-none {
+  --sc: var(--shop-none);
+  --sb: var(--shop-none-bg);
+  --si: var(--shop-none-ink);
+}
+
+/* ---------- Motion ------------------------------------------------------- */
+/* Keyframes are global so every CSS Module can use them through the --anim-* shorthands
+   (CSS Modules would otherwise rename a keyframe that is not defined in the same file). */
+@keyframes sm-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sm-slidein {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+@keyframes sm-pop {
+  from {
+    transform: translateY(-4px) scale(0.98);
+    opacity: 0;
+  }
+}
+@keyframes sm-up {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}
+@keyframes sm-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+/* --flash-focus: a focused cell keeps its navy focus ring under the 撫子 ring (grid CSS sets it on :focus-visible) */
+@keyframes sm-flash {
+  0%,
+  40% {
+    background: var(--st-flash-bg);
+    box-shadow: var(--flash-focus, 0 0 transparent), 0 0 0 2px var(--accent);
+  }
+}
+:root {
+  --anim-fade: sm-fade var(--dur-base) var(--ease-standard);
+  --anim-slidein: sm-slidein var(--dur-slow) var(--ease-enter);
+  --anim-pop: sm-pop var(--dur-base) var(--ease-enter);
+  --anim-up: sm-up var(--dur-slow) var(--ease-enter);
+  --anim-pulse: sm-pulse 2s var(--ease-standard) infinite;
+  /* Assignment changed / undo / 表で見る target: background + ring only. */
+  --anim-flash: sm-flash var(--dur-flash) var(--ease-standard);
+}
+
+/* Reduced motion: the duration tokens are already 0 (tokens.css); this also stops
+   infinite animations and smooth scrolling that do not use the tokens. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Segmented sub-labels hidden on narrow laptops (spec §5 ≤1400). */
+@media (max-width: 1400px) and (min-width: 641px) {
+  .seg-sub-1400 {
+    display: none;
+  }
+}
+
+/* Horizontal scrollers with more content to one side (useEdgeFade): fade that edge.
+   Only the mask's alpha matters; black/transparent are not colours on screen. */
+[data-fade-end] {
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
+}
+[data-fade-start] {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 32px);
+  mask-image: linear-gradient(to right, transparent, black 32px);
+}
+[data-fade-start][data-fade-end] {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent);
+}
+
+/* Touch devices (pointer: coarse, tablets and phones): controls grow to ≥ 36px targets
+   (spec §5 「Touch targets are ≥ 36px」). The component modules read these tokens. */
+@media (pointer: coarse) {
+  :root {
+    --control-h-sm: 36px;
+    --control-h: 40px;
+  }
+}
+@media (pointer: coarse) and (min-width: 641px) {
+  :root {
+    /* role grid rows (the whole td is the target) and a status bar tall enough for 36px keys */
+    --grid-row: 36px;
+    --statusbar-h: 40px;
+  }
+}
+
+/* A page (role=tabpanel) receives focus only programmatically when the tab changes by a shortcut
+   (App usePanelFocus), so the next Tab starts inside it; it is not a control, so no ring. */
+[role="tabpanel"]:focus-visible {
+  box-shadow: none;
+}

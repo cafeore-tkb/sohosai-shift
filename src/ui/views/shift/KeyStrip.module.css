@@ -1,0 +1,77 @@
+/* === <KeyStrip> (legend pinned under the grid, spec §4) ================== */
+.strip {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  height: 34px;
+  padding: 0 var(--sp-2) 0 10px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-subtle);
+  font-size: var(--fs-sm);
+  color: var(--ink-secondary);
+  white-space: nowrap;
+  flex: none;
+}
+.items {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.items::-webkit-scrollbar {
+  display: none;
+}
+.key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: none;
+}
+.sep {
+  width: 1px;
+  height: 14px;
+  background: var(--line-strong);
+  flex: none;
+}
+.hint {
+  color: var(--ink-muted);
+  flex: none;
+}
+/* On touch a plain drag scrolls the grid; moving needs a long-press (useDragMove) */
+.hintTouch {
+  display: none;
+}
+@media (pointer: coarse) {
+  .hintMouse {
+    display: none;
+  }
+  .hintTouch {
+    display: inline;
+  }
+}
+.busy {
+  display: inline-flex;
+  color: var(--st-busy-ink);
+}
+.help {
+  flex: none;
+}
+/* Below 1440 the strip no longer fits: the drip legend (also in the help popover) makes room for
+   the click/drag and 行／列 hints */
+@media (max-width: 1439px) and (min-width: 641px) {
+  .wide {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  .strip {
+    height: 38px;
+    padding: 0 0 0 12px;
+  }
+  .help {
+    display: none;
+  }
+}

@@ -1,0 +1,144 @@
+/* === <StatusBar> (fixed, 28px; spec §4 StatusBar) ======================== */
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-statusbar);
+  height: var(--statusbar-h);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  padding: 0 max(var(--sp-6), env(safe-area-inset-right)) 0 max(var(--sp-6), env(safe-area-inset-left));
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+:global(body.is-focus) .bar {
+  display: none;
+}
+.stat b,
+.meter b {
+  margin-left: 4px;
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: var(--numeric);
+}
+.meter b {
+  margin-left: 0;
+}
+.isOpen b {
+  color: var(--st-open-ink);
+}
+.isConflict b {
+  color: var(--st-conflict-ink);
+}
+.conflictGroup {
+  display: contents;
+}
+.conflictGroup[hidden] {
+  display: none !important;
+}
+.div {
+  width: 1px;
+  height: 12px;
+  background: var(--line-strong);
+  flex: none;
+}
+.meter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  margin-left: auto;
+  min-width: 0;
+}
+/* ⌘Z 元に戻す / ? ヘルプ — quiet text buttons with keycaps */
+.key {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--sp-2);
+  margin: 0 calc(-1 * var(--sp-2));
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink-muted);
+  font-size: var(--fs-sm);
+  flex: none;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+.key:hover:not(:disabled),
+.key[aria-expanded="true"] {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+.key:disabled {
+  color: var(--disabled-ink);
+}
+.key kbd {
+  height: 16px;
+  min-width: 16px;
+  font-size: 10px;
+}
+.key:disabled kbd {
+  color: var(--disabled-ink);
+}
+.note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 440px;
+  overflow: hidden;
+  color: var(--ink-muted);
+}
+.note > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.note > svg {
+  flex: none;
+}
+@media (max-width: 1100px) {
+  .note {
+    max-width: 240px;
+  }
+}
+@media (max-width: 900px) {
+  .bar {
+    gap: var(--sp-4);
+    padding: 0 var(--sp-5);
+  }
+  .track {
+    width: 60px !important;
+  }
+  .note {
+    display: none;
+  }
+}
+/* Narrow tablets / landscape phones: keep スタッフ・未割当・重複・充足率 and the keys */
+@media (max-width: 760px) {
+  .minor {
+    display: none;
+  }
+}
+/* Touch tablets: the bar is taller (global.css raises --statusbar-h) so the keys are 36px targets */
+@media (pointer: coarse) and (min-width: 641px) {
+  .key {
+    height: 36px;
+  }
+}
+@media (max-width: 640px) {
+  .bar {
+    display: none;
+  }
+}

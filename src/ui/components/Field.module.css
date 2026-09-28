@@ -1,0 +1,322 @@
+/* === <TextInput> <SearchInput> <Select> <Checkbox> <Switch> <ShopToggle> === */
+.input {
+  height: var(--control-h);
+  padding: 0 10px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--r-md);
+  background: var(--surface-paper);
+  font-size: var(--fs-md);
+  color: var(--ink);
+  min-width: 0;
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+.input::placeholder {
+  color: var(--ink-placeholder);
+}
+.input:hover {
+  border-color: var(--line-control-hover);
+}
+.input:focus,
+.input:focus-visible {
+  outline: none;
+  border-color: var(--focus-color);
+  box-shadow: 0 0 0 3px var(--focus-halo);
+}
+.input:disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-ink);
+  cursor: not-allowed;
+}
+.input[type="search"]::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+.sm {
+  height: 30px;
+}
+.lg {
+  height: var(--control-h-lg);
+}
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--ink-secondary);
+  background: var(--surface-subtle);
+}
+@media (max-width: 640px) {
+  /* 16px avoids iOS zoom on focus */
+  .input {
+    height: var(--touch-min);
+    font-size: 16px;
+  }
+}
+
+/* Search: icon + input + "/" keycap */
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.search > .searchIcon {
+  position: absolute;
+  left: 10px;
+  color: var(--ink-decorative);
+  pointer-events: none;
+}
+.search > .input {
+  width: 100%;
+  padding-left: 32px;
+}
+.search > .searchKbd {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+}
+.search > .input:focus ~ .searchKbd,
+.search > .input:not(:placeholder-shown) ~ .searchKbd {
+  display: none;
+}
+@media (max-width: 640px), (pointer: coarse) {
+  .search > .searchKbd {
+    display: none;
+  }
+}
+
+/* Select: native select + drawn chevron */
+.selectWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.selectWrap::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  width: 12px;
+  height: 12px;
+  background: var(--ink-muted);
+  pointer-events: none;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 30px;
+  padding: 0 26px 0 9px;
+  border: 1px solid var(--line-control);
+  border-radius: 6px;
+  background: var(--surface-paper);
+  font-size: var(--fs-md);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+.select:hover {
+  border-color: var(--line-control-hover);
+}
+.select:focus,
+.select:focus-visible {
+  outline: none;
+  border-color: var(--focus-color);
+  box-shadow: 0 0 0 3px var(--focus-halo);
+}
+.select:disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-ink);
+  cursor: not-allowed;
+}
+.unset {
+  color: var(--ink-muted);
+  border-style: dashed;
+}
+.set {
+  /* the boundary stays --line-control: a pink outline read as a validation error (spec §1) */
+  background: var(--accent-bg);
+  color: var(--accent-strong);
+  font-weight: var(--fw-semibold);
+}
+.selectWrap:has(.set)::after {
+  background: var(--accent-strong);
+}
+@media (max-width: 640px) {
+  .select {
+    height: 36px;
+    font-size: 16px;
+  }
+}
+
+/* Checkbox (real input, drawn box) */
+.check {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-md);
+  cursor: pointer;
+}
+.check > input,
+.switch > input,
+.stog > input {
+  position: absolute;
+  /* covers the whole label (invisible, clicks go to the label): when Tab scrolls it into view,
+     the visible box / pill scrolls into view too, not a 1px point at its left edge */
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  pointer-events: none;
+}
+.box {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--line-control);
+  background: var(--surface-paper);
+  flex: none;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+}
+.check > input:checked + .box {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.check > input:checked + .box::after {
+  content: "";
+  width: 8px;
+  height: 4px;
+  border-left: 2px solid var(--on-color);
+  border-bottom: 2px solid var(--on-color);
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+.check > input:focus-visible + .box {
+  box-shadow: var(--focus-ring);
+}
+.check > input:disabled + .box {
+  background: var(--disabled-bg);
+  border-color: var(--line-strong);
+}
+
+/* Switch (real checkbox + track) */
+.switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-4);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.track {
+  position: relative;
+  width: 30px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--control-track);
+  flex: none;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+.track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--on-color);
+  box-shadow: var(--sh-sm);
+  transition: transform var(--dur-fast) var(--ease-standard);
+}
+.switch > input:checked + .track {
+  background: var(--selected);
+}
+.switch > input:checked + .track::after {
+  transform: translateX(12px);
+}
+.switch > input:focus-visible + .track {
+  box-shadow: var(--focus-ring);
+}
+
+/* ShopToggle: shop checkbox drawn as a toggle pill */
+.stog {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-paper);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+.stog:hover {
+  background: var(--surface-hover);
+}
+.stogDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sc);
+  opacity: 0.35;
+  flex: none;
+}
+.stog:has(> input:checked) {
+  background: var(--sb);
+  border-color: transparent;
+  color: var(--si);
+  box-shadow: inset 0 0 0 1px var(--sc);
+}
+.stog:has(> input:checked) > .stogDot {
+  opacity: 1;
+}
+.stog:has(> input:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+@media (max-width: 640px) {
+  .stog {
+    height: 36px;
+    padding: 0 12px;
+  }
+}
+
+/* Touch devices: ≥ 36px targets for the small inputs, selects, switches and shop toggles */
+@media (pointer: coarse) {
+  .sm,
+  .select {
+    height: 36px;
+  }
+  /* 16px avoids iOS zoom on focus (landscape phones are wider than 640px) */
+  .input,
+  .select {
+    font-size: 16px;
+  }
+  .switch,
+  .check {
+    min-height: 36px;
+  }
+  .stog {
+    height: 36px;
+    padding: 0 12px;
+  }
+}

@@ -1,0 +1,29 @@
+.close {
+  padding: 0 var(--sp-3);
+  flex: none;
+}
+.glyph {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+@media (max-width: 640px) {
+  .close {
+    width: var(--control-h-lg);
+    height: var(--control-h-lg);
+    justify-content: center;
+  }
+  .kbd {
+    display: none;
+  }
+}
+/* Touch devices: no Esc keycap (keycaps do nothing on a touch-only device) */
+@media (pointer: coarse) {
+  .close {
+    min-width: var(--control-h-lg);
+    justify-content: center;
+  }
+  .kbd {
+    display: none;
+  }
+}

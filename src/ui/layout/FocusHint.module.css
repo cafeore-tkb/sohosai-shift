@@ -1,0 +1,21 @@
+/* === <FocusHint> (全画面) =============================================== */
+.hint {
+  position: fixed;
+  left: 50%;
+  bottom: 56px;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 7px 12px;
+  border-radius: var(--r-pill);
+  background: var(--surface-inverse);
+  color: var(--ink-inverse);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  box-shadow: var(--sh-md);
+  pointer-events: none;
+  animation: var(--anim-up);
+}

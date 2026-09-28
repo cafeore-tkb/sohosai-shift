@@ -1,0 +1,163 @@
+/* === Layout primitives: <Page> <WorkSurface> <Card> <Notice> <Disclosure> <Spacer> === */
+
+/* Centred page (tabs 1–4): eyebrow STEP n / 5 + h1 + description */
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: var(--sp-8) var(--sp-8) var(--sp-11);
+}
+.wide {
+  max-width: 1400px;
+}
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-6);
+  margin-bottom: var(--sp-6);
+}
+.eyebrow {
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-eyebrow);
+}
+.title {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.01em;
+  font-feature-settings: "palt";
+}
+.desc {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-md);
+  color: var(--ink-muted);
+}
+.headAside {
+  flex: none;
+}
+@media (max-width: 640px) {
+  .page {
+    padding: var(--sp-6) var(--sp-6) var(--sp-9);
+  }
+  .head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-2);
+    margin-bottom: 14px;
+  }
+  .title {
+    font-size: 19px;
+  }
+}
+
+/* Full-bleed work surface (tab 5): fills the page area, only its inner scroller scrolls */
+.work {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  height: calc(100dvh - var(--appbar-h) - var(--statusbar-h));
+  min-height: 0;
+  padding: 10px var(--sp-6) var(--sp-5);
+}
+:global(body.is-focus) .work {
+  height: 100dvh;
+  padding-top: var(--sp-4);
+}
+/* Short landscape screens (a phone turned sideways, ≤ 560px high): the surface grows with its
+   content, so the toolbar scrolls away with the page and the grid frame keeps a usable height */
+@media (max-height: 560px) and (min-width: 641px) {
+  .work,
+  :global(body.is-focus) .work {
+    height: auto;
+    min-height: calc(100dvh - var(--appbar-h) - var(--statusbar-h));
+  }
+}
+@media (max-width: 640px) {
+  .work {
+    height: calc(100dvh - var(--appbar-h) - var(--tabbar-h-m) - env(safe-area-inset-bottom));
+    padding: 0;
+    gap: 0;
+  }
+  :global(body.is-focus) .work {
+    height: 100dvh;
+    padding-top: 0;
+    /* no tab bar in full-screen mode: keep the KeyStrip out of the home-indicator zone */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+.card {
+  background: var(--surface-paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs);
+}
+.pad {
+  padding: 18px var(--sp-7);
+}
+
+.notice {
+  display: flex;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-md);
+  line-height: var(--lh-body);
+}
+.notice > svg {
+  margin-top: 3px;
+}
+.notice b {
+  font-weight: var(--fw-bold);
+}
+.info {
+  background: var(--surface-sunken);
+  color: var(--ink-secondary);
+}
+.ok {
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+  border: 1px solid var(--ok-border);
+}
+.warn {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  border: 1px solid var(--warn-border);
+}
+
+.disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border: 0;
+  background: none;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-link);
+  border-radius: var(--r-xs);
+}
+.disclosure > svg {
+  transition: transform var(--dur-fast) var(--ease-standard);
+}
+.disclosure[aria-expanded="false"] > svg {
+  transform: rotate(-90deg);
+}
+.disclosure:hover {
+  text-decoration: underline;
+}
+
+.spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Touch devices: ≥ 36px disclosure targets */
+@media (pointer: coarse) {
+  .disclosure {
+    min-height: 36px;
+  }
+}

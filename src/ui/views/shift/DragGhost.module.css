@@ -1,0 +1,76 @@
+/* === <DragGhost> (spec §4): follows the pointer (transform set in useDragMove), tilted −2° ===
+   The element also carries the global class `drag-ghost` (the regression oracle skips it). */
+.ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-drag-ghost);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 6px 10px;
+  border-radius: var(--r-md);
+  background: var(--surface-inverse);
+  color: var(--ink-inverse);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  box-shadow: var(--sh-lg);
+  pointer-events: none;
+  animation: var(--anim-fade);
+}
+/* Dropped: shrinks into the target cell (transform set in useDragMove) */
+.landing {
+  transform-origin: 0 0;
+  opacity: 0;
+  transition:
+    transform var(--dur-base) var(--ease-exit),
+    opacity var(--dur-base) var(--ease-exit);
+}
+.icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: var(--ink-inverse-muted);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.body {
+  display: flex;
+  flex-direction: column;
+}
+.name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.len {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--ink-inverse);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+}
+.route {
+  margin-top: 1px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--ink-inverse-muted);
+}
+.route b {
+  font-weight: var(--fw-bold);
+  color: var(--ink-inverse-accent);
+}
+/* What the drop would cause: ⚠ 重複・勤務できない時間・条件外 (allowed) / × 入りません (refused) */
+.note {
+  margin-top: 1px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  color: var(--ink-inverse-warn);
+}

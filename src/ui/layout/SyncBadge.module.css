@@ -1,0 +1,111 @@
+/* === <SyncBadge> #modeBadge — offline | room | saving | reconnecting | error | login === */
+.sync {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  white-space: nowrap;
+  flex: none;
+}
+.sync::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+.offline {
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+}
+.room {
+  background: var(--live-bg);
+  color: var(--live-ink);
+}
+.room::before {
+  box-shadow: 0 0 0 3px var(--live-halo);
+}
+.saving {
+  background: var(--surface-sunken);
+  color: var(--ink-secondary);
+}
+.saving::before {
+  animation: var(--anim-pulse);
+}
+.reconnecting {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+.error {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.login {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  box-shadow: inset 0 0 0 1px var(--warn-border);
+}
+/* the login pill is a button (opens the share dialog) */
+.loginBtn {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.loginBtn:hover {
+  text-decoration: underline;
+}
+.short {
+  display: none;
+}
+/* ≤1180 (laptop / tablet): only the dot; the text stays in title + the live region */
+@media (max-width: 1180px) and (min-width: 641px) {
+  .sync {
+    width: 22px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  .full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .loginBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+/* Phone: compact dot + short status */
+@media (max-width: 640px) {
+  .full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .short {
+    display: inline;
+  }
+  .sync {
+    height: 24px;
+    padding: 0 9px;
+  }
+}

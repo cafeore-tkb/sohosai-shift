@@ -1,0 +1,258 @@
+/* === <CountsDrawer> (必要人数の設定) === */
+
+/* The table frame is the scroller (sticky head row + sticky role column); the note stays on top. */
+.body.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+}
+.dates {
+  margin-left: 6px;
+}
+.grow {
+  flex: 1;
+}
+.frame {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-paper);
+}
+.empty {
+  padding: var(--sp-8) var(--sp-6);
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: var(--fs-md);
+}
+
+/* Matrix: roles × half-hours */
+.ct {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: max-content;
+  min-width: 100%;
+  font-size: var(--fs-sm);
+  font-variant-numeric: var(--numeric);
+}
+.ct thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 7px 2px;
+  background: var(--surface-subtle);
+  border-bottom: 1px solid var(--line);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-muted);
+  white-space: nowrap;
+  text-align: center;
+}
+.ct thead th.isHour {
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+}
+.ct thead th:first-child,
+.ct tbody th.role {
+  position: sticky;
+  left: 0;
+  text-align: left;
+  padding-left: 14px;
+  box-shadow: inset -1px 0 0 var(--line);
+}
+.ct thead th:first-child {
+  z-index: 3;
+}
+.ct td {
+  padding: var(--sp-2) var(--sp-1);
+  border-bottom: 1px solid var(--line-grid);
+  text-align: center;
+}
+.ct td.isHour {
+  border-left: 1px solid var(--line-grid);
+}
+.role {
+  z-index: 1;
+  min-width: 150px;
+  padding: var(--sp-2) 10px var(--sp-2) 14px;
+  background: var(--surface-paper);
+  border-bottom: 1px solid var(--line-grid);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-tight);
+}
+.role b {
+  display: block;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+.role small {
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+}
+.bulkHead {
+  padding: 7px var(--sp-4) !important;
+}
+.ct td.bulk {
+  padding: var(--sp-2) var(--sp-4);
+  box-shadow: inset -1px 0 0 var(--line);
+}
+.group th {
+  position: sticky;
+  left: 0;
+  padding: var(--sp-3) 14px;
+  background: var(--surface-canvas);
+  text-align: left;
+  border-bottom: 1px solid var(--line-grid);
+}
+.group th > span {
+  position: sticky;
+  left: 14px;
+}
+/* 店舗の営業時間（時間割） */
+.group th > .openNote {
+  position: sticky;
+  left: 14px;
+  margin-left: var(--sp-3);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+/* Number inputs: 36×28, identified by their value text and the grid itself —
+   the one documented exemption from the ≥ 3:1 control boundary (spec §1). */
+.ci {
+  display: inline-block;
+  width: 36px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-paper);
+  text-align: center;
+  font: inherit;
+  font-size: var(--fs-md);
+  font-variant-numeric: var(--numeric);
+  color: var(--ink);
+  -moz-appearance: textfield;
+  appearance: textfield;
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+.ci::-webkit-inner-spin-button,
+.ci::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.ci:hover {
+  border-color: var(--line-control-hover);
+}
+.ci:focus,
+.ci:focus-visible {
+  outline: none;
+  border-color: var(--focus-color);
+  box-shadow: 0 0 0 3px var(--focus-halo);
+}
+.changed {
+  background: var(--accent-bg);
+  color: var(--accent-strong);
+  font-weight: var(--fw-bold);
+}
+.zero {
+  background: var(--st-na-hatch);
+  color: var(--ink-muted);
+  font-weight: var(--fw-regular);
+}
+.ciBulk {
+  width: 44px;
+  border-style: dashed;
+}
+.ciBulk::placeholder {
+  color: var(--ink-placeholder);
+}
+
+/* Footer key */
+.key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.ci.keyCi {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 22px;
+  font-size: var(--fs-sm);
+}
+.keys {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-5);
+}
+
+@media (max-width: 900px) {
+  .dates small {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  /* Phone head: 見出し・標準に戻す・閉じる on the first row, the date segmented on its own row.
+     The drawer's head-extra wrapper (the parent of .dates) dissolves so its children join the head's wrapping row. */
+  :has(> .dates) {
+    display: contents;
+  }
+  .dates {
+    margin-left: 0;
+    order: 5;
+    flex: 1 1 100%;
+    overflow-x: auto;
+  }
+  .dates > button {
+    flex: 1 0 auto;
+    justify-content: center;
+  }
+  .body.body {
+    gap: var(--sp-5);
+  }
+  .role {
+    min-width: 112px;
+  }
+  .ci {
+    width: 40px;
+    height: 36px;
+    font-size: 16px;
+  }
+  .ciBulk {
+    width: 48px;
+  }
+  .keys {
+    display: none;
+  }
+}
+
+/* Touch devices (tablets, landscape phones): ≥ 36px inputs, 16px so iOS does not zoom on focus;
+   no Tab / ↵ keycaps */
+@media (pointer: coarse) {
+  .keys {
+    display: none;
+  }
+  .ci {
+    width: 40px;
+    height: 36px;
+    font-size: 16px;
+  }
+  .ciBulk {
+    width: 48px;
+  }
+}
+
+/* Short landscape screens (≤ 560px high): the drawer is a full-screen sheet (Drawer.module.css);
+   the note is hidden so the matrix (#countEditor, the only scroller) fills the body. */
+@media (max-height: 560px) and (min-width: 641px) {
+  .note {
+    display: none;
+  }
+}

@@ -1,0 +1,42 @@
+/* === <Popover> / <Menu> ================================================= */
+.pop {
+  position: fixed;
+  z-index: var(--z-popover);
+  max-width: calc(100vw - 16px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-lg);
+  padding: var(--sp-6) 18px;
+  animation: var(--anim-pop);
+}
+.pop:focus-visible {
+  box-shadow: var(--sh-lg), var(--focus-ring);
+}
+/* Bottom sheet (no visible anchor, or phones) + its scrim */
+.scrim {
+  display: none;
+}
+.scrim:has(+ .pop[data-sheet]) {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-popover);
+  background: var(--scrim);
+  animation: var(--anim-fade);
+}
+.pop[data-sheet] {
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: 0;
+  width: auto !important;
+  max-width: none;
+  max-height: 80vh;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  border-bottom: 0;
+  padding-bottom: calc(var(--sp-6) + env(safe-area-inset-bottom));
+  animation: var(--anim-up);
+}

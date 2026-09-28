@@ -1,0 +1,572 @@
+/* === <ShiftToolbar> + <Minimap> + phone summary strip (spec §2, §4, §5) ===
+   One flex container, one DOM. Desktop: two rows split by .break; phone: summary → days →
+   action row → filter row. Items are placed with `order`; wrappers that only exist for the
+   phone arrangement (.filters, the Overflow) are `display: contents` on desktop. */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--sp-4);
+  /* The zero-height .break sits on its own flex line, so each side adds half of the 8px row gap */
+  row-gap: var(--sp-2);
+  flex: none;
+}
+.toolbar > * {
+  flex: none;
+}
+.dates {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+}
+.dateSeg {
+  max-width: 100%;
+}
+.dayShort {
+  display: none;
+}
+.grow1,
+.grow2 {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.break {
+  flex-basis: 100%;
+  height: 0;
+}
+.sep {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  margin: 0 var(--sp-2);
+  background: var(--line-strong);
+}
+.filters {
+  display: contents;
+}
+.chips {
+  flex-wrap: wrap;
+}
+.fullName {
+  margin-left: var(--sp-2);
+}
+.audit .auditPill {
+  margin-left: 2px;
+}
+.pillShort {
+  display: none;
+}
+.helpItem {
+  display: none;
+}
+
+/* ---- Desktop order (≥641px) ---- */
+@media (min-width: 641px) {
+  .dates {
+    order: 1;
+  }
+  .grow1 {
+    order: 2;
+  }
+  .clear {
+    order: 3;
+  }
+  .sep1 {
+    order: 4;
+  }
+  .counts {
+    order: 5;
+  }
+  .audit {
+    order: 6;
+  }
+  .auto {
+    order: 7;
+  }
+  .break {
+    order: 10;
+  }
+  .chips {
+    order: 11;
+  }
+  .sep2 {
+    order: 12;
+  }
+  .modes {
+    order: 13;
+  }
+  .fullName {
+    order: 14;
+  }
+  .grow2 {
+    order: 15;
+  }
+  .minimap {
+    order: 16;
+  }
+  .fullscreen {
+    order: 17;
+  }
+  /* In focus mode the button reads 「← 通常表示に戻る」 (text); the arrow icon is for the phone only */
+  .fullscreenBack > svg:first-child {
+    display: none;
+  }
+  .more {
+    display: contents;
+  }
+}
+
+/* ---- Minimap ---- */
+.minimap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.mm {
+  position: relative;
+  display: flex;
+  width: 260px;
+  /* 24px: the minimum pointer target (WCAG 2.5.8); the segments touch each other */
+  height: 24px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.mmSeg {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  padding: 0;
+  border: 0;
+  border-right: 1px solid var(--surface-paper);
+  background: var(--sb);
+  color: var(--si);
+  font-size: 10px;
+  font-weight: var(--fw-bold);
+  overflow: hidden;
+  cursor: pointer;
+}
+/* Touch devices: ≥ 36px segments */
+@media (pointer: coarse) {
+  .mm {
+    height: 36px;
+  }
+}
+.mmSeg:last-of-type {
+  border-right: 0;
+}
+.mmSeg:hover {
+  filter: brightness(0.97);
+}
+.mmSeg:focus-visible {
+  box-shadow: var(--focus-inset);
+}
+.mmWin {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  border: 1.5px solid var(--selected);
+  border-radius: var(--r-sm);
+  background: rgba(23, 32, 44, 0.04);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+  transition:
+    left var(--dur-fast) var(--ease-standard),
+    width var(--dur-fast) var(--ease-standard);
+}
+
+/* ---- Phone summary strip (hidden on desktop via .m-only) ---- */
+.msum {
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+.msumRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  white-space: nowrap;
+}
+.msumStat b,
+.msumMeter b {
+  margin-left: 4px;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  font-variant-numeric: var(--numeric);
+}
+.msumMeter {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.isOpen b,
+.isOpen dd {
+  color: var(--st-open-ink);
+}
+.isConflict b,
+.isConflict dd {
+  color: var(--st-conflict-ink);
+}
+.msumToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 36px;
+  margin-left: auto;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-link);
+}
+.msumToggle[aria-expanded="false"] > svg {
+  transform: rotate(-90deg);
+}
+.msumMore {
+  padding: 2px 0 10px;
+}
+.msumMore dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px 12px;
+  margin: 0;
+}
+.msumMore dl > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+.msumMore dt {
+  color: var(--ink-muted);
+}
+.msumMore dd {
+  margin: 0;
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  font-variant-numeric: var(--numeric);
+}
+.msumNote {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: var(--fs-xs);
+  line-height: var(--lh-body);
+  color: var(--ink-muted);
+}
+.msumNote > svg {
+  margin-top: 3px;
+}
+
+/* ---- Laptop breakpoints ----
+   Spec §5 puts this at ≤1320, but row 2 already overflows below 1400 (1366×768 laptops), so
+   the caption hides and the map narrows to 200px from 1399 down. */
+@media (max-width: 1399px) and (min-width: 641px) {
+  .mmLabel {
+    display: none;
+  }
+  .mm {
+    width: 200px;
+  }
+  .mmSeg {
+    min-width: 32px;
+  }
+  .pillFull {
+    display: none;
+  }
+  .pillShort {
+    display: inline;
+  }
+}
+
+/* Two-row desktop (≥1241): the shop chips never push 表示位置 / 全画面 onto a line of their own.
+   A zero flex-basis keeps them from wrapping the row; they grow up to their own width (max-content,
+   the large grow factor gives them the free space before the spacer), and when row 2 is short
+   (1241–1399, 3日分を一覧's extra 準備 chip, the wider focus-mode button) they scroll sideways
+   with a faded edge. */
+@media (min-width: 1241px) {
+  .chips {
+    flex: 1000 1 0;
+    max-width: max-content;
+    min-width: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ---- Narrow laptop / tablet (641–1240px): three rows instead of two wrapping ones ----
+   A: days ─ 全画面   B: 役職別/個人別・フルネーム ─ クリア │ 人数・チェック・自動割当   C: shops ─ 表示位置 */
+@media (max-width: 1240px) and (min-width: 641px) {
+  .dates {
+    order: 1;
+  }
+  .grow1 {
+    order: 2;
+  }
+  .fullscreen {
+    order: 3;
+  }
+  .break {
+    order: 4;
+  }
+  .modes {
+    order: 5;
+  }
+  .fullName {
+    order: 6;
+  }
+  .grow2 {
+    order: 7;
+  }
+  .clear {
+    order: 8;
+  }
+  .sep1 {
+    order: 9;
+  }
+  .counts {
+    order: 10;
+  }
+  .audit {
+    order: 11;
+  }
+  .auto {
+    order: 12;
+  }
+  .chips {
+    order: 13;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .minimap {
+    order: 14;
+    margin-left: auto;
+  }
+  .sep2 {
+    display: none;
+  }
+}
+/* 641–719px: クリア・人数・全画面 go icon-only so 自動割当 stays on row B and 全画面 on row A
+   (the label stays as visually hidden text, so the accessible name is unchanged) */
+@media (max-width: 719px) and (min-width: 641px) {
+  .toolbar .clear,
+  .counts,
+  .fullscreen:not(.fullscreenBack) {
+    width: var(--control-h);
+    padding: 0;
+    justify-content: center;
+  }
+  .toolbar .clear > :not(svg),
+  .counts > :not(svg),
+  .fullscreen:not(.fullscreenBack) > :not(svg) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 900px) and (min-width: 641px) {
+  .minimap {
+    display: none;
+  }
+  .auditText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+/* ---- Phone (≤640px) ---- */
+@media (max-width: 640px) {
+  .toolbar {
+    column-gap: var(--sp-4);
+    row-gap: 7px;
+    padding: 0 12px 10px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-canvas);
+  }
+  .msum {
+    order: 0;
+    flex-basis: calc(100% + 24px);
+    margin: 0 -12px;
+    padding: 0 12px;
+    background: var(--surface-subtle);
+    border-bottom: 1px solid var(--line);
+  }
+  .dates {
+    order: 1;
+    flex-basis: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .dates::-webkit-scrollbar {
+    display: none;
+  }
+  .dateSeg {
+    max-width: none;
+  }
+  .dayFull {
+    display: none;
+  }
+  .dayShort {
+    display: inline;
+  }
+  .auto {
+    order: 2;
+    height: var(--control-h-lg);
+    margin-right: auto;
+  }
+  .counts {
+    order: 3;
+  }
+  .audit {
+    order: 4;
+  }
+  .fullscreen {
+    order: 5;
+  }
+  .more {
+    order: 6;
+  }
+  .grow1,
+  .grow2,
+  .sep1,
+  .break,
+  .minimap {
+    display: none;
+  }
+  /* Secondary square icon buttons (40×40) */
+  .toolbar .counts,
+  .toolbar .audit,
+  .toolbar .fullscreen {
+    width: var(--control-h-lg);
+    height: var(--control-h-lg);
+    padding: 0;
+    background: var(--secondary-bg);
+    border-color: var(--secondary-border);
+    color: var(--ink);
+    box-shadow: var(--sh-xs);
+  }
+  .toolbar .fullscreen > span[aria-hidden="true"] {
+    display: none;
+  }
+  .auditText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  /* The same #auditBadge becomes the count dot */
+  .toolbar .audit .auditPill {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 19px;
+    height: 19px;
+    margin: 0;
+    padding: 0 5px;
+    justify-content: center;
+    background: var(--st-conflict-border);
+    color: var(--on-color);
+    font-size: var(--fs-2xs);
+    box-shadow: 0 0 0 2px var(--surface-canvas);
+  }
+  .toolbar .audit .auditPill[hidden] {
+    display: none;
+  }
+  .pillFull {
+    display: none;
+  }
+  .pillShort {
+    display: inline;
+  }
+  /* Filter row: 役職別/個人別 first, then the shop chips; scrolls sideways */
+  .filters {
+    order: 7;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    flex-basis: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filters::-webkit-scrollbar {
+    display: none;
+  }
+  .filters > * {
+    flex: none;
+  }
+  /* 役職別/個人別 first on phones (the DOM has the desktop order: shops, then the view toggle) */
+  .filters > .modes {
+    order: 0;
+  }
+  .filters > .sep2 {
+    order: 1;
+  }
+  .filters > .chips {
+    order: 2;
+  }
+  /* Phone day labels are short (準備・1日目・一覧); the date stays in the title */
+  .dates small {
+    display: none;
+  }
+  .chips {
+    flex-wrap: nowrap;
+  }
+  /* Inside the ⋯ menu */
+  .toolbar .clear {
+    color: var(--danger);
+  }
+  .fullName {
+    margin-left: 0;
+  }
+  .helpItem {
+    display: flex;
+  }
+}
+
+/* Focus mode: the back button 「← 通常表示に戻る Esc」 is wider than 全画面, so the minimap drops
+   its caption; on narrower laptops it drops the map too, so the shop chips keep their room */
+:global(body.is-focus) .mmLabel {
+  display: none;
+}
+@media (max-width: 1439px) and (min-width: 1400px) {
+  :global(body.is-focus) .mm {
+    width: 200px;
+  }
+}
+/* 3日分を一覧 adds a 準備 chip to row 2: the minimap drops its caption and narrows */
+@media (min-width: 1400px) {
+  .toolbar[data-all] .mmLabel {
+    display: none;
+  }
+  .toolbar[data-all] .mm {
+    width: 200px;
+  }
+}
+@media (max-width: 1399px) and (min-width: 1241px) {
+  :global(body.is-focus) .minimap {
+    display: none;
+  }
+}

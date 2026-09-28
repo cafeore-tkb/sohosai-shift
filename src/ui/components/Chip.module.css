@@ -1,0 +1,82 @@
+/* === <Chip> (filters) =================================================== */
+.chips {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: nowrap;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  height: 30px;
+  padding: 0 11px 0 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-paper);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+  flex: none;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+.chip:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+/* Pressed = a FILLED steel pill (selection is a fill; a shop is only the dot).
+   A ring-only pressed chip looked like the 本店-on ShopToggle (spec §4 Chip). */
+.chip[aria-pressed="true"] {
+  border-color: var(--selected);
+  background: var(--selected);
+  color: var(--on-primary);
+}
+.chip[aria-pressed="true"]:hover {
+  border-color: var(--selected-hover);
+  background: var(--selected-hover);
+  color: var(--on-primary);
+}
+.chip[aria-pressed="true"] .n {
+  color: var(--on-primary);
+}
+.chip[aria-pressed="true"] .dot {
+  box-shadow: 0 0 0 1.5px var(--on-primary);
+}
+.chip:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sc);
+  flex: none;
+}
+.n {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-muted);
+  font-variant-numeric: var(--numeric);
+}
+.hot {
+  color: var(--st-open-ink);
+}
+/* 店舗未設定 etc.: an attention (orange) dot instead of a shop dot */
+.dotOpen {
+  background: var(--st-open-border);
+}
+.ok {
+  color: var(--ok-ink);
+}
+@media (max-width: 640px), (pointer: coarse) {
+  .chip {
+    height: 36px;
+  }
+}

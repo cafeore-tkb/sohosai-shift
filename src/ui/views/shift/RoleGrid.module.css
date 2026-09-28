@@ -1,0 +1,572 @@
+/* === <RoleGrid> + <GridCell> (spec §4 RoleGrid / GridCell) =================
+   A plain <table>: sticky 3-row header, sticky time column, 30-min rows with hour bands.
+   Group / shop rules are inset box-shadows, so borders never double.
+   Inside a 3日分を一覧 day block the header re-sticks under the day title (--rg-top). */
+
+.rg {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  width: max-content;
+  font-size: var(--fs-md);
+}
+.tc {
+  width: var(--grid-time-col);
+}
+.pc {
+  width: var(--grid-col);
+}
+
+/* ---- Header ---- */
+.rg thead th {
+  position: sticky;
+  z-index: var(--z-grid-sticky-head);
+  background: var(--surface-paper);
+  padding: 0;
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.h1 th {
+  top: var(--rg-top, 0px);
+  height: var(--grid-head-row);
+}
+.h2 th {
+  top: calc(var(--rg-top, 0px) + var(--grid-head-row));
+  height: var(--grid-head-row);
+}
+.h3 th {
+  top: calc(var(--rg-top, 0px) + var(--grid-head-row) * 2);
+  height: var(--grid-head-row);
+}
+.rg thead th.corner {
+  left: 0;
+  z-index: var(--z-grid-corner);
+  vertical-align: bottom;
+  text-align: left;
+  padding: 0 10px 6px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  line-height: 1.35;
+  color: var(--ink-muted);
+  white-space: normal;
+  box-shadow:
+    inset -1px 0 0 var(--line-strong),
+    inset 0 -1px 0 var(--line-hour);
+}
+.corner b {
+  display: block;
+  margin-bottom: 2px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+.cornerNote {
+  display: block;
+}
+
+/* Shop band: tint + 3px shop rule on top, sticky label */
+.rg thead th.band {
+  background: var(--sb);
+  color: var(--si);
+  text-align: left;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.03em;
+  box-shadow: inset 0 3px 0 var(--sc);
+}
+.rg thead th.band.isShop {
+  box-shadow:
+    inset 0 3px 0 var(--sc),
+    inset 2px 0 0 var(--line-shop);
+}
+.bandLabel {
+  position: sticky;
+  left: calc(var(--grid-time-col) + 10px);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 3px 10px 0;
+}
+.bandOpen {
+  font-style: normal;
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-xs);
+}
+
+.rg thead th.role {
+  text-align: left;
+  padding: 0 10px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line-grid);
+}
+.rg thead th.roleSingle {
+  text-align: center;
+  padding: 0 4px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--line-hour);
+}
+.rg thead th.pos {
+  text-align: center;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-muted);
+  font-variant-numeric: var(--numeric);
+  border-bottom: 1px solid var(--line-hour);
+}
+.isGroup {
+  box-shadow: inset 1px 0 0 var(--line-group);
+}
+.isShop {
+  box-shadow: inset 2px 0 0 var(--line-shop);
+}
+
+/* ---- Time column ---- */
+.rg tbody th.time {
+  position: sticky;
+  left: 0;
+  z-index: var(--z-grid-sticky-col);
+  height: var(--grid-row);
+  padding: 0 8px 0 10px;
+  background: var(--surface-paper);
+  text-align: left;
+  font-weight: var(--fw-bold);
+  box-shadow: inset -1px 0 0 var(--line-strong);
+  border-bottom: 1px solid var(--line-grid);
+}
+.timeIn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.t {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  font-variant-numeric: var(--numeric);
+}
+.half .t {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--ink-muted);
+}
+
+/* ---- Rows ---- */
+.rg tbody td {
+  position: relative;
+  height: var(--grid-row);
+  padding: 2px 3px;
+  border-bottom: 1px solid var(--line-grid);
+  border-right: 1px solid var(--line-grid);
+}
+.rg tbody tr.half td,
+.rg tbody tr.half th.time {
+  border-bottom-color: var(--line-hour);
+}
+/* No slot at all at this time (not clickable) */
+.rg tbody td.void {
+  background: var(--st-na-hatch);
+}
+
+/* Stint: one person's consecutive rows → a rail, and no half-hour rule inside (hour rules stay) */
+.rg tbody td[data-stint]::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--stint-rail);
+  z-index: 0;
+}
+.rg tbody td.isShop[data-stint]::before {
+  left: 5px;
+}
+.rg tbody td[data-stint="start"]::before {
+  top: 8px;
+  border-radius: 2px 2px 0 0;
+}
+.rg tbody td[data-stint="end"]::before {
+  bottom: 8px;
+  border-radius: 0 0 2px 2px;
+}
+.rg tbody tr:not(.half) td[data-stint="start"],
+.rg tbody tr:not(.half) td[data-stint="mid"] {
+  border-bottom-color: transparent;
+}
+
+/* Status box run: consecutive rows with the same state read as one box */
+.rg tbody td[data-box="start"],
+.rg tbody td[data-box="mid"] {
+  padding-bottom: 0;
+  border-bottom-color: transparent;
+}
+.rg tbody td[data-box="mid"],
+.rg tbody td[data-box="end"] {
+  padding-top: 0;
+}
+td[data-box="start"] > .cell,
+td[data-box="mid"] > .cell {
+  height: calc(var(--grid-row) - 1px);
+  margin-bottom: -1px;
+  border-bottom-width: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+td[data-box="mid"] > .cell,
+td[data-box="end"] > .cell {
+  border-top-width: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+td[data-box="mid"] > .cell {
+  height: calc(var(--grid-row) + 1px);
+}
+td[data-box="end"] > .cell {
+  height: calc(var(--grid-row) - 2px);
+}
+
+/* ---- GridCell ---- */
+.cell {
+  position: relative;
+  z-index: var(--z-grid-cell);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  height: calc(var(--grid-row) - 5px);
+  padding: 0 6px 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: left;
+  cursor: grab;
+  /* long-press starts a drag on touch: no text selection, loupe or callout (legacy parity) */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  transition:
+    background var(--dur-instant) var(--ease-standard),
+    border-color var(--dur-instant) var(--ease-standard),
+    opacity var(--dur-fast) var(--ease-standard);
+}
+.cell:hover {
+  background: var(--surface-hover);
+  border-color: var(--line-strong);
+}
+.cell:focus-visible {
+  box-shadow: var(--focus-inset);
+}
+.nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.mk {
+  flex: none;
+}
+.cell[data-cont] {
+  font-weight: var(--fw-regular);
+  color: var(--ink-secondary);
+}
+.cell[data-state="open"] {
+  background: var(--st-open-bg);
+  border: 1px dashed var(--st-open-border);
+  color: var(--st-open-ink);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.cell[data-state="open"]:hover {
+  background: var(--st-open-hover);
+}
+.cell[data-state="none"] {
+  background: var(--st-none-bg);
+  border: 1px dashed var(--st-none-border);
+  color: var(--st-none-ink);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+.cell[data-flag="dislike"] {
+  background: var(--st-dislike-bg);
+  border-color: var(--st-dislike-border);
+  color: var(--st-dislike-ink);
+}
+.cell[data-flag="conflict"] {
+  background: var(--st-conflict-bg);
+  border-color: var(--st-conflict-border);
+  color: var(--st-conflict-ink);
+  font-weight: var(--fw-bold);
+}
+.cell[data-flag="off"] {
+  background: var(--st-off-hatch);
+  border-color: var(--st-off-border);
+  color: var(--st-off-ink);
+  font-weight: var(--fw-bold);
+}
+/* Marks (★, drip) on the off hatch sit on a paper chip: the darker stripe would drop them to ~4.2:1 */
+.cell[data-flag="off"] :is(.mk, .dripMk) {
+  padding: 0 2px;
+  border-radius: var(--r-xs);
+  background: var(--surface-paper);
+}
+/* 条件外 (所属店舗・ステータス・車): teal dots + ≠ — after 重複 and 勤務できない時間, before 苦手 */
+.cell[data-flag="unfit"] {
+  background: var(--st-unfit-dots);
+  border-color: var(--st-unfit-border);
+  color: var(--st-unfit-ink);
+  font-weight: var(--fw-bold);
+}
+.cell[data-flag="unfit"] .mk {
+  color: var(--st-unfit-ink);
+}
+.cell[data-flag][data-cont] {
+  font-weight: var(--fw-semibold);
+}
+.cell[data-flag="dislike"] .mk {
+  color: var(--st-dislike-mark);
+}
+/* Not needed at this time: the hatch fills the td, hover offers 「＋ 必要人数」 */
+.cell[data-state="na"] {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  justify-content: center;
+  background: var(--st-na-hatch);
+  cursor: pointer;
+}
+.cell[data-state="na"]:hover {
+  background: var(--surface-hover);
+}
+.cell[data-state="na"]:hover::after {
+  content: "＋ 必要人数";
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--st-na-hover-ink);
+}
+/* Picker open on this cell: selection (steel), never the focus colour */
+.cell.picking {
+  background: var(--surface-selected);
+  border-color: var(--selected);
+  box-shadow: 0 0 0 1px var(--selected);
+  color: var(--ink);
+}
+.cell.picking:focus-visible {
+  box-shadow:
+    0 0 0 1px var(--selected),
+    var(--focus-inset);
+}
+/* Changed / 表で見る target: steel wash + 撫子 ring, background and ring only */
+.flash {
+  animation: var(--anim-flash);
+}
+/* In a box run the rows touch (no td padding), so the next row would paint over an outer ring:
+   draw the 撫子 ring inside the box instead */
+td[data-box] > .flash {
+  animation-name: flashInset;
+}
+@keyframes flashInset {
+  0%,
+  40% {
+    background: var(--st-flash-bg);
+    box-shadow: var(--flash-focus, 0 0 transparent), inset 0 0 0 var(--flash-inset-w, 2px) var(--accent);
+  }
+}
+/* Focus (navy) and the flash ring (撫子) stay separate (spec §1): a focused cell shows both
+   (inside a box the 撫子 ring moves inward, just inside the focus ring's paper gap) */
+.flash:focus-visible {
+  --flash-focus: var(--focus-inset);
+}
+td[data-box] > .flash:focus-visible {
+  --flash-inset-w: 5px;
+}
+/* Reduced motion: the flash is a location cue, not decoration — show it as a static highlight
+   for as long as the cell carries the class (store FLASH_MS), with no easing */
+@media (prefers-reduced-motion: reduce) {
+  .flash {
+    animation: none;
+    background: var(--st-flash-bg) !important;
+    box-shadow: 0 0 0 2px var(--accent) !important;
+  }
+  td[data-box] > .flash {
+    animation: none;
+    box-shadow: inset 0 0 0 2px var(--accent) !important;
+  }
+  .flash:focus-visible {
+    box-shadow: var(--focus-inset), 0 0 0 2px var(--accent) !important;
+  }
+  td[data-box] > .flash:focus-visible {
+    box-shadow: var(--focus-inset), inset 0 0 0 5px var(--accent) !important;
+  }
+}
+
+/* ---- Range selection (Shift+click / Shift+↑↓): steel ring + wash over the cell's own state ---- */
+td[data-selected] > .cell {
+  box-shadow:
+    inset 0 0 0 2px var(--sel-range-ring),
+    inset 0 0 0 999px var(--sel-range-tint);
+}
+td[data-selected] > .cell:focus-visible {
+  box-shadow:
+    var(--focus-inset),
+    inset 0 0 0 999px var(--sel-range-tint);
+}
+/* ---- Move / drag (the grid root carries [data-moving]) ----
+   Every cell except the grabbed one is a target ([data-drop-ok]); green ([data-drop-fit]) marks the
+   ones where everyone moved still meets the conditions. The rest stay dimmed but can be dropped on.
+   The footprint (footprint.ts) lights every cell the moving range would land in:
+   .is-drop-hover (the grabbed cell's landing) + .is-drop-foot (the rest), .is-drop-swap (someone there
+   swaps back), .is-drop-warn (allowed, but breaks a condition), .is-drop-bad (does not fit: refused). */
+:global([data-moving]) .rg tbody td:not([data-drop-fit]):not([data-drag-source]):not(:global(.is-drop-hover)):not(:global(.is-drop-foot)) > .cell {
+  opacity: var(--st-drag-dim);
+}
+td[data-drop-ok] > .cell {
+  cursor: copy;
+}
+td[data-drop-fit] > .cell {
+  border: 1.5px dashed var(--st-drop-border);
+  background: var(--st-drop-bg);
+  color: var(--ink);
+}
+td[data-drop-fit] > .cell[data-state="open"] {
+  color: var(--st-drop-strong);
+}
+/* Footprint — or, in move mode, the hovered / keyboard-focused target: same preview */
+td[data-drop-ok]:global(.is-drop-hover) > .cell,
+td:global(.is-drop-foot) > .cell,
+td[data-drop-ok] > .cell:hover,
+td[data-drop-ok] > .cell:focus-visible {
+  border: 2px solid var(--st-drop-strong);
+  background: var(--st-drop-hover);
+  box-shadow: 0 2px 6px var(--st-drop-shadow);
+  color: var(--ink);
+}
+td[data-drop-ok] > .cell:focus-visible {
+  box-shadow:
+    0 2px 6px var(--st-drop-shadow),
+    var(--focus-inset);
+}
+/* 空き text on the hover fill: --st-drop-strong is 4.35:1 there, the ○ green ink is 5.1:1 */
+td[data-drop-ok]:global(.is-drop-hover) > .cell[data-state="open"],
+td:global(.is-drop-foot) > .cell[data-state="open"],
+td[data-drop-ok] > .cell[data-state="open"]:hover,
+td[data-drop-ok] > .cell[data-state="open"]:focus-visible {
+  color: var(--avail-yes-ink);
+}
+/* Allowed but breaks a condition (the ghost / toast says which): slate instead of green */
+td:global(.is-drop-warn) > .cell,
+td:global(.is-drop-warn) > .cell:hover,
+td:global(.is-drop-warn) > .cell:focus-visible {
+  border-color: var(--st-drop-warn-border);
+  background: var(--st-drop-warn-bg);
+  box-shadow: none;
+}
+td:global(.is-drop-warn) > .cell:focus-visible {
+  box-shadow: var(--focus-inset);
+}
+td:global(.is-drop-warn) > .cell[data-state="open"] {
+  color: var(--ink-secondary);
+}
+/* 「入替」 tag on every footprint cell whose occupant goes back to the vacated cells */
+td:global(.is-drop-swap) > .cell::after {
+  content: "入替";
+  margin-left: auto;
+  padding: 1px 4px;
+  border-radius: var(--r-xs);
+  background: var(--st-drop-strong);
+  color: var(--on-color);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+}
+td:global(.is-drop-warn.is-drop-swap) > .cell::after {
+  background: var(--st-drop-warn-border);
+}
+/* The range does not fit this column (a row falls on 不要 / no slot): red dashed footprint, dropping is refused */
+.rg tbody td:global(.is-drop-bad)::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: var(--z-grid-cell);
+  border: 2px dashed var(--st-nodrop-border);
+  border-radius: var(--r-sm);
+  background: var(--st-nodrop-bg);
+  pointer-events: none;
+}
+td:global(.is-drop-bad) > .cell,
+td:global(.is-drop-bad) > .cell:hover {
+  border-color: transparent;
+  background: var(--surface-paper);
+  box-shadow: none;
+  opacity: 1;
+}
+td:global(.is-drop-bad) > .cell[data-state="na"] {
+  background: var(--st-na-hatch);
+}
+td:global(.is-drop-bad.is-drop-hover) > .cell::after {
+  content: "入りません";
+  position: relative;
+  z-index: calc(var(--z-grid-cell) + 1);
+  margin-left: auto;
+  padding: 1px 4px;
+  border-radius: var(--r-xs);
+  background: var(--st-nodrop-border);
+  color: var(--on-color);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+}
+td[data-drag-source] > .cell {
+  border: 1.5px dashed var(--ink-muted);
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+  box-shadow: none;
+}
+
+/* ---- Phone: 84px columns, 36px rows, time + 車N stacked ---- */
+@media (max-width: 640px) {
+  .cell {
+    font-size: var(--fs-base);
+    padding: 0 6px 0 9px;
+  }
+  .cell[data-state="open"],
+  .cell[data-state="none"] {
+    font-size: var(--fs-md);
+  }
+  .bandLabel {
+    left: calc(var(--grid-time-col) + 6px);
+  }
+  .rg tbody th.time {
+    padding: 0 4px 0 8px;
+  }
+  .timeIn {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    line-height: 1.05;
+  }
+  .rg thead th.corner {
+    padding: 0 6px 6px 8px;
+  }
+  .cornerNote {
+    display: none;
+  }
+  .car {
+    height: 15px;
+    padding: 0 4px;
+    font-size: 10px;
+  }
+}

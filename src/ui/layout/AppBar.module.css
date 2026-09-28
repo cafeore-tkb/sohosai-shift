@@ -1,0 +1,306 @@
+/* === <AppBar> + <Tabs> (spec §2, §4 AppBar and Tabs, §5 responsive) ====== */
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-appbar);
+  height: var(--appbar-h);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  padding: 0 var(--sp-6);
+  background: var(--surface-paper);
+  border-bottom: 1px solid var(--line);
+}
+:global(body.is-focus) .appbar {
+  display: none;
+}
+
+/* ---- Brand: tile + serif wordmark + caption, then the sync pill ---- */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  min-width: 0;
+}
+.word {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.word > b {
+  font-family: var(--font-brand);
+  font-size: 18px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.word > small {
+  margin-top: 3px;
+  font-size: 9.5px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.14em;
+  color: var(--ink-eyebrow);
+  white-space: nowrap;
+}
+.pageTitle {
+  display: none;
+}
+
+/* ---- Tabs ---- */
+.tabs {
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  margin-left: var(--sp-5);
+  min-width: 0;
+}
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+.tab:hover {
+  color: var(--ink);
+}
+.tab::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: transparent;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+.tab:focus-visible {
+  box-shadow: var(--focus-inset);
+  border-radius: var(--r-md);
+}
+.tabN {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: var(--numeric);
+  color: var(--ink-muted);
+  flex: none;
+}
+.tabIcon,
+.tabLock {
+  display: none;
+}
+.tab[aria-selected="true"] {
+  color: var(--ink);
+}
+.tab[aria-selected="true"]::after {
+  background: var(--selected);
+}
+.tab[aria-selected="true"] .tabN {
+  background: var(--selected);
+  border-color: var(--selected);
+  color: var(--on-primary);
+}
+.tab:disabled {
+  color: var(--disabled-ink);
+  cursor: not-allowed;
+}
+.tab:disabled .tabN {
+  display: none;
+}
+.tab:disabled .tabLock {
+  display: block;
+  color: var(--disabled-ink);
+}
+.short {
+  display: none;
+}
+.badge,
+.conflictBadge {
+  margin-left: 1px;
+}
+
+/* ---- Actions ---- */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-left: auto;
+  flex: none;
+}
+
+/* ==== Laptop / tablet (spec §5) ==== */
+@media (max-width: 1279px) and (min-width: 641px) {
+  .conflictBadge,
+  .word > small {
+    display: none;
+  }
+  .tab {
+    padding: 0 9px;
+  }
+}
+@media (max-width: 1180px) and (min-width: 641px) {
+  .appbar {
+    gap: var(--sp-4);
+  }
+  .tab {
+    padding: 0 6px;
+  }
+}
+@media (max-width: 1023px) and (min-width: 641px) {
+  .word {
+    display: none;
+  }
+  .tabs {
+    margin-left: 0;
+    /* never runs under the actions: scrolls sideways if it ever runs out of room */
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab::after {
+    bottom: 0;
+  }
+  .tab > .full {
+    display: none;
+  }
+  .tab > .short {
+    display: inline;
+  }
+}
+
+/* Narrow tablets / landscape phones: drop the number discs and the 「未割当」 word so the five
+   tabs fit between the brand and the actions (the numbers stay in the tab titles) */
+@media (max-width: 800px) and (min-width: 641px) {
+  .tabN,
+  .badge > .full {
+    display: none;
+  }
+  .appbar {
+    gap: var(--sp-3);
+  }
+  .tab {
+    gap: 5px;
+    padding: 0 6px;
+  }
+}
+
+/* ==== Phone (≤640): app bar = tile + page title + compact sync + share + ⋯; tabs = fixed bottom bar ==== */
+@media (max-width: 640px) {
+  .appbar {
+    padding: 0 var(--sp-4) 0 var(--sp-5);
+    gap: var(--sp-4);
+  }
+  .brand {
+    flex: 1;
+  }
+  .word > b {
+    font-size: 17px;
+  }
+  .word > small {
+    display: none;
+  }
+  .word[data-has-title] {
+    display: none;
+  }
+  .pageTitle {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 17px;
+    font-weight: var(--fw-bold);
+    color: var(--ink);
+  }
+  .actions {
+    gap: var(--sp-1);
+  }
+  /* 共同編集 is a plain icon button on phones */
+  .actions .share {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    color: var(--ink-secondary);
+  }
+  .tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-appbar);
+    height: calc(var(--tabbar-h-m) + env(safe-area-inset-bottom));
+    margin: 0;
+    padding: 0 var(--sp-2) env(safe-area-inset-bottom);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    background: var(--surface-paper);
+    border-top: 1px solid var(--line);
+  }
+  .tab {
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    padding: 0;
+    font-size: var(--fs-2xs);
+  }
+  .tabN {
+    display: none;
+  }
+  .tab > .full {
+    display: none;
+  }
+  .tab > .short {
+    display: inline;
+  }
+  .tabIcon {
+    display: block;
+  }
+  .tab:disabled .tabLock {
+    position: absolute;
+    top: 8px;
+    left: calc(50% + 8px);
+    width: 12px;
+    height: 12px;
+  }
+  .badge {
+    position: absolute;
+    top: 5px;
+    left: calc(50% + 6px);
+    height: 16px;
+    padding: 0 5px;
+    font-size: 9.5px;
+    margin: 0;
+  }
+  .badge > .full,
+  .conflictBadge {
+    display: none;
+  }
+  .tab::after {
+    top: 0;
+    bottom: auto;
+    left: 28%;
+    right: 28%;
+    height: 2.5px;
+    border-radius: 0 0 2px 2px;
+  }
+}

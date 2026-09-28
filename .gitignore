@@ -2,3 +2,6 @@
 .claude/
 *.zip
 *.csv
+.migration/
+node_modules/
+dist/
