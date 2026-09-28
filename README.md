@@ -118,7 +118,7 @@ REST API で `pubs/{キー}` のその人の分（`ics.{ID}`）だけを読ん�
    GitHub の Settings → Secrets and variables → Actions に `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を登録する。
 3. Actions の「Deploy calendar worker」を実行する（`worker/` を変えて main に push したときも動く。Secrets がなければテストだけ）。
    手元からなら `cd worker && npx wrangler login && npx wrangler deploy`。
-4. デプロイされた URL（いまは `https://sohosai-shift-cal.cafeore.workers.dev`）を `public/firebase-config.js` の
+4. デプロイされた URL（いまは `https://sohosai-shift.cafeore.workers.dev`）を `public/firebase-config.js` の
    `window.SHIFT_CALENDAR.feedBase` に書く。空のあいだは、閲覧ページは「ファイルで取り込む」だけを出す。
 
 ## オフライン配布（zip）

@@ -1,5 +1,5 @@
 {
-  "name": "sohosai-shift-cal",
+  "name": "sohosai-shift",
   "private": true,
   "description": "雙峰祭シフトのカレンダー配信（購読用の .ics を返す Cloudflare Worker）",
   "scripts": {
