@@ -5,7 +5,7 @@ import { autoRules, setAutoRule } from "./autoRules";
 import { createModel } from "./model";
 import type { Model } from "./types";
 import { refreshDerived } from "./model";
-import { canWorkAt, fitsSlot, levelOf } from "./rules";
+import { canWorkAt, fitsSlot, levelOf, unfitReasons } from "./rules";
 import { dripsForIce, iceOf } from "./parse";
 import { flattened } from "./slots";
 import { statusLevels } from "./config";
@@ -211,6 +211,24 @@ describe("autoAssign（自動割当の決まり）", () => {
     expect(t.every(Boolean)).toBe(true);
   });
 
+  it("未合格の人はドリッパーに入れない（役職ルールを条件なしにしても）", () => {
+    const m = createModel();
+    for (const name of ["A", "B"]) {
+      m.availability.push({ name, date: D, start: "10:00", end: "12:00" });
+      m.memberStores[name] = ["本店"];
+    }
+    m.memberStatuses = { A: "未合格", B: "1年目合格" };
+    for (const k of Object.keys(m.roleRequirements)) m.roleRequirements[k] = "未設定";
+    refreshDerived(m);
+    for (const s of m.slots) s.count = s.store === "本店" && s.role === "ドリッパー" ? 2 : 0;
+    autoAssign(m);
+    const got = (role: string) => new Set(flattened(m).filter((x) => x.role === role).map((x) => m.assignments[x.key]));
+    expect(got("ドリッパー")).toEqual(new Set(["B", undefined]));
+    const x = flattened(m).find((y) => y.role === "ドリッパー")!;
+    expect(fitsSlot(m, "A", { ...x, role: "レジ" })).toBe(true);
+    expect(fitsSlot(m, "A", x)).toBe(false);
+    expect(unfitReasons(m, "A", x)).toEqual(["ドリップ不可"]);
+  });
   it("ドリッパーの記号（H・1・2）のある人は各時間1人まで、できなければ2人まで", () => {
     // ドリッパー3人の枠。ice：氏名 → アイス（○／×／1杯のみ／2杯のみ）
     const drip = (ice: Record<string, string>) => {
