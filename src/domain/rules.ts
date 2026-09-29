@@ -1,6 +1,7 @@
 // 誰がどの枠に入れるか（役職ルール・所属・車・勤務可能時間）と、希望・苦手
 
-import { carRoles, ordinalRoles, roleBase, roleStore, statusLevels, statusShort, storeNames } from "./config";
+import { DRIP_NONE, carRoles, ordinalRoles, roleBase, roleStore, statusLevels, statusShort, storeNames } from "./config";
+import { iceOf } from "./parse";
 import type { Availability, Model } from "./types";
 
 /** 役職ルールのキー（例："本店|||マスター"） */
@@ -46,6 +47,10 @@ export const posTag = (m: Model, store: string, role: string, i: number): string
       : `${statusShort[r]}↑`
     : "";
 };
+
+/** その人のアイス（○／1杯のみ／2杯のみ／×、未合格は DRIP_NONE、未設定は ""） */
+export const memberIce = (m: Model, name: string): string =>
+  m.memberStatuses[name] === "未合格" ? DRIP_NONE : iceOf(m.memberDrips[name]);
 
 /** 車が必要な係に車なしの人は入れない */
 export function fitsChoice(m: Model, name: string, item: SlotLike): boolean {

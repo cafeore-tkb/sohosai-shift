@@ -5,8 +5,8 @@
 // 共同編集はキーごとの差分・マージなので、1人を動かしたときは原則その人の番号だけを書き換える
 // （前後の人の番号のあいだの値）。番号のない人がいる・同じ番号がある・すき間がなくなったときだけ、全員に番号を振り直す。
 
-import { iceStatuses, statusLevels, storeNames, workloadLevels } from "./config";
-import { iceOf } from "./parse";
+import { iceLevels, statusLevels, storeNames, workloadLevels } from "./config";
+import { memberIce } from "./rules";
 import type { Model } from "./types";
 
 /** 五十音順（旧版の並び：氏名の文字どおり） */
@@ -88,7 +88,7 @@ function sortKeyOf(m: Model, kind: Exclude<MemberSort, "kana">): (n: string) => 
       };
     case "ice":
       return (n) => {
-        const i = iceStatuses.indexOf(iceOf(m.memberDrips[n]));
+        const i = iceLevels.indexOf(memberIce(m, n));
         return { unset: i < 0, k: i };
       };
     case "car":

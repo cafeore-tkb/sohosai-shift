@@ -6,7 +6,7 @@ import { csvLine } from "./csv";
 import { importSurvey } from "./importSurvey";
 import { MOCK_SURVEY_HEADERS } from "./mockSurvey";
 import { createModel } from "./model";
-import { iceOf } from "./parse";
+import { memberIce } from "./rules";
 import { toHM } from "./time";
 import type { Availability, Model } from "./types";
 
@@ -132,7 +132,7 @@ export function surveyCsv(d: SurveyDoc): string {
         gradeOf(m.memberGrade[name]),
         status === "未設定" ? "" : status,
         (m.memberStores[name] || []).join(", "),
-        iceOf(m.memberDrips[name]),
+        memberIce(m, name),
         name in m.memberCars ? (m.memberCars[name] ? "あり" : "なし") : "",
         (m.memberWants[name] || []).join(", "),
         (m.memberDislikes[name] || []).join(", "),

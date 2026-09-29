@@ -104,7 +104,7 @@ node oracle.mjs diff ref.json new.json                               # 旧版（
 - `workloadLevels`（少し／5時間程度／いっぱい）`workloadTargetHours`（1日あたりの目安：少し 3・5時間程度 5。いっぱいは目安なし）
 - `roleStore` `carRoles` `breakRoles` `ordinalRoles` `groupOrder` `storeNames` `prefRoles` `roleBase(role)`
 - `statusLevels` `statusNames` `statusShort` `eventDays` `dayName(date, index)` `dataViews`
-- `dripTypes` `slotChoices` `iceStatuses` `storeClass(store)` `cellStore` `cellRole` `printRole` `OLD_DRIP`
+- `dripTypes` `slotChoices` `iceStatuses` `DRIP_NONE`（"ドリップ不可"＝未合格）`iceLevels`（iceStatuses＋DRIP_NONE。表示・並べ替えの順） `storeClass(store)` `cellStore` `cellRole` `printRole` `OLD_DRIP`
 
 **types.ts** — `Model`（旧 `state` と同じ形）、`Availability` `Slot` `Item`（= Slot + occ + key）`Settings` `View` `GridMode`（`Model.view`・`Model.gridMode` の型）、`SHARED_MAPS`（共同編集で共有するマップ）と `SharedMap`
 
@@ -122,6 +122,7 @@ node oracle.mjs diff ref.json new.json                               # 旧版（
 
 **rules.ts**（誰がどの枠に入れるか）
 - `ruleKey(store, role)` `posKey(store, role, occ)` `levelOf(m, name)` `requiredFor(m, slot)`（役職と番目の厳しいほう）
+- `memberIce(m, name)`（アイスの表示・数え方はこれ。未合格は memberDrips によらず DRIP_NONE＝ホットも不可。記号は赤字 ×）
 - `fitsChoice` `fitsSlot(m, name, slot)`（所属・ステータス・車）`unfitReasons(m, name, slot)`（合わない理由：「所属店舗」「ステータス」「車」。条件外の表示用）`canWorkAt(m, name, slot)`（勤務可能時間）`available(m, slot)`（入れる人の勤務可能時間の一覧）`decided(m, key)`
 - `posLabel(role, i)`（1st… / 1…）`posTag(m, store, role, i)`（見出しの「上級」「1年↑」、なければ ""）`wants` `dislikes` `prefMark`（★／△／""。表のセルと担当者ポップアップで使う）
 

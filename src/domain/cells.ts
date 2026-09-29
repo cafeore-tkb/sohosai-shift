@@ -1,11 +1,10 @@
 // 表のセルに出すデータ（アプリのシフト表と印刷で共用。HTML は作らない）
 
 import type { Audit } from "./audit";
-import { breakRoles, ordinalRoles, roleStore, slotChoices, storeClass, storeNames } from "./config";
+import { DRIP_NONE, breakRoles, ordinalRoles, roleStore, slotChoices, storeClass, storeNames } from "./config";
 import { namesOn } from "./availability";
-import { iceOf } from "./parse";
 import { displayName } from "./names";
-import { available, canWorkAt, dislikes, posLabel, prefMark, unfitReasons } from "./rules";
+import { available, canWorkAt, dislikes, memberIce, posLabel, prefMark, unfitReasons } from "./rules";
 import { fmt } from "./time";
 import { flattened, hoursForDate } from "./slots";
 import { plusSlot } from "./time";
@@ -15,22 +14,23 @@ import type { Item, Model } from "./types";
 // ---- ドリッパーのアイス（名前の右の記号）----
 
 export interface DripBadge {
-  /** アイスのステータス（○／1杯のみ／2杯のみ／×） */
+  /** アイスのステータス（○／1杯のみ／2杯のみ／×／ドリップ不可） */
   ice: string;
   /** ツールチップ（例：「アイス：1杯のみ」） */
   title: string;
   /** true なら全部できる（灰色の ○） */
   all: boolean;
-  /** 記号：○／1／2／H */
+  /** 記号：○／1／2／H／×（ドリップ不可） */
   text: string;
   /** 記号の色："" | "ice"（青）| "hot"（赤） */
   cls: "" | "ice" | "hot";
 }
 
-// 記号：○（全部）／青字1・2（その杯数のみ）／赤字H（アイス不可＝ホットのみ）
+// 記号：○（全部）／青字1・2（その杯数のみ）／赤字H（アイス不可＝ホットのみ）／赤字×（ドリップ不可＝未合格）
 export function dripBadge(m: Model, name: string): DripBadge | null {
-  const ice = iceOf(m.memberDrips[name]);
+  const ice = memberIce(m, name);
   if (!ice) return null;
+  if (ice === DRIP_NONE) return { ice, title: `${DRIP_NONE}（未合格）`, all: false, text: "×", cls: "hot" };
   const title = `アイス：${ice}`;
   if (ice === "○") return { ice, title, all: true, text: "○", cls: "" };
   return { ice, title, all: false, text: ice === "×" ? "H" : ice[0], cls: ice === "×" ? "hot" : "ice" };

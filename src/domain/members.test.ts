@@ -7,7 +7,8 @@ import { setMemberCar, setMemberIce, setMemberStatus, setMemberStore, setRoleReq
 import { refreshDerived } from "./model";
 import { buildShortNames, displayName, surname } from "./names";
 import { pruneAssignments, prunedMessage } from "./prune";
-import { posTag, unfitReasons } from "./rules";
+import { memberIce, posTag, unfitReasons } from "./rules";
+import { sortedMembers } from "./order";
 import { unfitAssignments } from "./audit";
 import { setSlotCount } from "./slots";
 import { D, item, tinyModel } from "../test/fixtures";
@@ -106,6 +107,13 @@ describe("セルのデータ", () => {
     expect(dripBadge(m, "B")).toMatchObject({ all: false, text: "2", cls: "ice", title: "アイス：2杯のみ" });
     expect(dripBadge(m, "C")).toMatchObject({ text: "H", cls: "hot" });
     expect(dripBadge(m, "D")).toBeNull();
+    // 未合格はホットもできない（H ではなく ×＝ドリップ不可。アイスの値によらない）
+    setMemberStatus(m, "A", "未合格");
+    expect(memberIce(m, "A")).toBe("ドリップ不可");
+    expect(dripBadge(m, "A")).toMatchObject({ text: "×", cls: "hot", title: "ドリップ不可（未合格）" });
+    expect(sortedMembers(m, ["A", "B", "C"], "ice")).toEqual(["B", "C", "A"]);
+    setMemberStatus(m, "A", "1年目合格");
+    expect(memberIce(m, "A")).toBe("×");
     // carFreeAt：シフトに入っていない車持ち
     expect(carFreeAt(m, D)).toBeNull();
     m.memberCars = { A: true, B: true, C: false };

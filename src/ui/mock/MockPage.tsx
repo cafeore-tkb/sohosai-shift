@@ -12,9 +12,11 @@ import {
   gradeCode,
   gradeLabels,
   gradeOf,
-  iceOf,
+  DRIP_NONE,
+  iceLevels,
   iceStatuses,
   importFailedMessage,
+  memberIce,
   readSurvey,
   removeSurveyMember,
   renameSurveyMember,
@@ -65,8 +67,8 @@ const saveDraft = (d: SurveyDoc) => {
 };
 
 const norm = (s: string) => s.normalize("NFKC").replace(/\s/g, "");
-/** アイスの短い表示（アプリのドリッパーの記号と同じ） */
-const iceMark = (ice: string) => (ice === "×" ? "H" : ice ? ice[0] : "未設定");
+/** アイスの短い表示（アプリのドリッパーの記号と同じ。ドリップ不可は「不可」） */
+const iceMark = (ice: string) => (ice === DRIP_NONE ? "不可" : ice === "×" ? "H" : ice ? ice[0] : "未設定");
 
 export function MockPage() {
   const [doc, setDoc] = useState(loadDraft);
@@ -257,7 +259,7 @@ function Summary({ doc }: { doc: SurveyDoc }) {
     return out;
   };
   const st = count((n) => doc.m.memberStatuses[n] || "未設定"),
-    ice = count((n) => iceOf(doc.m.memberDrips[n]));
+    ice = count((n) => memberIce(doc.m, n));
   return (
     <p className={cx(styles.meta, "num")} id="mockSummary">
       <b>{doc.names.length}</b>名
@@ -268,7 +270,7 @@ function Summary({ doc }: { doc: SurveyDoc }) {
         .join("／")}
       <span className={styles.sep}>・</span>
       アイス{" "}
-      {[...iceStatuses, ""]
+      {[...iceLevels, ""]
         .filter((s) => ice[s])
         .map((s) => `${iceMark(s)} ${ice[s]}`)
         .join("／")}
@@ -280,7 +282,8 @@ function Row({ doc, name, dates, edit }: { doc: SurveyDoc; name: string; dates: 
   const { m } = doc;
   const stores = m.memberStores[name] || [];
   const status = m.memberStatuses[name] || "未設定";
-  const ice = iceOf(m.memberDrips[name]);
+  const ice = memberIce(m, name),
+    none = ice === DRIP_NONE;
   const grade = gradeOf(m.memberGrade[name]);
   /** 確定した欄は変更を反映してからフォーカスを外す */
   const set = (el: HTMLElement, run: () => unknown) => {
@@ -356,14 +359,22 @@ function Row({ doc, name, dates, edit }: { doc: SurveyDoc; name: string; dates: 
           tone={ice ? "default" : "unset"}
           wrapClassName={styles.iceSelect}
           value={ice}
+          disabled={none}
+          title={none ? "未合格の人はドリップに入れません（合格にするとアイスを選べます）" : undefined}
           onChange={(e) => set(e.currentTarget, () => setMemberIce(m, name, e.currentTarget.value))}
         >
-          <option value="">未設定</option>
-          {iceStatuses.map((v) => (
-            <option key={v} value={v}>
-              {v === "○" ? v : `${v}（${iceMark(v)}）`}
-            </option>
-          ))}
+          {none ? (
+            <option value={DRIP_NONE}>ドリップ不可</option>
+          ) : (
+            <>
+              <option value="">未設定</option>
+              {iceStatuses.map((v) => (
+                <option key={v} value={v}>
+                  {v === "○" ? v : `${v}（${iceMark(v)}）`}
+                </option>
+              ))}
+            </>
+          )}
         </Select>
       </td>
       <td>

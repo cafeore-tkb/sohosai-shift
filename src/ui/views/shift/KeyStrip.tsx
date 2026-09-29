@@ -86,7 +86,7 @@ export function KeyStrip({ mode, note }: { mode: GridMode; note: string }) {
               同じ人の続き
             </span>
             <span className={cx(s.sep, s.wide)} aria-hidden="true" />
-            <span className={cx(s.key, s.wide)} title="ドリッパーの名前の右：○ アイス1杯・2杯とも／1・2 その杯数のみ／H アイス不可">
+            <span className={cx(s.key, s.wide)} title="ドリッパーの名前の右：○ アイス1杯・2杯とも／1・2 その杯数のみ／H アイス不可（ホットのみ）／× ドリップ不可（未合格）">
               アイス
               <Drip kind="both" text="○" />
               両方

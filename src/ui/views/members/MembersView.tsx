@@ -3,7 +3,7 @@
 
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { MEMBER_SORTS, MEMBER_SORT_LABELS, allNames, gradeLabels, gradeOf, gradeText, workloadLevels, filterMembers, iceOf, iceStatuses, memberStoreCounts, sortedMembers, storeNames } from "../../../domain";
+import { MEMBER_SORTS, MEMBER_SORT_LABELS, allNames, gradeLabels, gradeOf, gradeText, workloadLevels, filterMembers, DRIP_NONE, iceStatuses, memberIce, memberStoreCounts, sortedMembers, storeNames } from "../../../domain";
 import type { MemberSort, Model, SortDir } from "../../../domain";
 import { actions, useModel, useModelVersion } from "../../../store";
 import { Button, Checkbox, Chip, ChipCount, ChipGroup, Icon, IconButton, Notice, Page, SearchInput, SegButton, Segmented, Select, ShopToggle, Spacer, cx, inputClassName, useEdgeFade } from "../../components";
@@ -239,7 +239,8 @@ function MemberRow({ m, name, drag }: { m: Model; name: string; drag: ReturnType
   const version = useModelVersion();
   const stores = m.memberStores[name] || [];
   const status = m.memberStatuses[name] || "未設定";
-  const ice = iceOf(m.memberDrips[name]);
+  const ice = memberIce(m, name),
+    none = ice === DRIP_NONE;
   const tags = attentionOf(m, name);
   return (
     <tr className={cx(tags.length > 0 && styles.needsFix)} data-member-row={name}>
@@ -334,12 +335,20 @@ function MemberRow({ m, name, drag }: { m: Model; name: string; drag: ReturnType
           tone={ice ? "default" : "unset"}
           wrapClassName={styles.iceSelect}
           value={ice}
+          disabled={none}
+          title={none ? "未合格の人はドリップに入れません（合格にするとアイスを選べます）" : undefined}
           onChange={(e) => commit(e.currentTarget, () => actions.changeMemberIce(name, e.currentTarget.value))}
         >
-          <option value="">未設定</option>
-          {iceStatuses.map((v) => (
-            <option key={v}>{v}</option>
-          ))}
+          {none ? (
+            <option value={DRIP_NONE}>不可</option>
+          ) : (
+            <>
+              <option value="">未設定</option>
+              {iceStatuses.map((v) => (
+                <option key={v}>{v}</option>
+              ))}
+            </>
+          )}
         </Select>
       </td>
       <td className={styles.car}>

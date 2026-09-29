@@ -210,8 +210,13 @@ export const slotChoices: Readonly<
     initial: (occ) => dripTypes[occ % dripTypes.length],
   },
 };
-// アイスのステータス（ホットは全員できる前提）：○＝1杯・2杯とも／1杯のみ／2杯のみ／×＝アイス不可。内部では対応できるドリップの一覧で持つ
+// アイスのステータス（ホットは合格した人ならできる前提）：○＝1杯・2杯とも／1杯のみ／2杯のみ／×＝アイス不可（ホットのみ）。
+// 内部では対応できるドリップの一覧で持つ
 export const iceStatuses: readonly string[] = ["○", "1杯のみ", "2杯のみ", "×"];
+/** 未合格の人：ホットもできない（アイスの値は持たず、ステータスから決まる。memberIce） */
+export const DRIP_NONE = "ドリップ不可";
+/** 表示・並べ替えの順（アイスのステータスのあとにドリップ不可） */
+export const iceLevels: readonly string[] = [...iceStatuses, DRIP_NONE];
 
 /** 勤務時間に含めない係 */
 export const breakRoles: readonly string[] = ["昼食", "休憩"];

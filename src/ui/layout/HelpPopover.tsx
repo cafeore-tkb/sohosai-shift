@@ -104,9 +104,10 @@ export function HelpPopover() {
             <Drip kind="ice" text="1" />
             <Drip kind="ice" text="2" />
             <Drip kind="hot" text="H" />
+            <Drip kind="hot" text="×" />
           </dt>
           <dd>
-            <b>ドリッパーの名前の右</b>：○ アイス1杯・2杯とも／1・2 その杯数のみ／H アイス不可
+            <b>ドリッパーの名前の右</b>：○ アイス1杯・2杯とも／1・2 その杯数のみ／H アイス不可（ホットのみ）／× ドリップ不可（未合格）
           </dd>
         </div>
         <div className={styles.row}>

@@ -57,6 +57,14 @@ describe("アンケート回答 CSV の編集（/mock）", () => {
     expect(again.names.at(-1)).toBe("追加 さん");
     expect(again.m.availability.some((x) => x.name === "追加 さん")).toBe(false);
   });
+  it("未合格の人はアイスの欄を「ドリップ不可」で書き出す（読み込み直しても未合格のまま）", () => {
+    const d = readSurvey(mockSurveyCsv()),
+      n = d.names.find((x) => d.m.memberStatuses[x] === "未合格")!;
+    const out = surveyCsv(d);
+    expect(out.split("\n").find((l) => l.startsWith(`${n},`))).toContain(",未合格,");
+    expect(out.split("\n").find((l) => l.startsWith(`${n},`))).toContain(",ドリップ不可,");
+    expect(readSurvey(out).m.memberStatuses[n]).toBe("未合格");
+  });
   it("空から作れる", () => {
     const d = emptySurvey();
     addSurveyMember(d, "A");

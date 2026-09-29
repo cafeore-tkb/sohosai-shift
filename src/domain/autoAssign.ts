@@ -2,8 +2,7 @@
 
 import { breakRoles, openRoles, statusLevels } from "./config";
 import { autoRules } from "./autoRules";
-import { iceOf } from "./parse";
-import { available, decided, dislikes, levelOf, requiredFor, wants, type SlotLike } from "./rules";
+import { available, decided, dislikes, levelOf, memberIce, requiredFor, wants, type SlotLike } from "./rules";
 import { ensureAllSlots, flattened, slotAtOffset } from "./slots";
 import { SLOT, toMin } from "./time";
 import type { Availability, Item, Model } from "./types";
@@ -122,7 +121,7 @@ export function autoAssign(m: Model): AutoAssignResult {
 
   // ドリッパーの記号（H・1・2）：その時間に dripMarked 人を超えて入れるなら、超える人数（0＝目安のうち）
   const marked = (name: string) => {
-    const ice = iceOf(m.memberDrips[name]);
+    const ice = memberIce(m, name);
     return !!ice && ice !== "○";
   };
   const tk = (x: Item) => `${x.date} ${x.start}`;
