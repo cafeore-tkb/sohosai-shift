@@ -124,7 +124,7 @@ node oracle.mjs diff ref.json new.json                               # 旧版（
 - `ruleKey(store, role)` `posKey(store, role, occ)` `levelOf(m, name)` `requiredFor(m, slot)`（役職と番目の厳しいほう）
 - `memberIce(m, name)`（アイスの表示・数え方はこれ。未合格は memberDrips によらず DRIP_NONE＝ホットも不可。記号は赤字 ×）
 - `roleFloor(store, role)`（config の `roleMinStatus`：役職ルールで選べる下限。ドリッパーは1年目合格。`requiredFor` は役職・番目・下限の厳しいもの、`setRoleRequirement` は下限より低い値を丸める）
-- `fitsChoice` `fitsSlot(m, name, slot)`（所属・ステータス・車）`unfitReasons(m, name, slot)`（合わない理由：「所属店舗」「ステータス」「車」。条件外の表示用）`canWorkAt(m, name, slot)`（勤務可能時間）`available(m, slot)`（入れる人の勤務可能時間の一覧）`decided(m, key)`
+- `fitsSlot(m, name, slot)`（所属・ステータス。買い出しの車は条件ではなく、audit の `carlessItems`＝車ありの人がいない時間・自動割当は車ありの人から）`unfitReasons(m, name, slot)`（合わない理由：「所属店舗」「ステータス」。条件外の表示用）`canWorkAt(m, name, slot)`（勤務可能時間）`available(m, slot)`（入れる人の勤務可能時間の一覧）`decided(m, key)`
 - `posLabel(role, i)`（1st… / 1…）`posTag(m, store, role, i)`（見出しの「上級」「1年↑」、なければ ""）`wants` `dislikes` `prefMark`（★／△／""。表のセルと担当者ポップアップで使う）
 
 **slots.ts**（枠）
@@ -138,7 +138,7 @@ node oracle.mjs diff ref.json new.json                               # 旧版（
 
 **audit.ts** — `assignmentAudit(m)`→{conflicts:Set, hours[name][date], booked} `mergeSpans` `allNames(m)` `wantsMissing(m)` `offAssignments(m)`（時間外）`unfitAssignments(m)`（条件外＝fitsSlot に合わない割当）`dislikedCount(m)` `auditRow(m, audit, name, dates)` `fillOf(m, items)` `summaryStats(m, audit?)`（旧 updateStats の数値）
 
-**auditIssues.ts** — `auditIssues(m, audit)`→{conflicts, offs, unfits, dislikes}：勤務状況チェックの「直したほうがよい枠」を人・日ごとにまとめる（`AuditIssue`＝name・date・keys・first（「表で見る」の枠）・where（「本番1日目 14:00–15:00 本店・ホール 1 ／ 2号店・レジ」））。`groupIssues(m, items)`
+**auditIssues.ts** — `auditIssues(m, audit)`→{conflicts, offs, unfits, dislikes, carless}（carless＝車ありの人がいない買い出しの時間帯 `CarlessIssue`・`carlessIssues(m)`）：勤務状況チェックの「直したほうがよい枠」を人・日ごとにまとめる（`AuditIssue`＝name・date・keys・first（「表で見る」の枠）・where（「本番1日目 14:00–15:00 本店・ホール 1 ／ 2号店・レジ」））。`groupIssues(m, items)`
 
 **autoAssign.ts** — `autoAssign(m)`→{runBlocked} … 割当を捨てて自動割当（このあと refreshDerived）。条件に合う人だけを、1時間のまとまりで入れる（手動の移動の決まりとは別）。
 自動割当の決まり（autoRules）に従う：続けて入るのは maxRunHours まで（超える割当はしない。それで空けた枠の数が runBlocked）、ほかは目安で、
@@ -149,7 +149,7 @@ settings の `autoMasterHours` `autoAvailPercent` `autoMaxRunHours` `autoDripMar
 
 **assign.ts**（手動編集。結果は `EditResult {ok, message, changes}`：ok なら changes が空でないときだけ「元に戻す」付きトースト、ok でなければ message をそのままトースト。null は何もしない）
 - 手動の移動の決まり（assign.ts の「移動・入れ替え」の節の先頭にも書いてある）：
-  - 単位は30分のセル1つ。どの枠からどの枠へも（日・時間・店舗・役職・番目を問わず、勤務可能時間・所属・ステータス・車・同じ時間の別の枠も見ずに）移せる。移動元以外のすべての枠が移動先。
+  - 単位は30分のセル1つ。どの枠からどの枠へも（日・時間・店舗・役職・番目を問わず、勤務可能時間・所属・ステータス・同じ時間の別の枠も見ずに）移せる。移動元以外のすべての枠が移動先。
   - 移動先に人がいれば入れ替え（その人は移動元へ。条件に合わなくても入る）。人が消えることはない。1時間のまとまりを自動でまとめて動かすことはしない。
   - 範囲（`columnRange`：同じ列＝日・店舗・役職・番目の、続いた時間の枠。Shift＋クリック・Shift＋↑↓）の中の枠をつかむと範囲ごと動く：
     つかんだ枠が落とした枠へ、ほかの枠は時間のずれを保ったまま落とした枠の列へ。移動先にいた人は、空いた移動元の枠へ時間順に戻る

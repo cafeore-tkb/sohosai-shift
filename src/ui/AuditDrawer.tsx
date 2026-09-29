@@ -5,7 +5,7 @@
 import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { allNames, auditIssues, auditRow, dayName, eventDates, fmt, surname } from "../domain";
-import type { AuditIssue } from "../domain";
+import type { AuditIssue, CarlessIssue } from "../domain";
 import { actions, useModel, useUi } from "../store";
 import { Drawer, Icon, Pill, Swatch } from "./components";
 import type { SwatchKind } from "./components";
@@ -84,6 +84,41 @@ function IssueCard({ kind, title, lead, issues }: { kind: SwatchKind; title: str
   );
 }
 
+/** 車ありの人がいない買い出し（時間帯ごと） */
+function CarlessCard({ issues }: { issues: CarlessIssue[] }) {
+  return (
+    <div className={styles.item}>
+      <Swatch kind="open" className={styles.sw} />
+      <div className={styles.itemBody}>
+        <p>
+          <b>車ありがいない買い出し</b>
+          {"　同じ時間の買い出しに車ありの人が1人もいません："}
+          {issues.map((x, i) => (
+            <span key={x.first}>
+              {i ? "、" : ""}
+              {`${x.where}（${x.names.join("・")}）`}
+            </span>
+          ))}
+        </p>
+        <div className={styles.links}>
+          {issues.map((x) => (
+            <LinkButton
+              key={x.first}
+              label={`表で見る（${x.where}）`}
+              onClick={() => {
+                actions.revealSlot(x.first);
+                closeOnPhone();
+              }}
+            >
+              {issues.length === 1 ? "表で見る" : `${x.where.split(" ").slice(1, 2).join("")}を表で見る`}
+            </LinkButton>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AuditContent() {
   const m = useModel();
   const audit = useAudit();
@@ -97,7 +132,7 @@ function AuditContent() {
     names = allNames(m),
     rows = names.map((name) => ({ name, ...auditRow(m, audit, name, dates) })),
     maxTotal = Math.max(1, ...rows.map((r) => r.total)),
-    anyIssue = issues.conflicts.length || issues.offs.length || issues.unfits.length || issues.dislikes.length;
+    anyIssue = issues.conflicts.length || issues.offs.length || issues.unfits.length || issues.dislikes.length || issues.carless.length;
   return (
     <>
       <div className={styles.badges}>
@@ -112,6 +147,7 @@ function AuditContent() {
         {offs.length ? <Pill tone="off" size="lg">{`勤務できない時間の割当 ${offs.length}枠`}</Pill> : null}
         {unfits.length ? <Pill tone="unfit" size="lg">{`条件外の割当 ${unfits.length}枠`}</Pill> : null}
         {disliked ? <Pill tone="dislike" size="lg">{`苦手な役職への割当 ${disliked}枠`}</Pill> : null}
+        {issues.carless.length ? <Pill tone="open" size="lg">{`車ありがいない買い出し ${issues.carless.length}件`}</Pill> : null}
         {missing.length ? <Pill tone="open" size="lg">{`やりたい役職に入っていない ${missing.length}名`}</Pill> : null}
         <WorkloadOverBadge list={overs} />
       </div>
@@ -136,7 +172,7 @@ function AuditContent() {
             <IssueCard
               kind="unfit"
               title="条件外"
-              lead="青緑の点の枠（≠ 付き）は、所属店舗・ステータス・車の条件に合わない人です（手で移動した枠や、あとから条件を変えた枠。割当は外れません）"
+              lead="青緑の点の枠（≠ 付き）は、所属店舗・ステータスの条件に合わない人です（手で移動した枠や、あとから条件を変えた枠。割当は外れません）"
               issues={issues.unfits}
             />
           ) : null}
@@ -148,6 +184,7 @@ function AuditContent() {
               issues={issues.dislikes}
             />
           ) : null}
+          {issues.carless.length ? <CarlessCard issues={issues.carless} /> : null}
         </section>
       ) : null}
 

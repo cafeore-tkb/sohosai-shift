@@ -319,7 +319,7 @@ td[data-box="end"] > .cell {
   border-radius: var(--r-xs);
   background: var(--surface-paper);
 }
-/* 条件外 (所属店舗・ステータス・車): teal dots + ≠ — after 重複 and 勤務できない時間, before 苦手 */
+/* 条件外 (所属店舗・ステータス): teal dots + ≠ — after 重複 and 勤務できない時間, before 苦手 */
 .cell[data-flag="unfit"] {
   background: var(--st-unfit-dots);
   border-color: var(--st-unfit-border);

@@ -1,6 +1,6 @@
 // 誰がどの枠に入れるか（役職ルール・所属・車・勤務可能時間）と、希望・苦手
 
-import { DRIP_NONE, carRoles, ordinalRoles, roleBase, roleMinStatus, roleStore, statusLevels, statusShort, storeNames } from "./config";
+import { DRIP_NONE, ordinalRoles, roleBase, roleMinStatus, roleStore, statusLevels, statusShort, storeNames } from "./config";
 import { iceOf } from "./parse";
 import type { Availability, Model } from "./types";
 
@@ -55,23 +55,17 @@ export const posTag = (m: Model, store: string, role: string, i: number): string
 export const memberIce = (m: Model, name: string): string =>
   m.memberStatuses[name] === "未合格" ? DRIP_NONE : iceOf(m.memberDrips[name]);
 
-/** 車が必要な係に車なしの人は入れない */
-export function fitsChoice(m: Model, name: string, item: SlotLike): boolean {
-  return !(carRoles.includes(item.role) && m.memberCars[name] !== true);
-}
-
-// 時間以外の条件（所属店舗・ステータス〈番目ごと〉・車）
+// 時間以外の条件（所属店舗・ステータス〈番目ごと〉）
 export function fitsSlot(m: Model, name: string, slot: SlotLike): boolean {
   const store = storeNames.includes(slot.store) ? slot.store : roleStore[slot.role];
   return (
     (!store || (m.memberStores[name] || []).includes(store)) &&
-    levelOf(m, name) >= statusLevels[requiredFor(m, slot)] &&
-    fitsChoice(m, name, slot)
+    levelOf(m, name) >= statusLevels[requiredFor(m, slot)]
   );
 }
 
 /**
- * fitsSlot を満たさない理由（「所属店舗」「ステータス」「車」。満たしていれば []）。
+ * fitsSlot を満たさない理由（「所属店舗」「ステータス」。満たしていれば []）。
  * 手で移動した割当や、あとから条件を変えた割当は外さずに「条件外」として表示する（表のツールチップ・担当者ポップアップ）
  */
 export function unfitReasons(m: Model, name: string, slot: SlotLike): string[] {
@@ -79,7 +73,6 @@ export function unfitReasons(m: Model, name: string, slot: SlotLike): string[] {
   const out: string[] = [];
   if (store && !(m.memberStores[name] || []).includes(store)) out.push("所属店舗");
   if (levelOf(m, name) < statusLevels[requiredFor(m, slot)]) out.push("ステータス");
-  if (!fitsChoice(m, name, slot)) out.push("車");
   return out;
 }
 

@@ -6,7 +6,7 @@ import { dislikes } from "./rules";
 import { eventDates, flattened } from "./slots";
 import { itemLabel } from "./labels";
 import type { Audit } from "./audit";
-import { offAssignments, unfitAssignments } from "./audit";
+import { carlessItems, offAssignments, unfitAssignments } from "./audit";
 import type { Item, Model } from "./types";
 
 /** 1人・1日ぶんの問題 */
@@ -24,9 +24,42 @@ export interface AuditIssue {
 export interface AuditIssues {
   conflicts: AuditIssue[];
   offs: AuditIssue[];
-  /** 所属店舗・ステータス・車の条件に合わない割当（条件外） */
+  /** 所属店舗・ステータスの条件に合わない割当（条件外） */
   unfits: AuditIssue[];
   dislikes: AuditIssue[];
+  /** 車ありの人がいない買い出し（時間帯ごと） */
+  carless: CarlessIssue[];
+}
+
+/** 車ありの人がいない買い出しの、続いている時間帯1つ */
+export interface CarlessIssue {
+  date: string;
+  /** 「表で見る」で見せる枠（いちばん早いもの） */
+  first: string;
+  /** 例：「前日準備 10:00–12:00 買い出し」 */
+  where: string;
+  /** 入っている人 */
+  names: string[];
+}
+
+/** 車ありの人がいない買い出しを、日・係ごとに続いている時間帯にまとめる */
+export function carlessIssues(m: Model): CarlessIssue[] {
+  const dates = eventDates(m),
+    out: (CarlessIssue & { role: string; end: string })[] = [];
+  for (const x of carlessItems(m)) {
+    const name = m.assignments[x.key],
+      cur = out.find((r) => r.date === x.date && r.role === x.role && r.end >= x.start);
+    if (cur) {
+      if (x.end > cur.end) cur.end = x.end;
+      if (!cur.names.includes(name)) cur.names.push(name);
+    } else out.push({ date: x.date, role: x.role, first: x.key, where: x.start, end: x.end, names: [name] });
+  }
+  return out.map(({ date, role, first, where, end, names }) => ({
+    date,
+    first,
+    where: `${dayName(date, dates.indexOf(date))} ${where}–${end} ${role}`,
+    names,
+  }));
 }
 
 interface Run {
@@ -111,5 +144,6 @@ export function auditIssues(m: Model, audit: Audit): AuditIssues {
       m,
       all.filter((x) => m.assignments[x.key] && dislikes(m, m.assignments[x.key], x.role)),
     ),
+    carless: carlessIssues(m),
   };
 }

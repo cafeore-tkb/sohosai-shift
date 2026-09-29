@@ -45,7 +45,7 @@ export interface SlotCell {
   candidates: number;
   /** 勤務可能表では × の時間に入っている */
   off: boolean;
-  /** 条件外の理由（所属店舗・ステータス・車。条件に合っていれば []） */
+  /** 条件外の理由（所属店舗・ステータス。条件に合っていれば []） */
   unfit: string[];
   /** 色分け：conflict / off / unfit / dislike / filled / empty / none（優先順：重複 → 勤務できない時間 → 条件外 → 苦手） */
   kind: "conflict" | "off" | "unfit" | "dislike" | "filled" | "empty" | "none";

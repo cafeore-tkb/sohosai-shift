@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { assignmentAudit } from "./audit";
+import { assignmentAudit, carlessItems } from "./audit";
+import { carlessIssues } from "./auditIssues";
 import { autoAssign, isMasterSlot } from "./autoAssign";
 import { autoRules, setAutoRule } from "./autoRules";
 import { createModel } from "./model";
@@ -64,17 +65,28 @@ describe("autoAssign（小さな例）", () => {
     const roles = new Set(flattened(m).filter((x) => m.assignments[x.key]).map((x) => x.role));
     expect(roles).toEqual(new Set(["美化", "裏シフト"]));
   });
-  it("車が必要な係には車ありの人だけ", () => {
+  it("買い出しは誰でも入れるが、各時間に車ありの人を1人以上（いなければ勤務状況チェックに出る）", () => {
     const m = tinyModel();
     m.availability.forEach((a) => (a.date = "2026-10-30"));
     m.slots = [];
     refreshDerived(m);
     m.memberCars.B = true;
-    for (const s of m.slots) if (s.role !== "買い出し") s.count = 0;
+    for (const s of m.slots) s.count = s.role === "買い出し" ? 2 : 0;
     autoAssign(m);
-    const buyers = flattened(m).filter((x) => x.role === "買い出し" && m.assignments[x.key]);
-    expect(buyers.length).toBeGreaterThan(0);
-    expect(new Set(buyers.map((x) => m.assignments[x.key]))).toEqual(new Set(["B"]));
+    const buyers = flattened(m).filter((x) => x.role === "買い出し");
+    const times = [...new Set(buyers.map((x) => x.start))];
+    expect(times.length).toBeGreaterThan(0);
+    for (const t of times) {
+      const names = buyers.filter((x) => x.start === t).map((x) => m.assignments[x.key]);
+      expect(names).toContain("B");
+      expect(names.filter(Boolean)).toHaveLength(2);
+    }
+    expect(carlessItems(m)).toEqual([]);
+    // 車ありの人を外すと、その時間が出る
+    const withB = buyers.filter((x) => m.assignments[x.key] === "B");
+    for (const x of withB) m.assignments[x.key] = "";
+    expect(carlessItems(m).length).toBe(withB.length);
+    expect(carlessIssues(m)[0].where).toMatch(/^前日準備 10:00–.+ 買い出し$/);
   });
 });
 

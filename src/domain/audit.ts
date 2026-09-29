@@ -1,6 +1,6 @@
 // 勤務状況チェック（重複・勤務時間・時間外・条件外・希望外）と集計
 
-import { breakRoles, roleBase } from "./config";
+import { breakRoles, carRoles, roleBase } from "./config";
 import { orderedNames } from "./order";
 import { canWorkAt, decided, dislikes, fitsSlot } from "./rules";
 import { countedItems, flattened } from "./slots";
@@ -72,11 +72,25 @@ export const offAssignments = (m: Model): Item[] =>
   flattened(m).filter((x) => m.assignments[x.key] && !canWorkAt(m, m.assignments[x.key], x));
 
 /**
- * 条件外の割当：所属店舗・ステータス（番目ごと）・車の条件（fitsSlot）に合わない人が入っている枠。
+ * 条件外の割当：所属店舗・ステータス（番目ごと）の条件（fitsSlot）に合わない人が入っている枠。
  * 自動割当はこうならない。手で移動した（どの枠へも移せる）か、あとから条件を変えたときに起きる（割当は外さない）
  */
 export const unfitAssignments = (m: Model): Item[] =>
   flattened(m).filter((x) => m.assignments[x.key] && !fitsSlot(m, m.assignments[x.key], x));
+
+/** 車ありの人がいない買い出し（carRoles）の枠：誰かが入っているのに、その時間のその係に車ありの人がいない（時間順） */
+export function carlessItems(m: Model): Item[] {
+  const byTime = new Map<string, Item[]>();
+  for (const x of flattened(m))
+    if (carRoles.includes(x.role) && m.assignments[x.key]) {
+      const k = `${x.date}|${x.start}|${x.role}`;
+      byTime.set(k, [...(byTime.get(k) || []), x]);
+    }
+  return [...byTime.values()]
+    .filter((list) => !list.some((x) => m.memberCars[m.assignments[x.key]]))
+    .flat()
+    .sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
+}
 
 /** 苦手な役職への割当の数 */
 export const dislikedCount = (m: Model): number =>

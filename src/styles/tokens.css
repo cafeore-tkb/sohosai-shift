@@ -183,7 +183,7 @@
   --st-off-b:      #E4D7F7;
   --st-off-ink:    #52259A;   /* 7.4:1 on the darker stripe */
   --st-off-hatch:  repeating-linear-gradient(135deg, var(--st-off-a) 0 5px, var(--st-off-b) 5px 9px);
-  /* 条件外 — placed by hand against 所属店舗・ステータス・車 (fitsSlot false): teal
+  /* 条件外 — placed by hand against 所属店舗・ステータス (fitsSlot false): teal
      dots with ≠. Added after the final spec (manual moves go anywhere). Teal is
      away from every state hue and from steel / 撫子; the dots keep it apart from
      the pale green 移動先 and 準備 tints (bg ΔE2000 ≥ 9 to both). */

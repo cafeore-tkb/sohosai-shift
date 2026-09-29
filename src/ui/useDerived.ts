@@ -22,7 +22,7 @@ export interface AuditSummary {
   missing: ReturnType<typeof wantsMissing>;
   /** 勤務できない時間の割当 */
   offs: Item[];
-  /** 条件外（所属店舗・ステータス・車）の割当 */
+  /** 条件外（所属店舗・ステータス）の割当 */
   unfits: Item[];
   /** 苦手な役職への割当の数 */
   disliked: number;

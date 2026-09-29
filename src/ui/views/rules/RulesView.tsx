@@ -90,7 +90,7 @@ export function RulesView({ hidden }: { hidden: boolean }) {
                   // 下限のある役職（ドリッパー）は、下限より低い値（旧データ）でも下限を表示する
                   const k = ruleKey(store, role),
                     v = requiredFor(m, { store, role });
-                  const notes = [carRoles.includes(role) ? "車ありのみ" : "", roleStore[role] ? `${roleStore[role]}所属のみ` : ""].filter(Boolean);
+                  const notes = [carRoles.includes(role) ? "車ありが1人以上" : "", roleStore[role] ? `${roleStore[role]}所属のみ` : ""].filter(Boolean);
                   return (
                     <tr key={`${g.key}|${store}|${role}`} className={styles.row}>
                       <td className={styles.shop}>

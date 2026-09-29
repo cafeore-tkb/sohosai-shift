@@ -37,7 +37,7 @@ describe("auditIssues", () => {
     expect(offs.flatMap((x) => x.keys)).toHaveLength(offAssignments(m).length);
   });
 
-  it("条件外：所属・ステータス・車に合わない割当。セルの色は 重複 > 勤務できない時間 > 条件外 > 苦手", () => {
+  it("条件外：所属・ステータスに合わない割当。セルの色は 重複 > 勤務できない時間 > 条件外 > 苦手", () => {
     const m = tinyModel();
     m.memberStatuses.C = "1年目合格";
     m.memberDislikes = { C: ["マスター"] };

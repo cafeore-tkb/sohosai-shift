@@ -47,7 +47,7 @@ export const roleStore: Readonly<Record<string, string>> = {
   "店舗準備（2号店）": "2号店",
   "店舗準備（くれあ）": "くれあ",
 };
-/** 車ありの人だけが入れる係 */
+/** 同じ時間に車ありの人が1人以上いてほしい係（誰でも入れる。自動割当は車ありの人から入れ、いなければ勤務状況チェックに出す） */
 export const carRoles: readonly string[] = ["買い出し"];
 // 美化・裏シフトは店舗に属さない係（誰でも入れる）。人数は最大値で、実際の標準人数は liveSchedule の時間帯だけ
 export const liveExtraRoles: RolesByStore = {
