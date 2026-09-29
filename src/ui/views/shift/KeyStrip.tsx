@@ -49,7 +49,7 @@ export function KeyStrip({ mode, note }: { mode: GridMode; note: string }) {
               <Swatch kind="off" />
               勤務できない時間
             </span>
-            <span className={s.key} title="所属店舗・ステータス・車の条件に合わない割当（未合格のドリッパーも）">
+            <span className={s.key} title="所属店舗・ステータス・車の条件に合わない割当">
               <Swatch kind="unfit" />
               条件外
             </span>

@@ -2,9 +2,10 @@
 // 割当の条件が変わる操作も割当は外さない（合わなくなった割当は「条件外」として表示）。念のため pruneAssignments で
 // 枠がなくなった割当だけを片付け、外した数を返す（0 より大きければ prunedMessage を表示）
 
-import { storeNames } from "./config";
+import { statusLevels, storeNames } from "./config";
 import { dripsForIce, parseKana, parseRoles } from "./parse";
 import { pruneAssignments } from "./prune";
+import { roleFloor } from "./rules";
 import type { Model } from "./types";
 
 /** ステータスを変える（未合格ならアイス ×、上級生ならアイス ○ に） */
@@ -64,8 +65,14 @@ export function setMemberIce(m: Model, name: string, ice: string): number {
   return pruneAssignments(m);
 }
 
-/** 役職ルール（ruleKey / posKey → 最低ステータス。「条件なし」は "未設定"） */
+/**
+ * 役職ルール（ruleKey / posKey → 最低ステータス。「条件なし」は "未設定"）。
+ * 下限（roleMinStatus）より低い値は、役職の条件なら下限に、番目の条件なら「役職と同じ」（"未設定"）にする
+ */
 export function setRoleRequirement(m: Model, key: string, status: string): number {
+  const [store, role, occ] = key.split("|||"),
+    floor = roleFloor(store, role);
+  if ((statusLevels[status] ?? 0) < statusLevels[floor]) status = occ === undefined ? floor : "未設定";
   m.roleRequirements[key] = status;
   return pruneAssignments(m);
 }

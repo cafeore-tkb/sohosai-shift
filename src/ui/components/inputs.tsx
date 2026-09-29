@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef } from "react";
 import type { InputHTMLAttributes } from "react";
-import { statusNames } from "../../domain";
+import { statusLevels, statusNames } from "../../domain";
 
 type ChangeInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "defaultValue" | "onChange"> & {
   /** 表示する値（Model の値） */
@@ -40,11 +40,11 @@ export function releaseFocus(el: HTMLElement): void {
   if (document.activeElement === el) el.blur();
 }
 
-/** ステータスの選択肢。forRule：true なら「未設定」を「条件なし」、文字列ならその文字で表示 */
-export function StatusOptions({ forRule }: { forRule?: true | string }) {
+/** ステータスの選択肢。forRule：true なら「未設定」を「条件なし」、文字列ならその文字で表示。from：これより低いステータスは出さない */
+export function StatusOptions({ forRule, from }: { forRule?: true | string; from?: string }) {
   return (
     <>
-      {statusNames.map((status) => (
+      {statusNames.filter((s) => !from || statusLevels[s] >= statusLevels[from]).map((status) => (
         <option key={status} value={status}>
           {forRule && status === "未設定" ? (forRule === true ? "条件なし" : forRule) : status}
         </option>

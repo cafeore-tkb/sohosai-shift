@@ -2,7 +2,7 @@
 // デスクトップは表（見出しはアプリバーの下に固定）、スマホ（≤640px）は同じ DOM を役職ごとのカードに並べる
 
 import type { ChangeEvent } from "react";
-import { AUTO_RULE_DEFAULTS, autoRules, carRoles, eventDayRoles, eventDays, liveRoles, posKey, posLabel, roleStore, ruleKey, shortDay, statusNames } from "../../../domain";
+import { AUTO_RULE_DEFAULTS, autoRules, carRoles, eventDayRoles, eventDays, liveRoles, posKey, posLabel, requiredFor, roleFloor, roleStore, ruleKey, shortDay, statusLevels, statusNames } from "../../../domain";
 import type { AutoRuleKey, Model, RolesByStore } from "../../../domain";
 import { actions, store, useModel } from "../../../store";
 import { Disclosure, Page, Select, ShopTag, cx, inputClassName } from "../../components";
@@ -57,7 +57,7 @@ export function RulesView({ hidden }: { hidden: boolean }) {
         <div className={styles.explain}>
           {"2人以上の役職は、1人目・2人目…の番目ごとに最低ステータスを設定できます（役職の条件と厳しいほうが使われます）。ドリッパーは 1st〜6th で、初期値は 1st・6th が上級生です。シフト表・印刷の列はこの番目どおりなので、そのまま当日の配置表として使えます。"}
           <br />
-          {"ステータスが未合格の人はドリップ不可（ホットも不可）で、ここの条件にかかわらずドリッパーには入りません。上級生の人はアイスが自動で ○ になります。"}
+          {"ステータスが未合格の人はドリップ不可（ホットも不可）、上級生の人はアイスが自動で ○ になります。ドリッパーの条件は1年目合格以上から選べます（未合格・未設定の人は入れません）。"}
         </div>
       </Disclosure>
       <AutoRulesCard m={m} />
@@ -87,8 +87,9 @@ export function RulesView({ hidden }: { hidden: boolean }) {
               </tr>,
               ...Object.entries(g.roles).flatMap(([store, roles]) =>
                 roles.map(([role, def]) => {
+                  // 下限のある役職（ドリッパー）は、下限より低い値（旧データ）でも下限を表示する
                   const k = ruleKey(store, role),
-                    v = m.roleRequirements[k] || "未設定";
+                    v = requiredFor(m, { store, role });
                   const notes = [carRoles.includes(role) ? "車ありのみ" : "", roleStore[role] ? `${roleStore[role]}所属のみ` : ""].filter(Boolean);
                   return (
                     <tr key={`${g.key}|${store}|${role}`} className={styles.row}>
@@ -115,7 +116,7 @@ export function RulesView({ hidden }: { hidden: boolean }) {
                           value={v}
                           onChange={onRuleChange}
                         >
-                          <StatusOptions forRule />
+                          <StatusOptions forRule from={roleFloor(store, role)} />
                         </Select>
                       </td>
                       <td className={styles.pos}>{g.live ? <PosRules m={m} store={store} role={role} def={def} /> : <None />}</td>
@@ -157,13 +158,16 @@ function PosRules({ m, store, role, def }: { m: Model; store: string; role: stri
     <div className={styles.posrow} role="group" aria-label={`${store} ${role} の番目ごとの最低ステータス`}>
       {Array.from({ length: n }, (_, i) => {
         const k = posKey(store, role, i),
-          v = m.roleRequirements[k] || "未設定",
+          raw = m.roleRequirements[k] || "未設定",
+          floor = roleFloor(store, role),
+          // 下限より低い値（旧データ）は「役職と同じ」
+          v = statusLevels[raw] >= statusLevels[floor] ? raw : "未設定",
           label = posLabel(role, i);
         return (
           <label key={i} className={cx(styles.possel, v !== "未設定" && styles.isSet)} title={`${role} ${label}：${v === "未設定" ? "条件なし" : `${v}以上`}`}>
             <b>{label}</b>
             <select data-rule={k} aria-label={`${store} ${role} ${label} の最低ステータス`} value={v} onChange={onRuleChange}>
-              {statusNames.map((s) => (
+              {statusNames.filter((s) => s === "未設定" || statusLevels[s] >= statusLevels[floor]).map((s) => (
                 <option key={s} value={s}>
                   {POS_LABEL[s] ?? s}
                 </option>
