@@ -6,6 +6,7 @@ import { createModel } from "./model";
 import type { Model } from "./types";
 import { refreshDerived } from "./model";
 import { canWorkAt, fitsSlot, levelOf } from "./rules";
+import { dripsForIce, iceOf } from "./parse";
 import { flattened } from "./slots";
 import { statusLevels } from "./config";
 import { D, autoModel, item, sampleModel, tinyModel } from "../test/fixtures";
@@ -29,6 +30,13 @@ describe("autoAssign（サンプル）", () => {
       expect(canWorkAt(m, name, x)).toBe(true);
       if (x.role === "ドリッパー" && (x.occ === 0 || x.occ === 5)) expect(levelOf(m, name)).toBe(statusLevels["上級生"]);
     }
+  });
+  it("ドリッパーの記号（H・1・2）のある人は各時間1人まで（どこかの時間に固まらない）", () => {
+    const byTime: Record<string, number> = {};
+    for (const x of assigned)
+      if (x.role === "ドリッパー" && iceOf(m.memberDrips[m.assignments[x.key]]) !== "○")
+        byTime[`${x.date} ${x.start}`] = (byTime[`${x.date} ${x.start}`] || 0) + 1;
+    expect(Math.max(...Object.values(byTime))).toBe(1);
   });
   it("同じ入力なら同じ結果・既存の割当は捨てる", () => {
     const again = sampleModel();
@@ -103,14 +111,16 @@ function runs(names: string[]): Record<string, number[]> {
 describe("autoAssign（自動割当の決まり）", () => {
   const all = (s: string, e: string, ...names: string[]) => Object.fromEntries(names.map((n) => [n, [s, e] as [string, string]]));
 
-  it("決まりの標準（マスター 1時間・勤務可能時間の 80%・連続 3時間）と、変えた値の保存", () => {
+  it("決まりの標準（マスター 1時間・勤務可能時間の 80%・連続 3時間・ドリッパーの記号 1人）と、変えた値の保存", () => {
     const m = createModel();
-    expect(autoRules(m)).toEqual({ masterHours: 1, availPercent: 80, maxRunHours: 3 });
+    expect(autoRules(m)).toEqual({ masterHours: 1, availPercent: 80, maxRunHours: 3, dripMarked: 1 });
     expect(setAutoRule(m, "maxRunHours", 2.3)).toBe(true);
     expect(setAutoRule(m, "availPercent", 150)).toBe(true);
     expect(setAutoRule(m, "masterHours", -1)).toBe(false);
-    expect(m.settings).toEqual({ autoMaxRunHours: 2.5, autoAvailPercent: 100 });
+    expect(setAutoRule(m, "dripMarked", 1.6)).toBe(true);
+    expect(m.settings).toEqual({ autoMaxRunHours: 2.5, autoAvailPercent: 100, autoDripMarked: 2 });
     setAutoRule(m, "maxRunHours", 3);
+    setAutoRule(m, "dripMarked", 1);
     expect(m.settings).toEqual({ autoAvailPercent: 100 });
   });
 
@@ -199,5 +209,28 @@ describe("autoAssign（自動割当の決まり）", () => {
     // B は A の分も入る（目安を超えてもほかにいない）
     expect(hoursOf("B")).toBe(5);
     expect(t.every(Boolean)).toBe(true);
+  });
+
+  it("ドリッパーの記号（H・1・2）のある人は各時間1人まで、できなければ2人まで", () => {
+    // ドリッパー3人の枠。ice：氏名 → アイス（○／×／1杯のみ／2杯のみ）
+    const drip = (ice: Record<string, string>) => {
+      const m = createModel();
+      for (const [name, v] of Object.entries(ice)) {
+        m.availability.push({ name, date: D, start: "10:00", end: "12:00" });
+        m.memberStatuses[name] = "上級生";
+        m.memberStores[name] = ["本店"];
+        m.memberDrips[name] = dripsForIce(v);
+      }
+      refreshDerived(m);
+      for (const s of m.slots) s.count = s.store === "本店" && s.role === "ドリッパー" ? 3 : 0;
+      autoAssign(m);
+      const at: Record<string, string[]> = {};
+      for (const x of flattened(m)) if (m.assignments[x.key]) (at[x.start] ??= []).push(iceOf(m.memberDrips[m.assignments[x.key]]));
+      return Object.values(at).map((ices) => [ices.length, ices.filter((i) => i !== "○").length]);
+    };
+    // ○ が2人いれば、記号のある人は各時間1人（H・1・2 は合わせて数える）
+    expect(drip({ A: "×", B: "1杯のみ", C: "2杯のみ", D: "○", E: "○" }).every(([n, k]) => n === 3 && k === 1)).toBe(true);
+    // ○ が1人なら2人まで（空けはしない）
+    expect(drip({ A: "×", B: "1杯のみ", C: "2杯のみ", D: "○" }).every(([n, k]) => n === 3 && k === 2)).toBe(true);
   });
 });

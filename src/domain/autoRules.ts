@@ -6,27 +6,32 @@ import type { Model } from "./types";
  * - masterHours：マスターは1人 全日程の合計でこの時間まで（全員この時間までで埋めきれないときだけ、この時間ずつ増やす）。0＝制限なし
  * - availPercent：その日の勤務時間は、勤務可能時間のこの割合まで（目安。ほかに入れる人がいなければ超える。超えるのは上級生から）。0＝制限なし
  * - maxRunHours：続けて入るのはこの時間まで（超える割当はしない）。0＝制限なし
+ * - dripMarked：ドリッパーの記号（H・1・2＝アイスが全部はできない）のある人は、各時間この人数まで
+ *   （目安。できなければ1人ずつ増やす＝どこかの時間に固まらないように）。0＝制限なし
  */
 export interface AutoRules {
   masterHours: number;
   availPercent: number;
   maxRunHours: number;
+  dripMarked: number;
 }
 export type AutoRuleKey = keyof AutoRules;
 
-export const AUTO_RULE_DEFAULTS: Readonly<AutoRules> = { masterHours: 1, availPercent: 80, maxRunHours: 3 };
+export const AUTO_RULE_DEFAULTS: Readonly<AutoRules> = { masterHours: 1, availPercent: 80, maxRunHours: 3, dripMarked: 1 };
 
 /** settings のキー（旧版は知らないキーを読まない・書かない） */
 const settingKey: Readonly<Record<AutoRuleKey, string>> = {
   masterHours: "autoMasterHours",
   availPercent: "autoAvailPercent",
   maxRunHours: "autoMaxRunHours",
+  dripMarked: "autoDripMarked",
 };
 
-/** 入力できる値（時間は30分刻み、割合は整数の %） */
+/** 入力できる値（時間は30分刻み、割合は整数の %、人数は整数） */
 export function normalizeAutoRule(key: AutoRuleKey, value: number): number | undefined {
   if (!Number.isFinite(value) || value < 0) return undefined;
   if (key === "availPercent") return Math.min(100, Math.round(value));
+  if (key === "dripMarked") return Math.round(value);
   return Math.round(value * 2) / 2;
 }
 

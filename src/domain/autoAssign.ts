@@ -2,6 +2,7 @@
 
 import { breakRoles, openRoles, statusLevels } from "./config";
 import { autoRules } from "./autoRules";
+import { iceOf } from "./parse";
 import { available, decided, dislikes, levelOf, requiredFor, wants, type SlotLike } from "./rules";
 import { ensureAllSlots, flattened, slotAtOffset } from "./slots";
 import { SLOT, toMin } from "./time";
@@ -23,6 +24,8 @@ const HANDOFF = 60;
 
 /** 1人あたりの時間に上限がある役職（autoRules の masterHours） */
 export const isMasterSlot = (x: SlotLike): boolean => x.store === "本店" && x.role === "マスター";
+/** 同じ時間に記号（H・1・2）のある人を入れる数に目安がある役職（autoRules の dripMarked） */
+const isDripSlot = (x: SlotLike): boolean => x.store === "本店" && x.role === "ドリッパー";
 
 export interface AutoAssignResult {
   /** 入れる人はいたが、続けて入るのが上限（maxRunHours）を超えるので空けた枠の数 */
@@ -35,10 +38,11 @@ export interface AutoAssignResult {
  * - 続けて入るのは maxRunHours まで（超える割当はしない＝入れる人がいなければ空ける）
  * - 以下は目安（ほかに入れる人がいなければ超えても入れる）。優先の順に：
  *   1. マスターは1人 全日程の合計で masterHours まで。全員その時間までで埋めきれないときだけ masterHours ずつ上げる（全員が同じくらいになる）
- *   2. その日の勤務時間は、勤務可能時間の availPercent % まで（働ける量＝memberWorkload の目安があれば、それとの少ないほう）。
+ *   2. ドリッパーの記号（H・1・2）のある人は、各時間 dripMarked 人まで。できなければ1人ずつ増やす（どこかの時間に固まらないように）
+ *   3. その日の勤務時間は、勤務可能時間の availPercent % まで（働ける量＝memberWorkload の目安があれば、それとの少ないほう）。
  *      超えて入れるときは、ステータスの高い人（上級生）から
- *   3. 直前の30分に入っている人を続けて入れる（同じ役職なら なお優先）。連続の上限の最後の1時間は、空いている人がいれば交代
- *   4. 同じ人を次の30分にも続けて入れられるなら2枠まとめて入れる
+ *   4. 直前の30分に入っている人を続けて入れる（同じ役職なら なお優先）。連続の上限の最後の1時間は、空いている人がいれば交代
+ *   5. 同じ人を次の30分にも続けて入れられるなら2枠まとめて入れる
  */
 export function autoAssign(m: Model): AutoAssignResult {
   let runBlocked = 0;
@@ -49,6 +53,8 @@ export function autoAssign(m: Model): AutoAssignResult {
     daily: Record<string, number> = {},
     /** 氏名 → 入れたマスターの枠の数（全日程） */
     masterUsed: Record<string, number> = {},
+    /** "日付 開始" → そのドリッパーに入れた、記号のある人の数 */
+    dripMarkedAt: Record<string, number> = {},
     booked: Record<string, Item[]> = {};
   const dk = (name: string, date: string) => `${name}|${date}`;
   m.assignments = {};
@@ -114,6 +120,17 @@ export function autoAssign(m: Model): AutoAssignResult {
   }
   const masterFull = (name: string, x: Item) => isMasterSlot(x) && (masterUsed[name] || 0) >= masterCap;
 
+  // ドリッパーの記号（H・1・2）：その時間に dripMarked 人を超えて入れるなら、超える人数（0＝目安のうち）
+  const marked = (name: string) => {
+    const ice = iceOf(m.memberDrips[name]);
+    return !!ice && ice !== "○";
+  };
+  const tk = (x: Item) => `${x.date} ${x.start}`;
+  const dripOver = (name: string, x: Item) =>
+    rules.dripMarked && isDripSlot(x) && marked(name)
+      ? Math.max(0, (dripMarkedAt[tk(x)] || 0) + 1 - rules.dripMarked)
+      : 0;
+
   // 次の枠（同じ役職・同じ番目を優先）にも続けて入れられるか
   const pairOf = (x: Item, name: string) => {
     const occs = slotAtOffset(m, x, 1);
@@ -132,6 +149,7 @@ export function autoAssign(m: Model): AutoAssignResult {
     workload[name] = (workload[name] || 0) + 1;
     if (!breakRoles.includes(t.role)) daily[dk(name, t.date)] = (daily[dk(name, t.date)] || 0) + 1;
     if (isMasterSlot(t)) masterUsed[name] = (masterUsed[name] || 0) + 1;
+    if (isDripSlot(t) && marked(name)) dripMarkedAt[tk(t)] = (dripMarkedAt[tk(t)] || 0) + 1;
   };
 
   for (const x of items) {
@@ -152,6 +170,7 @@ export function autoAssign(m: Model): AutoAssignResult {
     const score = (a: Availability) => (workload[a.name] || 0) - (wants(m, a.name, x.role) ? 1 : 0);
     candidates.sort(
       (a, b) =>
+        dripOver(a.name, x) - dripOver(b.name, x) ||
         spare(a) - spare(b) ||
         Number(masterFull(a.name, x)) - Number(masterFull(b.name, x)) ||
         over(a) - over(b) ||
@@ -167,10 +186,13 @@ export function autoAssign(m: Model): AutoAssignResult {
       if (open.length) runBlocked++;
       continue;
     }
+    const drip = dripOver(c.name, x);
     book(x, c.name);
-    // マスターの上限・その日の目安に届いたら、続きは次の枠で選び直す（目安を超えるなら上級生から）
+    // マスターの上限・その日の目安に届いたら、続きは次の枠で選び直す（目安を超えるなら上級生から）。
+    // 記号のある人は、次の時間で ここより多く超えるなら選び直す
     const y = pairs.get(c.name);
-    if (y && !decided(m, y.key) && runOk(c.name, y) && !masterFull(c.name, y) && !over(c)) book(y, c.name);
+    if (y && !decided(m, y.key) && runOk(c.name, y) && !masterFull(c.name, y) && !over(c) && dripOver(c.name, y) <= drip)
+      book(y, c.name);
   }
   return { runBlocked };
 }

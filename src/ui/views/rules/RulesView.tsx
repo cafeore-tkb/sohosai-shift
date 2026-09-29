@@ -195,6 +195,14 @@ const AUTO_RULE_ROWS: readonly AutoRuleRow[] = [
     note: "本番の全日程の合計です。全員この時間までで埋めきれないときだけ、この時間ずつ増やして全員に同じくらい割り振ります。",
   },
   {
+    key: "dripMarked",
+    label: "ドリッパーの記号",
+    before: "H・1・2 のある人は各時間",
+    unit: "人まで",
+    step: 1,
+    note: "目安です。H・1・2 は合わせて数えます。できなければ1人ずつ増やし、どこかの時間に固まらないようにします。",
+  },
+  {
     key: "availPercent",
     label: "1日の勤務時間",
     before: "勤務可能時間の",
