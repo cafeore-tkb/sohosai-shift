@@ -47,8 +47,22 @@ export const roleStore: Readonly<Record<string, string>> = {
   "店舗準備（2号店）": "2号店",
   "店舗準備（くれあ）": "くれあ",
 };
-/** 同じ時間に車ありの人が1人以上いてほしい係（誰でも入れる。自動割当は車ありの人から入れ、いなければ勤務状況チェックに出す） */
-export const carRoles: readonly string[] = ["買い出し"];
+/**
+ * 買い出しの係。買い出し先（100均・トライアルなど。buyShops.ts）があれば、行き先ごとの係「買い出し（100均）」に分かれる
+ * （標準の人数・役職ルールの下限などは「買い出し」と同じ）
+ */
+export const BUY_ROLE = "買い出し";
+/** 行き先ごとの買い出しの係の名前（例：「買い出し（100均）」） */
+export const buyRole = (shop: string): string => `${BUY_ROLE}（${shop}）`;
+/** 買い出しの係（行き先ごとの係も） */
+export const isBuyRole = (role: string): boolean => role === BUY_ROLE || (role.startsWith(`${BUY_ROLE}（`) && role.endsWith("）"));
+/** 行き先ごとの買い出しの係の行き先（それ以外は ""） */
+export const buyShopOf = (role: string): string => (role !== BUY_ROLE && isBuyRole(role) ? role.slice(BUY_ROLE.length + 1, -1) : "");
+/**
+ * 同じ時間に車ありの人が1人以上いてほしい係（買い出し。行き先ごとに見る）。誰でも入れる。
+ * 自動割当は車ありの人から入れ、いなければ勤務状況チェックに出す
+ */
+export const isCarRole = isBuyRole;
 // 美化・裏シフトは店舗に属さない係（誰でも入れる）。人数は最大値で、実際の標準人数は liveSchedule の時間帯だけ
 export const liveExtraRoles: RolesByStore = {
   美化: [["美化", 3]],

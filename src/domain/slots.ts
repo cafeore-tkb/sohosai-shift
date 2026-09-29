@@ -1,6 +1,7 @@
 // シフト枠（slots）の生成・展開・必要人数と、旧データの移行処理
 
-import { OLD_DRIP, liveScheduleFor, openRoles, rolesForDate, slotChoices } from "./config";
+import { BUY_ROLE, OLD_DRIP, buyRole, isBuyRole, liveScheduleFor, openRoles, rolesForDate, slotChoices } from "./config";
+import type { RolesByStore } from "./config";
 import { dripsForIce } from "./parse";
 import { posKey, ruleKey } from "./rules";
 import { SLOT, hmToMin, plusSlot, toHM, toMin } from "./time";
@@ -49,12 +50,35 @@ export function hoursForDate(m: Model, date: string): string[] {
   return Array.from({ length: Math.max(0, (last - first) / SLOT) }, (_, i) => toHM(first + i * SLOT));
 }
 
+/** settings のキー：買い出し先の一覧（例：["100均", "トライアル"]。共同編集で共有する。旧版は知らないので無視する） */
+export const BUY_SHOPS_KEY = "buyShops";
+
+/** 買い出し先の一覧（なければ []＝買い出しは1つの係） */
+export function buyShops(m: Model): string[] {
+  const v = m.settings[BUY_SHOPS_KEY];
+  return Array.isArray(v) ? v.filter((s): s is string => typeof s === "string" && s !== "") : [];
+}
+
+/** 係の一覧の「買い出し」を、買い出し先ごとの係に分ける（買い出し先がなければそのまま） */
+export const expandBuyRoles = (roles: RolesByStore, shops: readonly string[]): RolesByStore =>
+  shops.length
+    ? Object.fromEntries(
+        Object.entries(roles).map(([store, list]) => [
+          store,
+          list.flatMap(([role, n]) => (role === BUY_ROLE ? shops.map((s) => [buyRole(s), n] as const) : [[role, n] as const])),
+        ]),
+      )
+    : roles;
+
+/** その日の店舗（係のまとまり）→ 役職の一覧（rolesForDate に買い出し先を反映したもの） */
+export const rolesOn = (m: Model, date: string): RolesByStore => expandBuyRoles(rolesForDate(date), buyShops(m));
+
 /** 表示する時間・役職の枠がなければ作る（必要人数は slotCounts か標準） */
 export function ensureGridSlots(m: Model, date: string, hours: readonly string[]): void {
   const at = (store: string, role: string, start: string) => `${store}\u0000${role}\u0000${start}`;
   const have = new Set(m.slots.filter((s) => s.date === date).map((s) => at(s.store, s.role, s.start)));
   for (const hour of hours) {
-    for (const [store, roles] of Object.entries(rolesForDate(date))) {
+    for (const [store, roles] of Object.entries(rolesOn(m, date))) {
       for (const [role, count] of roles) {
         if (!have.has(at(store, role, hour))) {
           const id = slotId(date, store, role, hour);
@@ -104,9 +128,11 @@ export function growOpenSlots(m: Model): void {
   }
 }
 
-/** 役職の人数（rolesForDate の値。時間割のある役職ではその日の最大）。時間ごとの標準は defaultCount */
-export const baseCount = (date: string, store: string, role: string): number =>
-  (rolesForDate(date)[store] || []).find(([r]) => r === role)?.[1] ?? 0;
+/** 役職の人数（rolesForDate の値。時間割のある役職ではその日の最大。行き先ごとの買い出しは「買い出し」の値）。時間ごとの標準は defaultCount */
+export const baseCount = (date: string, store: string, role: string): number => {
+  const r = isBuyRole(role) ? BUY_ROLE : role;
+  return (rolesForDate(date)[store] || []).find(([x]) => x === r)?.[1] ?? 0;
+};
 
 /**
  * 標準の必要人数。start（"HH:MM"）を渡すと本番の時間割（config の liveSchedule）どおり：

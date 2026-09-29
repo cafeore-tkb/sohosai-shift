@@ -3,10 +3,10 @@
 import { allNames, assignmentAudit, type Audit } from "../domain/audit";
 import { namesOn } from "../domain/availability";
 import { personMatrix, personSegments } from "../domain/cells";
-import { dayName, openRoles, printRole, roleBase, rolesForDate, slotChoices, storeClass } from "../domain/config";
+import { dayName, openRoles, printRole, roleBase, slotChoices, storeClass } from "../domain/config";
 import { buildShortNames } from "../domain/names";
 import { decided, posLabel } from "../domain/rules";
-import { ensureAllSlots, eventDates, findSlot, flattened, hoursForDate } from "../domain/slots";
+import { ensureAllSlots, eventDates, findSlot, flattened, hoursForDate, rolesOn } from "../domain/slots";
 import { dayLabel, fmt, shortDay } from "../domain/time";
 import type { Model } from "../domain/types";
 import { carCellHtml, dripBadgeHtml, esc, posTagHtml } from "./html";
@@ -23,7 +23,7 @@ export function printDayTable(m: Model, date: string, shortNames: ShortNames): s
   const hours = hoursForDate(m, date),
     carCell = carCellHtml(m, date),
     find = (store: string, role: string, h: string) => findSlot(m, date, store, role, h);
-  const groups = Object.entries(rolesForDate(date)),
+  const groups = Object.entries(rolesOn(m, date)),
     cols: { store: string; role: string; i: number; first: boolean }[] = [];
   for (const [store, roles] of groups)
     for (const [role] of roles) {

@@ -1,11 +1,11 @@
 // 4. 役職ルール：役職ごと・番目ごとの最低ステータス
 // デスクトップは表（見出しはアプリバーの下に固定）、スマホ（≤640px）は同じ DOM を役職ごとのカードに並べる
 
-import type { ChangeEvent } from "react";
-import { AUTO_RULE_DEFAULTS, autoRules, carRoles, eventDayRoles, eventDays, liveRoles, posKey, posLabel, requiredFor, roleFloor, roleStore, ruleKey, shortDay, statusLevels, statusNames } from "../../../domain";
+import type { ChangeEvent, FormEvent } from "react";
+import { AUTO_RULE_DEFAULTS, BUY_SHOP_MAX, autoRules, buyShopAssigned, buyShops, eventDayRoles, eventDays, expandBuyRoles, isCarRole, liveRoles, posKey, posLabel, requiredFor, roleFloor, roleStore, ruleKey, shortDay, statusLevels, statusNames } from "../../../domain";
 import type { AutoRuleKey, Model, RolesByStore } from "../../../domain";
 import { actions, store, useModel } from "../../../store";
-import { Disclosure, Page, Select, ShopTag, cx, inputClassName } from "../../components";
+import { Button, Disclosure, IconButton, Page, Select, ShopTag, TextInput, cx, inputClassName } from "../../components";
 import { ChangeInput, StatusOptions, releaseFocus } from "../../components/inputs";
 import styles from "./Rules.module.css";
 
@@ -40,7 +40,13 @@ export function RulesView({ hidden }: { hidden: boolean }) {
   const m = useModel();
   const liveDates = Object.keys(eventDays).filter((d) => !eventDayRoles[d]);
   const groups: Group[] = [
-    ...Object.entries(eventDayRoles).map(([date, roles]) => ({ key: date, day: eventDays[date] || date, dates: shortDay(date), roles, live: false })),
+    ...Object.entries(eventDayRoles).map(([date, roles]) => ({
+      key: date,
+      day: eventDays[date] || date,
+      dates: shortDay(date),
+      roles: expandBuyRoles(roles, buyShops(m)),
+      live: false,
+    })),
     { key: "live", day: "本番", dates: liveDates.map(shortDay).join("・"), roles: liveRoles, live: true },
   ];
   return (
@@ -61,6 +67,7 @@ export function RulesView({ hidden }: { hidden: boolean }) {
         </div>
       </Disclosure>
       <AutoRulesCard m={m} />
+      <BuyShopsCard m={m} />
       <div className={styles.card}>
         <table className={styles.rt}>
           <thead>
@@ -90,7 +97,7 @@ export function RulesView({ hidden }: { hidden: boolean }) {
                   // 下限のある役職（ドリッパー）は、下限より低い値（旧データ）でも下限を表示する
                   const k = ruleKey(store, role),
                     v = requiredFor(m, { store, role });
-                  const notes = [carRoles.includes(role) ? "車ありが1人以上" : "", roleStore[role] ? `${roleStore[role]}所属のみ` : ""].filter(Boolean);
+                  const notes = [isCarRole(role) ? "車ありが1人以上" : "", roleStore[role] ? `${roleStore[role]}所属のみ` : ""].filter(Boolean);
                   return (
                     <tr key={`${g.key}|${store}|${role}`} className={styles.row}>
                       <td className={styles.shop}>
@@ -277,5 +284,72 @@ function onAutoRuleCommit(el: HTMLInputElement) {
   // 読めない値・丸めた値は、いまの決まりに戻して見せる
   const v = autoRules(store.model)[key];
   el.value = v ? String(v) : "";
+  releaseFocus(el);
+}
+
+// 買い出し先（100均・トライアルなど）：前日準備の買い出しを行き先ごとの列に分ける（settings。共同編集で共有する）
+function BuyShopsCard({ m }: { m: Model }) {
+  const shops = buyShops(m);
+  return (
+    <section className={styles.auto} aria-labelledby="buyShopsTitle">
+      <h2 id="buyShopsTitle" className={styles.autoTitle}>
+        買い出し先
+        <span className={styles.autoSub}>前日準備の買い出しを、行き先ごとの列に分けます</span>
+      </h2>
+      {shops.length ? (
+        <ul className={styles.shopList}>
+          {shops.map((shop) => {
+            const n = buyShopAssigned(m, shop);
+            return (
+              <li key={shop} className={styles.shopRow}>
+                <ChangeInput
+                  type="text"
+                  maxLength={BUY_SHOP_MAX}
+                  data-buy-shop={shop}
+                  aria-label={`買い出し先「${shop}」の名前`}
+                  className={inputClassName({ size: "sm" }, styles.shopInput)}
+                  value={shop}
+                  onCommit={(el) => onShopRename(el, shop)}
+                />
+                <span className={styles.autoDefault}>{n ? `割当 ${n} 枠` : "割当なし"}</span>
+                <IconButton icon="trash" size="sm" label={`買い出し先「${shop}」を削除`} data-buy-shop-remove={shop} onClick={() => actions.removeBuyShop(shop)} />
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+      <form className={styles.shopAdd} onSubmit={onShopAdd}>
+        <TextInput
+          size="sm"
+          name="shop"
+          maxLength={BUY_SHOP_MAX}
+          placeholder="例：100均、トライアル"
+          aria-label="追加する買い出し先"
+          data-buy-shop-new=""
+          className={styles.shopInput}
+        />
+        <Button type="submit" size="sm" variant="secondary" icon="plus">
+          追加
+        </Button>
+      </form>
+      <p className={cx(styles.autoNote, styles.shopNote)}>
+        {"行き先ごとに、同じ時間に車ありの人を1人以上入れます（自動割当・勤務状況チェック）。人数は必要人数で行き先ごとに変えられます。"}
+        {shops.length
+          ? "最後の1つを削除すると、行き先を分けない買い出しに戻ります（割当はそのまま）。"
+          : "1つ目を追加すると、いまの買い出しの割当はその行き先に入ります。"}
+      </p>
+    </section>
+  );
+}
+
+function onShopAdd(e: FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+  const input = e.currentTarget.elements.namedItem("shop") as HTMLInputElement;
+  if (actions.addBuyShop(input.value)) input.value = "";
+}
+
+function onShopRename(el: HTMLInputElement, shop: string) {
+  // 変えられなければ元の名前に戻して見せる
+  if (!actions.renameBuyShop(shop, el.value)) el.value = shop;
   releaseFocus(el);
 }

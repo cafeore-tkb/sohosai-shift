@@ -22,6 +22,12 @@ import {
   applyAvailability,
   autoAssign,
   autoRules,
+  addBuyShop as addBuyShopIn,
+  buyShopAssigned,
+  buyShops,
+  removeBuyShop as removeBuyShopIn,
+  renameBuyShop as renameBuyShopIn,
+  type BuyShopResult,
   setAutoRule,
   type AutoRuleKey,
   clearAll,
@@ -187,6 +193,31 @@ export function setPinMoved(on: boolean): void {
 export function changeAutoRule(key: AutoRuleKey, value: number): void {
   setAutoRule(M(), key, value);
   store.commit();
+}
+
+// ---- 買い出し先（役職ルールの画面）----
+
+function finishShop(r: BuyShopResult): boolean {
+  if (r.ok) store.commit();
+  if (r.message) store.showToast(r.message);
+  return r.ok;
+}
+
+/** 買い出し先を足す。足せたら true（入力欄を空にする） */
+export function addBuyShop(text: string): boolean {
+  return finishShop(addBuyShopIn(M(), text));
+}
+
+/** 買い出し先の名前を変える。変えられなければ false（入力欄は元の名前に戻す） */
+export function renameBuyShop(from: string, text: string): boolean {
+  return finishShop(renameBuyShopIn(M(), from, text));
+}
+
+/** 買い出し先を消す。割当があれば確かめる（最後の1つは割当を「買い出し」に戻すので確かめない） */
+export function removeBuyShop(shop: string): void {
+  const n = buyShops(M()).length > 1 ? buyShopAssigned(M(), shop) : 0;
+  if (n && !ask(`買い出し先「${shop}」を削除しますか？（入っている割当 ${n} 枠も外れます）`)) return;
+  finishShop(removeBuyShopIn(M(), shop));
 }
 
 export function clearAssignments(): void {

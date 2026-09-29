@@ -102,7 +102,8 @@ node oracle.mjs diff ref.json new.json                               # 旧版（
   `hours`＝店舗の営業時間 [開始, 終了)（外は標準 0＝「不要な時間」）、`roles`＝ruleKey → `{ outside, windows: [開始, 終了, 人数][] }`（ドリッパー 6th は昼だけ、美化・裏シフトは時間帯だけ）。
   liveSchedule にない本番の日は `DEFAULT_LIVE_DAY`（本番1日目）と同じ。前日準備（eventDayRoles の日）は時間割なし
 - `workloadLevels`（少し／5時間程度／いっぱい）`workloadTargetHours`（1日あたりの目安：少し 3・5時間程度 5。いっぱいは目安なし）
-- `roleStore` `carRoles` `breakRoles` `ordinalRoles` `groupOrder` `storeNames` `prefRoles` `roleBase(role)`
+- `BUY_ROLE` `buyRole(shop)` `isBuyRole(role)` `buyShopOf(role)` `isCarRole(role)`（買い出し。行き先ごとの係「買い出し（100均）」も含む。車ありの人は係＝行き先ごとに見る）
+- `roleStore` `breakRoles` `ordinalRoles` `groupOrder` `storeNames` `prefRoles` `roleBase(role)`
 - `statusLevels` `statusNames` `statusShort` `eventDays` `dayName(date, index)` `dataViews`
 - `dripTypes` `slotChoices` `iceStatuses` `DRIP_NONE`（"ドリップ不可"＝未合格）`iceLevels`（iceStatuses＋DRIP_NONE。表示・並べ替えの順） `storeClass(store)` `cellStore` `cellRole` `printRole` `OLD_DRIP`
 
@@ -127,10 +128,14 @@ node oracle.mjs diff ref.json new.json                               # 旧版（
 - `fitsSlot(m, name, slot)`（所属・ステータス。買い出しの車は条件ではなく、audit の `carlessItems`＝車ありの人がいない時間・自動割当は車ありの人から）`unfitReasons(m, name, slot)`（合わない理由：「所属店舗」「ステータス」。条件外の表示用）`canWorkAt(m, name, slot)`（勤務可能時間）`available(m, slot)`（入れる人の勤務可能時間の一覧）`decided(m, key)`
 - `posLabel(role, i)`（1st… / 1…）`posTag(m, store, role, i)`（見出しの「上級」「1年↑」、なければ ""）`wants` `dislikes` `prefMark`（★／△／""。表のセルと担当者ポップアップで使う）
 
+**buyShops.ts**（買い出し先。役職ルールの画面）— `addBuyShop(m, text)` `renameBuyShop(m, from, text)` `removeBuyShop(m, shop)`（→{ok, message}）`buyShopAssigned(m, shop)` `normalizeBuyShop` `buyShopNameError`。
+係の名前が枠の id・役職ルールのキーに入るので、名前を変えると割当・固定・必要人数・役職ルールを新しい名前の係へ写す。最初の買い出し先は「買い出し」を引き継ぎ、最後の1つを消すと「買い出し」に戻る（割当はそのまま）。ほかを消すとその行き先の割当なども消す。
+
 **slots.ts**（枠）
 - `slotId(date, store, role, start)` `itemsOf(slot)` `flattened(m)` `eventDates(m)`（先頭3日）`hoursForDate(m, date)` `findSlot(m, date, store, role, start)`
+- `buyShops(m)`（settings の `buyShops`＝買い出し先の一覧。共同編集で共有、旧版は知らないキーを読まない）`expandBuyRoles(roles, shops)` `rolesOn(m, date)`（rolesForDate に買い出し先を反映した係の一覧。枠・表・必要人数・印刷はこれを使う）
 - `ensureGridSlots(m, date, hours)` `ensureAllSlots(m)`（移行 → 枠をそろえる）`migrateHalfHours` `migratePositions` `migrateBlanks`
-- `defaultCount(date, store, role, start?)`（start を渡すと時間割どおりの標準。省くと `baseCount`＝時間によらない人数）`slotDefault(slot)` `baseCount(date, store, role)`
+- `defaultCount(date, store, role, start?)`（start を渡すと時間割どおりの標準。省くと `baseCount`＝時間によらない人数）`slotDefault(slot)` `baseCount(date, store, role)`（行き先ごとの買い出しは「買い出し」の人数）
 - `setSlotCount(m, slot, value)`（その枠の標準＝slotDefault と同じなら slotCounts から消す）`setRoleCounts(m, date, store, role, value)`（一括：標準が 1人以上の時間帯だけ。営業時間外などはそのまま。その日ずっと標準 0 の役職なら全時間帯。旧版は value が "" なら何もしない→呼ぶ側で判定）`resetCounts(m, date)`（時間割どおりに戻す）`splitRuleKey(key)`
 - `slotAtOffset(m, item, ±1)` `partnerOf(m, item, name)`（1時間のまとまりの相方）`slotType(m, item)`（ドリップ種類）
 
@@ -202,7 +207,7 @@ UI は `ui/WorkloadTag.tsx`（担当者ポップアップの候補の「目安�
 人数が減った枠の、はみ出した番目の割当は Model には残るが表には出ない。旧版（app.js）で同じ部屋を開くと旧来の標準で解釈される。liveSchedule を変えるときも同じことが起きる。
 旧データの移行（migratePositions の「合計が 6 と違えば保存」）は旧来の標準 6 のまま。
 
-**shared.ts**（共同編集で共有するデータ。送受信・差分・マージは sync）— `sharedMap(m, k)` `replaceShared(m, availability, maps)`（部屋の内容で置き換え。枠は作り直し、データがあれば読み込み画面→シフト調整）`applySharedChange(m, k, key, value)`（1項目の変更。undefined は削除、必要人数なら枠の人数も合わせる）
+**shared.ts**（共同編集で共有するデータ。送受信・差分・マージは sync）— `sharedMap(m, k)` `replaceShared(m, availability, maps)`（部屋の内容で置き換え。枠は作り直し、データがあれば読み込み画面→シフト調整）`applySharedChange(m, k, key, value)`（1項目の変更。undefined は削除、必要人数なら枠の人数も合わせる、買い出し先なら枠を作り直す）
 
 **print/**（印刷ビュー。旧版とバイト単位で同じ HTML）
 - `printShiftHtml(m, { stamp? })` … 先に `ensureAllSlots(m)` を行う（旧版と同じ副作用）

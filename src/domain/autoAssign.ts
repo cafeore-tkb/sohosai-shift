@@ -1,6 +1,6 @@
 // 自動割当
 
-import { breakRoles, carRoles, openRoles, statusLevels } from "./config";
+import { breakRoles, isCarRole, openRoles, statusLevels } from "./config";
 import { isPinned } from "./assign";
 import { autoRules } from "./autoRules";
 import { available, decided, dislikes, levelOf, memberIce, requiredFor, wants, type SlotLike } from "./rules";
@@ -40,7 +40,7 @@ export interface AutoAssignResult {
  * 時間順に、条件の厳しい番目から埋める。決まり（autoRules）：
  * - 続けて入るのは maxRunHours まで（超える割当はしない＝入れる人がいなければ空ける）
  * - 以下は目安（ほかに入れる人がいなければ超えても入れる）。優先の順に：
- *   0. 買い出し（carRoles）は、その時間に車ありの人がまだいなければ車ありの人から
+ *   0. 買い出し（isCarRole。行き先ごと）は、その時間に車ありの人がまだいなければ車ありの人から
  *   1. マスターは1人 全日程の合計で masterHours まで。全員その時間までで埋めきれないときだけ masterHours ずつ上げる（全員が同じくらいになる）
  *   2. ドリッパーの記号（H・1・2）のある人は、各時間 dripMarked 人まで。できなければ1人ずつ増やす（どこかの時間に固まらないように）
  *   3. その日の勤務時間は、勤務可能時間の availPercent % まで（働ける量＝memberWorkload の目安があれば、それとの少ないほう）。
@@ -59,7 +59,7 @@ export function autoAssign(m: Model): AutoAssignResult {
     masterUsed: Record<string, number> = {},
     /** "日付 開始" → そのドリッパーに入れた、記号のある人の数 */
     dripMarkedAt: Record<string, number> = {},
-    /** "日付 開始 係" → その時間の買い出しに入れた車ありの人の数 */
+    /** "日付 開始 係" → その時間の買い出し（行き先ごと）に入れた車ありの人の数 */
     carAt: Record<string, number> = {},
     booked: Record<string, Item[]> = {};
   const dk = (name: string, date: string) => `${name}|${date}`;
@@ -159,7 +159,7 @@ export function autoAssign(m: Model): AutoAssignResult {
     if (!breakRoles.includes(t.role)) daily[dk(name, t.date)] = (daily[dk(name, t.date)] || 0) + 1;
     if (isMasterSlot(t)) masterUsed[name] = (masterUsed[name] || 0) + 1;
     if (isDripSlot(t) && marked(name)) dripMarkedAt[tk(t)] = (dripMarkedAt[tk(t)] || 0) + 1;
-    if (carRoles.includes(t.role) && m.memberCars[name]) carAt[ck(t)] = (carAt[ck(t)] || 0) + 1;
+    if (isCarRole(t.role) && m.memberCars[name]) carAt[ck(t)] = (carAt[ck(t)] || 0) + 1;
   };
 
   // 固定したコマを先に入れる（コマがなくなっていれば固定も外す）
@@ -187,7 +187,7 @@ export function autoAssign(m: Model): AutoAssignResult {
     };
     const score = (a: Availability) => (workload[a.name] || 0) - (wants(m, a.name, x.role) ? 1 : 0);
     // 買い出しにその時間の車ありの人がまだいなければ、車ありの人から
-    const noCar = (a: Availability) => Number(carRoles.includes(x.role) && !carAt[ck(x)] && !m.memberCars[a.name]);
+    const noCar = (a: Availability) => Number(isCarRole(x.role) && !carAt[ck(x)] && !m.memberCars[a.name]);
     candidates.sort(
       (a, b) =>
         noCar(a) - noCar(b) ||

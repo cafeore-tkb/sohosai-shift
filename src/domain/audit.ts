@@ -1,6 +1,6 @@
 // 勤務状況チェック（重複・勤務時間・時間外・条件外・希望外）と集計
 
-import { breakRoles, carRoles, roleBase } from "./config";
+import { breakRoles, isCarRole, roleBase } from "./config";
 import { orderedNames } from "./order";
 import { canWorkAt, decided, dislikes, fitsSlot } from "./rules";
 import { countedItems, flattened } from "./slots";
@@ -78,11 +78,11 @@ export const offAssignments = (m: Model): Item[] =>
 export const unfitAssignments = (m: Model): Item[] =>
   flattened(m).filter((x) => m.assignments[x.key] && !fitsSlot(m, m.assignments[x.key], x));
 
-/** 車ありの人がいない買い出し（carRoles）の枠：誰かが入っているのに、その時間のその係に車ありの人がいない（時間順） */
+/** 車ありの人がいない買い出し（isCarRole）の枠：誰かが入っているのに、その時間のその係（行き先）に車ありの人がいない（時間順） */
 export function carlessItems(m: Model): Item[] {
   const byTime = new Map<string, Item[]>();
   for (const x of flattened(m))
-    if (carRoles.includes(x.role) && m.assignments[x.key]) {
+    if (isCarRole(x.role) && m.assignments[x.key]) {
       const k = `${x.date}|${x.start}|${x.role}`;
       byTime.set(k, [...(byTime.get(k) || []), x]);
     }

@@ -2,7 +2,7 @@
 
 import { groupOrder, roleBase, rolesForDate, storeNames } from "./config";
 import { namesOn } from "./availability";
-import { hoursForDate } from "./slots";
+import { hoursForDate, rolesOn } from "./slots";
 import type { Item, Model, Slot } from "./types";
 
 export interface GridColumn {
@@ -40,7 +40,7 @@ export interface DayGrid {
 /** 1日分の表の列（storeF で店舗を絞り込み。該当なしなら null） */
 export function dayGrid(m: Model, date: string, storeF: string): DayGrid | null {
   const hours = hoursForDate(m, date);
-  const groups = Object.entries(rolesForDate(date)).filter(([store]) => !storeF || store === storeF);
+  const groups = Object.entries(rolesOn(m, date)).filter(([store]) => !storeF || store === storeF);
   if (!groups.length) return null;
   const slotAt = new Map(m.slots.filter((s) => s.date === date).map((s) => [`${s.store}|${s.role}|${s.start}`, s]));
   const cols: GridColumn[] = [];

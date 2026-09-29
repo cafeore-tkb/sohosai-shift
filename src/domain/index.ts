@@ -7,6 +7,7 @@ export * from "./parse";
 export * from "./csv";
 export * from "./rules";
 export * from "./slots";
+export * from "./buyShops";
 export * from "./labels";
 export * from "./audit";
 export * from "./autoAssign";

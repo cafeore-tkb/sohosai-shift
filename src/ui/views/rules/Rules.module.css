@@ -137,6 +137,28 @@
   line-height: var(--lh-body);
   color: var(--ink-muted);
 }
+.shopList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-3);
+  padding: 0;
+  list-style: none;
+}
+.shopRow,
+.shopAdd {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.shopInput {
+  width: 200px;
+  max-width: 100%;
+  min-width: 0;
+}
+.shopNote {
+  margin: var(--sp-3) 0 var(--sp-2);
+}
 @media (max-width: 640px) {
   .auto {
     padding: 12px 14px 4px;

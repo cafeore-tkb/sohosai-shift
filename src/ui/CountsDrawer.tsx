@@ -13,7 +13,7 @@ import {
   findSlot,
   hoursForDate,
   plusSlot,
-  rolesForDate,
+  rolesOn,
   ruleKey,
   shortDay,
 } from "../domain";
@@ -146,7 +146,7 @@ function CountTable({ m, date }: { m: Model; date: string }) {
         </tr>
       </thead>
       <tbody>
-        {Object.entries(rolesForDate(date)).flatMap(([s, roles]) => {
+        {Object.entries(rolesOn(m, date)).flatMap(([s, roles]) => {
           // 店舗の営業時間（時間割。外の時間は標準 0＝不要な時間）。表の時間がすべて営業時間内なら出さない
           const open = liveScheduleFor(date)?.hours[s],
             inOpen = (h: string) => !open || (h >= open[0] && h < open[1]),
