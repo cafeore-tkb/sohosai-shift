@@ -18,11 +18,13 @@ export interface ToastViewProps {
   message?: string;
   /** 最初の <button>。icon は飾り（aria-hidden の SVG なので textContent に入らない） */
   action?: { label: string; title?: string; icon?: IconName; onClick: () => void };
+  /** 2つ目のボタン（手で動かしたあとの「固定」） */
+  extra?: { label: string; title?: string; icon?: IconName; onClick: () => void };
   variant?: "default" | "move";
   onClose?: () => void;
 }
 
-export function ToastView({ id, visible, contentKey, message, action, variant = "default", onClose }: ToastViewProps) {
+export function ToastView({ id, visible, contentKey, message, action, extra, variant = "default", onClose }: ToastViewProps) {
   return (
     <div id={id} className={cx(styles.toast, variant === "move" && styles.move)} role="status" hidden={!visible}>
       {message !== undefined ? (
@@ -33,6 +35,12 @@ export function ToastView({ id, visible, contentKey, message, action, variant = 
             <button type="button" className={styles.action} title={action.title} onClick={action.onClick}>
               {action.icon ? <Icon name={action.icon} size={14} /> : null}
               {action.label}
+            </button>
+          ) : null}
+          {extra ? (
+            <button type="button" className={styles.action} title={extra.title} onClick={extra.onClick}>
+              {extra.icon ? <Icon name={extra.icon} size={14} /> : null}
+              {extra.label}
             </button>
           ) : null}
           {onClose ? (

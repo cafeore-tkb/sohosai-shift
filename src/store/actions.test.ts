@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { allNames, createModel, flattened, plusSlot, sameColumn } from "../domain";
+import { allNames, createModel, flattened, isPinned, plusSlot, sameColumn } from "../domain";
 import * as actions from "./actions";
 import { store } from "./store";
 
@@ -78,6 +78,40 @@ describe("store actions", () => {
       expect(store.ui.toast?.message).toBe("元に戻しました");
       expect(Object.values(store.model.assignments).filter(Boolean)).toEqual(Object.values(JSON.parse(before)).filter(Boolean));
     }
+  });
+
+  it("pins: the toast after a hand edit offers 固定; 動かしたら固定 pins right away; auto-assign keeps pins", () => {
+    actions.loadSample();
+    const x0 = flattened(store.model).find((x) => x.role === "レジ")!,
+      key = x0.key;
+    const name = store.model.availability.find((a) => a.date === x0.date)!.name;
+    actions.openPicker(key);
+    actions.pickName(name);
+    expect(store.model.assignments[key]).toBe(name);
+    expect(store.ui.toast?.extra?.label).toBe("固定");
+    store.ui.toast!.extra!.run();
+    expect(isPinned(store.model, key)).toBe(true);
+    expect(store.ui.toast?.message).toMatch(/コマを固定しました/);
+    actions.runAutoAssign();
+    expect(confirm).toHaveBeenLastCalledWith(expect.stringMatching(/^固定した \d+コマはそのままにして/));
+    expect(store.model.assignments[key]).toBe(name);
+    expect(store.ui.toast?.message).toMatch(/^自動割当しました（固定した \d+コマはそのまま）。/);
+    // 担当者ポップアップの「固定を外す」
+    actions.openPicker(key);
+    actions.togglePinPicked();
+    expect(isPinned(store.model, key)).toBe(false);
+    // 動かしたら固定
+    actions.setPinMoved(true);
+    const other = flattened(store.model).find((x) => x.role === "レジ" && x.date === x0.date && x.key !== key)!.key;
+    actions.openPicker(other);
+    actions.clearPicked();
+    actions.openPicker(other);
+    actions.pickName(name);
+    if (store.model.assignments[other] === name) {
+      expect(isPinned(store.model, other)).toBe(true);
+      expect(store.ui.toast?.extra).toBeUndefined();
+    }
+    actions.setPinMoved(false);
   });
 
   it("toast hides after 3.5s (7s with an action); sticky stays", () => {

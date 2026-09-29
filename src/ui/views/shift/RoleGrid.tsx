@@ -5,7 +5,7 @@
 
 import { memo, useRef } from "react";
 import type { Audit, DayGrid, DripBadge, Item, Model } from "../../../domain";
-import { CarChip, ChipCount, Drip, Mark, PosTag, cx, shopClass } from "../../components";
+import { CarChip, ChipCount, Drip, Icon, Mark, PosTag, cx, shopClass } from "../../components";
 import { useCellUi, useRestartFlash } from "./cellUi";
 import { hourTitle, roleHead, roleRows } from "./gridModel";
 import type { Edge, RoleCell, RoleHead, RoleRow } from "./gridModel";
@@ -156,7 +156,7 @@ function ItemCell({ cell }: { cell: Extract<RoleCell, { kind: "item" }> }) {
         data-state={cell.state}
         data-flag={cell.flag ?? undefined}
         data-cont={cell.cont ? "" : undefined}
-        data-manual={cell.manual ? "" : undefined}
+        data-pinned={cell.pinned ? "" : undefined}
         data-pick-slot={cell.key}
         data-cell=""
         tabIndex={-1}
@@ -166,6 +166,7 @@ function ItemCell({ cell }: { cell: Extract<RoleCell, { kind: "item" }> }) {
         {cell.mark ? <Mark kind={cell.mark} className={s.mk} /> : null}
         {cell.label ? <span className={s.nm}>{cell.label}</span> : null}
         <DripMark badge={cell.drip} className={s.dripMk} />
+        {cell.pinned ? <Icon name="lock" size={14} className={s.pin} /> : null}
       </button>
     </td>
   );

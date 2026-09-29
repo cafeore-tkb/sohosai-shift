@@ -10,8 +10,8 @@ import type { Item, Model, Slot } from "./types";
 
 // ---- 元に戻す ----
 
-/** 元に戻す対象のマップ（旧版の undoMaps＋手で入れた印） */
-export const undoMaps = ["assignments", "manualSlots"] as const;
+/** 元に戻す対象のマップ（旧版の undoMaps） */
+export const undoMaps = ["assignments"] as const;
 export type UndoMap = (typeof undoMaps)[number];
 export type Snapshot = Record<UndoMap, Record<string, string>>;
 /** [マップ, キー, 変更前, 変更後]（"" と未設定は同じ扱い） */
@@ -34,11 +34,10 @@ export function undoChanges(m: Model, changes: readonly Change[]): string {
   let skipped = 0;
   for (const [k, key, prev, next] of changes) {
     if ((m[k][key] || "") !== next) {
-      if (k === "assignments") skipped++;
+      skipped++;
       continue;
     }
-    if (k === "manualSlots" && !prev) delete m[k][key];
-    else m[k][key] = prev;
+    m[k][key] = prev;
   }
   return skipped ? `元に戻しました（その後に変更された ${skipped} 枠はそのままです）` : "元に戻しました";
 }
@@ -53,26 +52,11 @@ export interface EditResult {
   changes: Change[];
 }
 
-/** 手で変えた枠に印を付けてから（入れた枠は その人の名前、外した枠は印を消す）、変わった項目を返す */
-function done(before: Snapshot, m: Model, message: string): EditResult {
-  for (const [k, key, , next] of diffChanges(before, m))
-    if (k === "assignments") {
-      if (next) m.manualSlots[key] = next;
-      else delete m.manualSlots[key];
-    }
-  return { ok: true, message, changes: diffChanges(before, m) };
-}
-
-/** 手で入れた枠か（印の名前といまの割当が同じ） */
-export const isManual = (m: Model, key: string): boolean => !!m.assignments[key] && m.manualSlots[key] === m.assignments[key];
-
-/** 手で入れた枠の数 */
-export const manualCount = (m: Model): number => Object.keys(m.manualSlots).filter((k) => isManual(m, k)).length;
-
-/** 手で入れた印をすべて消す（割当はそのまま。次の自動割当ですべてやり直す） */
-export function clearManual(m: Model): void {
-  m.manualSlots = {};
-}
+const done = (before: Snapshot, m: Model, message: string): EditResult => ({
+  ok: true,
+  message,
+  changes: diffChanges(before, m),
+});
 
 // ---- 重なり・入れるかどうか ----
 
@@ -498,6 +482,56 @@ export function sendToBreak(m: Model, key: string, role: string, length: number)
 /** すべての割当をクリア（旧 clearBtn） */
 export function clearAll(m: Model): void {
   m.assignments = {};
-  m.manualSlots = {};
+  m.pinnedSlots = {};
   m.slotBlanks = {};
 }
+
+// ---- 固定（自動割当で変えないコマ）----
+
+/** 固定したコマか（固定したときの担当者がいまも入っている） */
+export const isPinned = (m: Model, key: string): boolean => !!m.assignments[key] && m.pinnedSlots[key] === m.assignments[key];
+
+/** 固定したコマの数 */
+export const pinnedCount = (m: Model): number => Object.keys(m.pinnedSlots).filter((k) => isPinned(m, k)).length;
+
+/** 変わった割当のうち、人が入ったコマ（「固定」ボタン・動かしたら固定 の対象） */
+export const filledChanges = (m: Model, changes: readonly Change[]): string[] =>
+  [...new Set(changes.filter(([k, key, , next]) => k === "assignments" && next && m.assignments[key] === next).map((c) => c[1]))];
+
+/**
+ * 固定の対象：range（選んでいる範囲）に key があればその範囲、なければ key の人がその列で続けて入っているコマ。
+ * 担当者のいないコマは入れない
+ */
+export function pinTargets(m: Model, key: string, range: readonly string[] = []): string[] {
+  if (range.length > 1 && range.includes(key)) return range.filter((k) => m.assignments[k]);
+  const all = flattened(m),
+    item = all.find((x) => x.key === key),
+    name = m.assignments[key];
+  if (!item || !name) return [];
+  const col = all
+    .filter((x) => x.date === item.date && x.store === item.store && x.role === item.role && x.occ === item.occ)
+    .sort((a, b) => a.start.localeCompare(b.start));
+  let i = col.findIndex((x) => x.key === key),
+    j = i;
+  while (i > 0 && col[i - 1].end === col[i].start && m.assignments[col[i - 1].key] === name) i--;
+  while (j < col.length - 1 && col[j].end === col[j + 1].start && m.assignments[col[j + 1].key] === name) j++;
+  return col.slice(i, j + 1).map((x) => x.key);
+}
+
+/** keys を固定する（on）／固定を外す。変えたコマの数を返す */
+export function setPinned(m: Model, keys: readonly string[], on: boolean): number {
+  let n = 0;
+  for (const k of keys) {
+    if (on && m.assignments[k] && !isPinned(m, k)) (m.pinnedSlots[k] = m.assignments[k]), n++;
+    if (!on && k in m.pinnedSlots) (n += isPinned(m, k) ? 1 : 0), delete m.pinnedSlots[k];
+  }
+  return n;
+}
+
+/** 固定をすべて外す（割当はそのまま） */
+export function clearPins(m: Model): void {
+  m.pinnedSlots = {};
+}
+
+/** 固定・固定を外したときのメッセージ */
+export const pinnedMessage = (count: number, on: boolean): string => (on ? `${count}コマを固定しました（自動割当で変えません）` : `${count}コマの固定を外しました`);

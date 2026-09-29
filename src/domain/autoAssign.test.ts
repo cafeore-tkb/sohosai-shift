@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { assignmentAudit, carlessItems } from "./audit";
 import { carlessIssues } from "./auditIssues";
 import { autoAssign, isMasterSlot } from "./autoAssign";
-import { clearAssignment, clearManual, isManual, manualCount, pickName, undoChanges } from "./assign";
+import { clearPins, filledChanges, isPinned, pickName, pinTargets, pinnedCount, setPinned } from "./assign";
 import { autoRules, setAutoRule } from "./autoRules";
 import { createModel } from "./model";
 import type { Model } from "./types";
@@ -271,35 +271,34 @@ describe("autoAssign（自動割当の決まり）", () => {
     expect(drip({ A: "×", B: "1杯のみ", C: "2杯のみ", D: "○" }).every(([n, k]) => n === 3 && k === 2)).toBe(true);
   });
 
-  it("手で入れた枠はそのままにして、ほかをやり直す（外した・元に戻した・印を消した枠はやり直す）", () => {
+  it("固定したコマはそのままにして、ほかをやり直す（人を替えた・固定を外したコマはやり直す）", () => {
     const m = oneRole("レジ", all("10:00", "19:00", "A", "B", "C"));
-    const x = item(m, "レジ", "12:00"),
-      y = item(m, "レジ", "15:00");
+    const x = item(m, "レジ", "12:00");
     const other = ["A", "B", "C"].find((n) => n !== m.assignments[x.key])!;
-    pickName(m, x.key, other, 1);
-    expect(isManual(m, x.key)).toBe(true);
-    expect(manualCount(m)).toBe(1);
-    autoAssign(m);
-    expect(m.assignments[x.key]).toBe(other);
-    // 手で入れた人も連続・その日の目安に数える（同じ人が前後に続けて入っても連続の上限を超えない）
-    for (const r of Object.values(runs(timeline(m, "レジ"))).flat()) expect(r).toBeLessThanOrEqual(180);
-    // 手で外した枠は印が消え、自動割当で埋まる
-    clearAssignment(m, y.key);
-    expect(isManual(m, y.key)).toBe(false);
-    autoAssign(m);
-    expect(m.assignments[y.key]).toBeTruthy();
-    // 元に戻すと印も戻る
-    const before = m.assignments[x.key];
-    const r2 = pickName(m, x.key, ["A", "B", "C"].find((n) => n !== before)!, 1)!;
-    undoChanges(m, r2.changes);
-    expect(m.assignments[x.key]).toBe(before);
-    expect(isManual(m, x.key)).toBe(true);
-    // 自動割当が変えた枠の古い印は効かない
-    m.assignments[x.key] = "Z";
-    expect(isManual(m, x.key)).toBe(false);
-    m.assignments[x.key] = before;
-    // 印を消すと、すべてやり直す
-    clearManual(m);
+    // 手で動かしただけでは固定しない
+    const r = pickName(m, x.key, other, 2)!;
+    expect(isPinned(m, x.key)).toBe(false);
+    // 固定の対象は、その人が続けて入っているコマ
+    const keys = pinTargets(m, x.key);
+    expect(keys.length).toBeGreaterThanOrEqual(2);
+    expect(filledChanges(m, r.changes).every((k) => keys.includes(k))).toBe(true);
+    expect(setPinned(m, keys, true)).toBe(keys.length);
+    expect(pinnedCount(m)).toBe(keys.length);
+    expect(autoAssign(m).kept).toBe(keys.length);
+    for (const k of keys) expect(m.assignments[k]).toBe(other);
+    // 固定した人も連続の上限に数える
+    for (const run of Object.values(runs(timeline(m, "レジ"))).flat()) expect(run).toBeLessThanOrEqual(180);
+    // 人を替えると固定は外れる
+    m.assignments[keys[0]] = "Z";
+    expect(isPinned(m, keys[0])).toBe(false);
+    m.assignments[keys[0]] = other;
+    expect(setPinned(m, keys, false)).toBe(keys.length);
     expect(autoAssign(m).kept).toBe(0);
+    // 範囲を選んでいれば範囲ごと
+    const range = [item(m, "レジ", "15:00").key, item(m, "レジ", "15:30").key, item(m, "レジ", "16:00").key];
+    expect(pinTargets(m, range[1], range)).toEqual(range);
+    setPinned(m, range, true);
+    clearPins(m);
+    expect(pinnedCount(m)).toBe(0);
   });
 });

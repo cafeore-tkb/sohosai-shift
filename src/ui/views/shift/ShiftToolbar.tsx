@@ -8,6 +8,7 @@
 
 import { Fragment, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { pinnedCount } from "../../../domain";
 import type { Model } from "../../../domain";
 import { actions, store, useUi } from "../../../store";
 import { Button, Chip, ChipCount, ChipGroup, Fill, Icon, Meter, Overflow, Pill, SegButton, SegSep, Segmented, Switch, cx, useEdgeFade, useMedia } from "../../components";
@@ -42,15 +43,27 @@ export function ShiftToolbar({ m, dates, minimap }: ShiftToolbarProps) {
   const filtersRef = useRef<HTMLDivElement>(null);
   useEdgeFade(datesRef, { enabled: phone });
   useEdgeFade(filtersRef, { enabled: phone });
+  // フルネームと「動かしたら固定」（同じ場所に並べる）
   const fullName = (
-    <Switch
-      id="fullNameToggle"
-      checked={!!m.fullNames}
-      onChange={(e) => actions.setFullNames(e.target.checked)}
-      label="フルネーム"
-      wrapClassName={s.fullName}
-    />
+    <>
+      <Switch
+        id="fullNameToggle"
+        checked={!!m.fullNames}
+        onChange={(e) => actions.setFullNames(e.target.checked)}
+        label="フルネーム"
+        wrapClassName={s.fullName}
+      />
+      <Switch
+        id="pinMovedToggle"
+        checked={!!m.pinMoved}
+        onChange={(e) => actions.setPinMoved(e.target.checked)}
+        label="動かしたら固定"
+        title="オンのあいだ、手で入れた・動かしたコマをすべて固定します（自動割当で変えません）。オフでも、動かしたあとの「固定」で固定できます"
+        wrapClassName={s.fullName}
+      />
+    </>
   );
+  const pins = pinnedCount(m);
 
   const modes = (
     <Segmented label="表示の切り替え" size="sm" id="gridModes" className={s.modes}>
@@ -124,12 +137,18 @@ export function ShiftToolbar({ m, dates, minimap }: ShiftToolbarProps) {
           icon="trash"
           shortLabel="クリア"
           shortAt="1279"
-          title="すべての割当をクリア（確認あり・元に戻せません）"
+          title="すべての割当をクリア（固定も外れます。確認あり・元に戻せません）"
           className={s.clear}
           onClick={actions.clearAssignments}
         >
           割当をクリア
         </Button>
+        {pins ? (
+          <button type="button" className={s.helpItem} id="clearPinsBtn" onClick={actions.clearAllPins}>
+            <Icon name="lock" />
+            {`固定をすべて外す（${pins}コマ）`}
+          </button>
+        ) : null}
         {phone ? fullName : null}
         <button type="button" className={s.helpItem} onClick={() => actions.toggleHelp(true)}>
           <Icon name="help" />
@@ -171,7 +190,7 @@ export function ShiftToolbar({ m, dates, minimap }: ShiftToolbarProps) {
         </Pill>
       </Button>
 
-      <Button id="autoBtn" variant="primary" icon="sparkle" title="自動割当（手で入れた枠はそのまま、ほかの割当は確認のうえ置き換え）" className={s.auto} onClick={actions.runAutoAssign}>
+      <Button id="autoBtn" variant="primary" icon="sparkle" title="自動割当（いまの割当は確認のうえ置き換え）" className={s.auto} onClick={actions.runAutoAssign}>
         自動割当
       </Button>
 

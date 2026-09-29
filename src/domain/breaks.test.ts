@@ -25,7 +25,7 @@ describe("昼食へ・休憩へ（sendToBreak）", () => {
     expect([m.assignments[key(m, "昼食", "12:00")], m.assignments[key(m, "昼食", "12:30")]]).toEqual(["A", "A"]);
     expect(["11:00", "11:30", "12:00", "12:30"].map((t) => m.assignments[key(m, "買い出し", t)])).toEqual(["A", "A", "", ""]);
     // 元に戻すための差分
-    expect(r.changes.filter((c) => c[0] === "assignments").length).toBe(4);
+    expect(r.changes.length).toBe(4);
   });
 
   it("空いている一番前の番目に入れる。参加できない時間で止まる", () => {

@@ -9,7 +9,8 @@ export function ToastDock() {
   const toast = useUi((u) => u.toast);
   const visible = useUi((u) => u.toastVisible);
   const move = toast?.variant === "move";
-  const action = toast?.action;
+  const action = toast?.action,
+    extra = toast?.extra;
   // 勤務状況チェックは表の横に開く（モーダルではない）ので、トーストは表の側に出す
   const besideDrawer = useUi((u) => u.auditOpen);
   return (
@@ -30,6 +31,19 @@ export function ToastDock() {
                 onClick: () => {
                   store.hideToast();
                   action.run();
+                },
+              }
+            : undefined
+        }
+        extra={
+          extra
+            ? {
+                label: extra.label,
+                icon: "lock",
+                title: "動かしたコマを固定します（自動割当で変えません）",
+                onClick: () => {
+                  store.hideToast();
+                  extra.run();
                 },
               }
             : undefined

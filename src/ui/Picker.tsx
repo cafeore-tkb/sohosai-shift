@@ -22,6 +22,7 @@ import {
   eventDates,
   flattened,
   fmt,
+  isPinned,
   itemLabel,
   pickerCandidates,
   prefMark,
@@ -321,6 +322,20 @@ function PickerBody({
           >
             移動…
           </Button>
+          <Button
+            size="sm"
+            icon="lock"
+            data-pk-pin=""
+            aria-pressed={isPinned(m, item.key)}
+            title={
+              isPinned(m, item.key)
+                ? "固定を外す（自動割当で変わるようになります）"
+                : `${rangeItems.length > 1 ? `選んでいる ${rangeItems.length}コマ` : `${chosen} が続けて入っているコマ`}を固定（自動割当で変えません）`
+            }
+            onClick={actions.togglePinPicked}
+          >
+            {isPinned(m, item.key) ? "固定を外す" : "固定"}
+          </Button>
           <Button size="sm" danger data-pk-clear="" onClick={actions.clearPicked}>
             外す
           </Button>
@@ -347,7 +362,7 @@ function PickerBody({
       {chosen && rangeItems.length > 1 ? (
         <p className={styles.range}>
           <Icon name="grid" size={14} />
-          {`選択中 ${rangeItems.length}コマ（${rangeItems[0].start}–${rangeItems[rangeItems.length - 1].end}）：「移動…」でまとめて移動`}
+          {`選択中 ${rangeItems.length}コマ（${rangeItems[0].start}–${rangeItems[rangeItems.length - 1].end}）：「移動…」「固定」でまとめて`}
         </p>
       ) : null}
       <div className={styles.tools}>

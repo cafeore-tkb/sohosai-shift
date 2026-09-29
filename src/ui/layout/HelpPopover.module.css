@@ -89,11 +89,7 @@
   gap: 2px;
 }
 
-/* 手で入れた枠の点（RoleGrid の .cell[data-manual]::after と同じ） */
-.manualDot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--primary);
+/* 固定したコマの鍵（RoleGrid の .pin と同じ色） */
+.pin {
+  color: var(--primary);
 }

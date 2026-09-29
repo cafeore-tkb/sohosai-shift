@@ -44,10 +44,10 @@ export interface Model {
   /** item.key → 氏名。"" は「外した」（キーは残る） */
   assignments: Record<string, string>;
   /**
-   * item.key → 手で入れた人の氏名（担当者の選択・移動・入れ替え・昼食へ など）。いまの割当と同じ名前のあいだだけ有効（isManual）。
-   * 自動割当はこの枠を変えない。旧版は知らないので無視する
+   * 固定したコマ：item.key → 固定したときの担当者。いまの割当と同じ名前のあいだだけ有効（isPinned。人を替えたら外れる）。
+   * 自動割当はこのコマを変えない。旧版は知らないので無視する
    */
-  manualSlots: Record<string, string>;
+  pinnedSlots: Record<string, string>;
   memberStatuses: Record<string, string>;
   memberStores: Record<string, string[]>;
   memberWants: Record<string, string[]>;
@@ -77,6 +77,8 @@ export interface Model {
   gridMode: GridMode;
   countDate: string;
   fullNames: boolean;
+  /** 手で動かしたコマをすべて固定する（シフト調整の「動かしたら固定」。このブラウザだけ） */
+  pinMoved: boolean;
   availDate: string;
   memberQuery: string;
   memberStore: string;
@@ -86,7 +88,7 @@ export interface Model {
 /** 共同編集で共有するマップ */
 export const SHARED_MAPS = [
   "assignments",
-  "manualSlots",
+  "pinnedSlots",
   "slotTypes",
   "slotCounts",
   "slotBlanks",

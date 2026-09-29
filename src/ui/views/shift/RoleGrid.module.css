@@ -273,16 +273,14 @@ td[data-box="end"] > .cell {
 .mk {
   flex: none;
 }
-/* 手で入れた枠（自動割当で変えない）：右上の小さな点 */
-.cell[data-manual]::after {
-  content: "";
+/* 固定したコマ（自動割当で変えない）：右上の小さな鍵 */
+.pin {
   position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--primary);
+  top: 2px;
+  right: 2px;
+  width: 11px;
+  height: 11px;
+  color: var(--primary);
 }
 .cell[data-cont] {
   font-weight: var(--fw-regular);

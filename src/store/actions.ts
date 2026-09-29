@@ -26,8 +26,13 @@ import {
   type AutoRuleKey,
   clearAll,
   clearAssignment,
-  clearManual,
-  manualCount,
+  clearPins,
+  filledChanges,
+  isPinned,
+  pinTargets,
+  pinnedCount,
+  pinnedMessage,
+  setPinned,
   dayName,
   decodeCsvBytes,
   eventDates,
@@ -65,7 +70,7 @@ import {
   templateCsv,
   undoChanges,
 } from "../domain";
-import type { AvailabilityChanges, Change, EditResult, GridMode, MemberSort, SortDir, View } from "../domain";
+import type { AvailabilityChanges, EditResult, GridMode, MemberSort, SortDir, View } from "../domain";
 import { printShiftHtml } from "../print/printHtml";
 import { ask, download, openHtmlWindow, scrollToTop, tell } from "./browser";
 import { movingRange, store } from "./store";
@@ -125,33 +130,57 @@ export function loadSample(): void {
 // ---- 割当 ----
 
 export function runAutoAssign(): void {
-  const kept = manualCount(M());
+  const pins = pinnedCount(M());
   if (
     hasAssignments(M()) &&
-    !ask(kept ? `手で入れた ${kept} 枠はそのままにして、ほかの割当を自動割当でやり直しますか？` : "いまの割当を置き換えて、自動割当をやり直しますか？")
+    !ask(pins ? `固定した ${pins}コマはそのままにして、ほかの割当を自動割当でやり直しますか？` : "いまの割当を置き換えて、自動割当をやり直しますか？")
   )
     return;
-  autoAssignWithToast();
-}
-
-/** 自動割当して結果を出す。手で入れた枠を残したときは「すべてやり直す」を付ける */
-function autoAssignWithToast(): void {
   const { runBlocked, kept } = autoAssign(M());
   store.commit();
   store.showToast(
-    (kept ? `自動割当しました（手で入れた ${kept} 枠はそのまま）。` : "自動割当しました。") +
+    (kept ? `自動割当しました（固定した ${kept}コマはそのまま）。` : "自動割当しました。") +
       "空いている枠はオレンジ色で表示されます" +
       (runBlocked ? `（連続 ${autoRules(M()).maxRunHours} 時間までの決まりで空けた枠 ${runBlocked}。役職ルールで変えられます）` : ""),
-    false,
-    kept ? { label: "すべてやり直す", run: redoAllAutoAssign } : undefined,
   );
 }
 
-/** 手で入れた枠も含めて、すべて自動割当でやり直す */
-export function redoAllAutoAssign(): void {
-  if (!ask("手で入れた枠も含めて、すべての割当を自動割当でやり直しますか？")) return;
-  clearManual(M());
-  autoAssignWithToast();
+// ---- 固定（自動割当で変えないコマ）----
+
+/** 担当者ポップアップの「固定」「固定を外す」：選んでいる範囲の中なら範囲ごと、なければその人が続けて入っているコマ */
+export function togglePinPicked(): void {
+  const p = store.ui.picker;
+  if (!p) return;
+  const keys = pinTargets(M(), p.key, store.ui.selection),
+    on = !isPinned(M(), p.key);
+  closePicker();
+  const n = setPinned(M(), keys, on);
+  store.commit();
+  store.showToast(pinnedMessage(n, on));
+  store.flashKeys(keys);
+}
+
+/** 手で動かしたあとのトーストの「固定」 */
+function pinKeys(keys: readonly string[]): void {
+  const n = setPinned(M(), keys, true);
+  store.commit();
+  store.showToast(pinnedMessage(n, true));
+  store.flashKeys(keys);
+}
+
+/** 固定をすべて外す（割当はそのまま） */
+export function clearAllPins(): void {
+  const n = pinnedCount(M());
+  if (!n || !ask(`固定した ${n}コマの固定をすべて外しますか？（割当はそのままです）`)) return;
+  clearPins(M());
+  store.commit();
+  store.showToast(pinnedMessage(n, false));
+}
+
+/** 「動かしたら固定」：手で動かしたコマをすべて固定する（このブラウザだけ） */
+export function setPinMoved(on: boolean): void {
+  M().pinMoved = on;
+  store.commit({ push: false });
 }
 
 /** 自動割当の決まり（役職ルールの画面）。値が読めなければ何もしない（入力欄は元の値に戻る） */
@@ -173,12 +202,21 @@ function finish(r: EditResult | null): void {
   if (!r.ok) return store.showToast(r.message);
   if (!r.changes.length) return;
   store.lastChange = r.changes;
-  store.showToast(r.message, false, { label: "元に戻す", run: undoLastChange });
-  store.flashKeys(changedSlots(r.changes));
+  // 人が入ったコマ：「動かしたら固定」ならすぐ固定、でなければトーストに「固定」
+  const filled = filledChanges(M(), r.changes);
+  if (filled.length && M().pinMoved) {
+    setPinned(M(), filled, true);
+    store.commit();
+  }
+  store.showToast(
+    r.message + (filled.length && M().pinMoved ? "（固定しました）" : ""),
+    false,
+    { label: "元に戻す", run: undoLastChange },
+    undefined,
+    filled.length && !M().pinMoved ? { label: "固定", run: () => pinKeys(filled) } : undefined,
+  );
+  store.flashKeys(r.changes.map((c) => c[1]));
 }
-
-/** 光らせる枠（割当が変わった枠。手で入れた印の変更は数えない） */
-const changedSlots = (changes: readonly Change[]) => changes.filter((c) => c[0] === "assignments").map((c) => c[1]);
 
 /** 直前の割当の変更を元に戻す */
 export function undoLastChange(): void {
@@ -188,7 +226,7 @@ export function undoLastChange(): void {
   const message = undoChanges(M(), c);
   store.commit();
   store.showToast(message);
-  store.flashKeys(changedSlots(c));
+  store.flashKeys(c.map((x) => x[1]));
 }
 
 /** ⌘Z／Ctrl+Z（入力中でなく、戻せる変更があるときだけ呼ぶ） */

@@ -31,6 +31,8 @@ export interface Toast {
   id: number;
   message: string;
   action?: ToastAction;
+  /** 2つ目のボタン（手で動かしたあとの「固定」） */
+  extra?: ToastAction;
   /** 見た目の種類。"move"＝移動中（紙色・緑の枠。ドックに「キャンセル」も出る） */
   variant?: "move";
 }
@@ -268,9 +270,9 @@ export class Store {
   }
 
   // ---- トースト ----
-  showToast(message: string, sticky = false, action?: ToastAction, variant?: Toast["variant"]): void {
+  showToast(message: string, sticky = false, action?: ToastAction, variant?: Toast["variant"], extra?: ToastAction): void {
     clearTimeout(this.toastTimer);
-    this.setUi({ toast: { id: ++this.toastSeq, message, action, variant }, toastVisible: true });
+    this.setUi({ toast: { id: ++this.toastSeq, message, action, extra, variant }, toastVisible: true });
     if (!sticky) this.toastTimer = setTimeout(() => this.setUi({ toastVisible: false }), action ? 7000 : 3500);
   }
   hideToast(): void {
