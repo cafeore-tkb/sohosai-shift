@@ -11,6 +11,7 @@ import { startSync } from "./sync/firebase";
 import { currentRoute } from "./sync/site";
 import { App } from "./ui/App";
 import { CalendarPage } from "./ui/calendar/CalendarPage";
+import { MockPage } from "./ui/mock/MockPage";
 
 declare global {
   interface Window {
@@ -32,6 +33,14 @@ if (route.kind === "calendar") {
   root.render(
     <StrictMode>
       <CalendarPage initialSlug={route.slug} />
+    </StrictMode>,
+  );
+} else if (route.kind === "mock") {
+  // アンケート回答 CSV を作るページ：アプリ本体（store・共同編集）は起動しない
+  document.title = "アンケート回答 CSV を作る";
+  root.render(
+    <StrictMode>
+      <MockPage />
     </StrictMode>,
   );
 } else startApp();

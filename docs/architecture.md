@@ -184,6 +184,9 @@ settings の `autoMasterHours` `autoAvailPercent` `autoMaxRunHours` `autoDripMar
 自動割当（autoAssign）は、その日の目安に届いた人を候補の後ろに回す（spare の次の順位。ほかにいなければ超えても入れる）。
 UI は `ui/WorkloadTag.tsx`（担当者ポップアップの候補の「目安超え」、`data-over-target`）と `ui/WorkloadOver.tsx`（勤務状況チェックのバッジと「働ける量の目安を超えている人」）
 
+**surveyEdit.ts** — /mock のページ用：`readSurvey(text)`→{m, names, warns}（importSurvey で読む。勤務可能時間のない人も names に残す）`surveyCsv(d)`（サンプルと同じ列。勤務可能時間のない人は日付・時刻が空の1行）
+`surveyDates` `spansText` / `setSpans`（"10-14 16:30-20"。読めなければ false）`addSurveyMember` `renameSurveyMember` `removeSurveyMember`。メンバーの値の変更は members.ts の setMember* をそのまま使う
+
 **exports.ts** — `exportCsv(m)` `templateCsv()` `sampleCsv()`（＝`mockSurveyCsv()`、2025年ベースのサンプル） `resetForSample(m)`（サンプル読み込みの前処理。このあと importSurvey(m, sampleCsv()) し、結果の代わりに `SAMPLE_INTRO` を表示）`sampleNames` とファイル名 `EXPORT_FILE` `TEMPLATE_FILE` `SAMPLE_FILE` `PRINT_FILE`
 
 **cells.ts**（セルのデータ。HTML は作らない）— `slotCell(m, item, audit, shortNames)`（役職別の表の1人分：kind/mark/label/tip/ariaLabel/drip/unfit。kind の優先順は 重複 → 勤務できない時間 → 条件外（unfit）→ 苦手）`dripBadge(m, name)` `carFreeAt(m, date)`→(h)=>車持ちの一覧 or null `carTitle(free)` `personMatrix(m, date, names)`→{hours, cols, span}（印刷と共用で旧版と同じ分け方。条件外は画面側の personTable が足す） `personSegments(m, name, date)`
@@ -242,7 +245,7 @@ UI は `ui/WorkloadTag.tsx`（担当者ポップアップの候補の「目安�
 **sync/firebase.ts** … 旧 sync.js の移植（`startSync()`）。ドキュメント形式・差分／マージ・WHOLE_MAP_THRESHOLD・受信の保留（busy → flush）・ログイン・管理者・退出・hashchange は旧版と同じ。gstatic から動的 import、`window.__FIREBASE_MOCK__` があればそれを使う。画面には store の `setShare` で状態を渡し、ダイアログは React（`ui/ShareDialog.tsx`）が描く。Model の共有データの書き換えは domain の `replaceShared` / `applySharedChange` で行う（sync は Model の中身の決まりを知らない）。
 
 **公開サイトの URL・カレンダー配信（個人TT）** … README の「公開サイトの URL」「カレンダー配信」。
-- `sync/site.ts`：`currentRoute()`（`/edit`＝本番の部屋・`/shift[/{名前}]`＝カレンダー・それ以外＝アプリ。古い `#room={本番}`・`#cal=` は置き換える。file:// は常にアプリ）`siteRoom()`（`window.SHIFT_SITE.room`）`CALENDAR_PATH`（"shift"＝パスと pubs の ID）
+- `sync/site.ts`：`currentRoute()`（`/edit`＝本番の部屋・`/shift[/{名前}]`＝カレンダー・`/mock`＝アンケート回答 CSV を作る・それ以外＝アプリ。古い `#room={本番}`・`#cal=` は置き換える。file:// は常にアプリ）`siteRoom()`（`window.SHIFT_SITE.room`）`CALENDAR_PATH`（"shift"＝パスと pubs の ID）
 - `domain/calendarId.ts`：`nameSlug`（氏名 → URL の名前）`calendarSlugs`（重なれば番号）`slugId`（URL の名前 → `m`＋16進14桁。Worker も使うので import なし）
 - `domain/overview.ts`：`shiftOverview(m)`（日ごと・参加者ごとの縦の並び `OverviewSeg`＝[行数, 種類, 表示, 店舗]。`personMatrix` から。配信に JSON で入れる）`expandSegs`
 - `domain/ical.ts`：`memberEvents(m, name)`（`personSegments` を日ごとに＝同じ担当が続く時間を1件）
@@ -252,6 +255,8 @@ UI は `ui/WorkloadTag.tsx`（担当者ポップアップの候補の「目安�
 - `sync/calendarFeed.ts`：閲覧ページが Firestore の REST API で `pubs/shift` の一部（mask）を読む。`feedUrls(slug)`
 - `ui/calendar/CalendarPage.tsx`：`/shift`（一覧・前回の人と、その下に `OverviewPanel`＝日ごとの全員の表）・`/shift/{名前}`（その人の列を日ごとに並べた表）。以前の `/shift/all` は `/shift` へ置き換える。
   表は `Timetable`（個人別と同じ見た目・操作なし）。表は内側でスクロールさせず（大きさのまま置き、ページが縦横にスクロール）、見出しと時間の列は sticky。pushState・戻る。`main.tsx` はアプリ本体（store・sync）を起動せずにこれだけを描く
+- `ui/mock/MockPage.tsx`：`/mock`。アンケート回答 CSV を読み込み（ファイル・ドロップ・サンプル）、表で直して（ステータス・アイス・所属・勤務可能時間「10-14 16:30-20」など。名前の変更・追加・削除も）、同じ形式でダウンロードする。
+  アプリ本体（store・共同編集）は起動せず、データはブラウザの中だけ（下書きは localStorage の `shift-mock-draft`）
 - `index.html`：`firebase-config.js` は Web ではサイト直下（`/shift/{名前}` の深さでも読める）、file:// では隣を読む
 - `worker/`：Cloudflare Worker（アプリ本体の配信も兼ねる。dist を静的ファイルとして配り、知らないパスは index.html。`/shift/*` と `/robots.txt` だけ Worker が先に受ける）。
   `/shift/{名前}.ics` → Firestore の `ics.{slugId(名前)}`、`/shift/{名前}` → index.html。テストは `worker/src/index.test.ts`（ルートの vitest で動く）

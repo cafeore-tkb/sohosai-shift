@@ -18,6 +18,7 @@ export * from "./prune";
 export * from "./members";
 export * from "./importSurvey";
 export * from "./exports";
+export * from "./surveyEdit";
 export * from "./cells";
 export * from "./grid";
 export * from "./shared";
