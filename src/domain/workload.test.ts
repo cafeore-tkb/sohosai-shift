@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { assignmentAudit } from "./audit";
 import { autoAssign } from "./autoAssign";
+import { setAutoRule } from "./autoRules";
 import { importSurvey } from "./importSurvey";
 import { createModel, refreshDerived } from "./model";
 import { parseWorkload } from "./parse";
@@ -51,6 +52,9 @@ describe("働ける量", () => {
         m.memberStores[n] = ["本店"];
       }
       m.memberWorkload.A = "少し";
+      // 勤務可能時間の割合・連続勤務の決まりは切って、働ける量の目安だけを見る
+      setAutoRule(m, "availPercent", 0);
+      setAutoRule(m, "maxRunHours", 0);
       refreshDerived(m);
       for (const s of m.slots) if (!(s.store === "本店" && s.role === "レジ")) s.count = 0;
       autoAssign(m);
@@ -62,7 +66,7 @@ describe("働ける量", () => {
     // B が 12:00 までしかいなければ、A は目安を超えても入る
     const short = run("12:00");
     expect(short.A[D]).toBeGreaterThan(3);
-    expect(short.A[D] + short.B[D]).toBe(9);
+    expect(short.A[D] + (short.B?.[D] ?? 0)).toBe(9);
     expect(workloadTarget(createModel(), "A")).toBeNull();
   });
 

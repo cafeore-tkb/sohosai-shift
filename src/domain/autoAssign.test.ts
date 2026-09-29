@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { assignmentAudit } from "./audit";
 import { autoAssign } from "./autoAssign";
+import { autoRules, setAutoRule } from "./autoRules";
+import { createModel } from "./model";
+import type { Model } from "./types";
 import { refreshDerived } from "./model";
 import { canWorkAt, fitsSlot, levelOf } from "./rules";
 import { flattened } from "./slots";
 import { statusLevels } from "./config";
-import { autoModel, item, sampleModel, tinyModel } from "../test/fixtures";
+import { D, autoModel, item, sampleModel, tinyModel } from "../test/fixtures";
 
 describe("autoAssign（サンプル）", () => {
   const m = autoModel();
@@ -63,5 +66,99 @@ describe("autoAssign（小さな例）", () => {
     const buyers = flattened(m).filter((x) => x.role === "買い出し" && m.assignments[x.key]);
     expect(buyers.length).toBeGreaterThan(0);
     expect(new Set(buyers.map((x) => m.assignments[x.key]))).toEqual(new Set(["B"]));
+  });
+});
+
+/** 本番1日目、本店の1つの役職だけ（1人ずつ）。people：氏名 → [開始, 終了]（全員 本店・上級生） */
+function oneRole(role: string, people: Record<string, [string, string]>, setup?: (m: Model) => void): Model {
+  const m = createModel();
+  for (const [name, [start, end]] of Object.entries(people)) {
+    m.availability.push({ name, date: D, start, end });
+    m.memberStatuses[name] = "上級生";
+    m.memberStores[name] = ["本店"];
+  }
+  setup?.(m);
+  refreshDerived(m);
+  for (const s of m.slots) s.count = s.store === "本店" && s.role === role ? 1 : 0;
+  autoAssign(m);
+  return m;
+}
+/** 時刻順の担当者（未割当は ""） */
+const timeline = (m: Model, role: string) =>
+  flattened(m)
+    .filter((x) => x.role === role && x.store === "本店")
+    .sort((a, b) => a.start.localeCompare(b.start))
+    .map((x) => m.assignments[x.key] || "");
+/** 1人ずつの、続けて入った時間（分）の一覧 */
+function runs(names: string[]): Record<string, number[]> {
+  const out: Record<string, number[]> = {};
+  names.forEach((n, i) => {
+    if (!n) return;
+    if (names[i - 1] === n) out[n][out[n].length - 1] += 30;
+    else (out[n] ??= []).push(30);
+  });
+  return out;
+}
+
+describe("autoAssign（自動割当の決まり）", () => {
+  const all = (s: string, e: string, ...names: string[]) => Object.fromEntries(names.map((n) => [n, [s, e] as [string, string]]));
+
+  it("決まりの標準（マスター 1時間・勤務可能時間の 80%・連続 3時間）と、変えた値の保存", () => {
+    const m = createModel();
+    expect(autoRules(m)).toEqual({ masterHours: 1, availPercent: 80, maxRunHours: 3 });
+    expect(setAutoRule(m, "maxRunHours", 2.3)).toBe(true);
+    expect(setAutoRule(m, "availPercent", 150)).toBe(true);
+    expect(setAutoRule(m, "masterHours", -1)).toBe(false);
+    expect(m.settings).toEqual({ autoMaxRunHours: 2.5, autoAvailPercent: 100 });
+    setAutoRule(m, "maxRunHours", 3);
+    expect(m.settings).toEqual({ autoAvailPercent: 100 });
+  });
+
+  it("マスターは人が足りていれば1人1時間ずつ", () => {
+    // 本店は 10:00〜19:00（9時間）。9人いれば全員 1時間
+    const m = oneRole("マスター", all("10:00", "19:00", ..."ABCDEFGHI"));
+    const r = runs(timeline(m, "マスター"));
+    expect(Object.keys(r)).toHaveLength(9);
+    for (const list of Object.values(r)) expect(list).toEqual([60]);
+  });
+
+  it("マスターは1時間ずつで足りないときだけ2時間ずつ（全員同じくらい）", () => {
+    // 9時間を5人：1時間ずつでは足りないので 2時間まで（2+2+2+2+1）
+    const m = oneRole("マスター", all("10:00", "19:00", ..."ABCDE"));
+    const hours = Object.values(runs(timeline(m, "マスター"))).map((l) => l.reduce((a, b) => a + b, 0) / 60);
+    expect(hours.sort()).toEqual([1, 2, 2, 2, 2]);
+    expect(timeline(m, "マスター").every(Boolean)).toBe(true);
+  });
+
+  it("できるだけ続けて入れ、連続は上限まで（超えるなら空ける）", () => {
+    // 2人・レジ 9時間：交代で続けて入る（上限の最後の1時間は、空いている人がいれば交代＝2時間ずつ）
+    const two = timeline(oneRole("レジ", all("10:00", "19:00", "A", "B"), (m) => setAutoRule(m, "availPercent", 0)), "レジ");
+    expect(two.every(Boolean)).toBe(true);
+    expect(two.slice(0, 4)).toEqual(["A", "A", "A", "A"]);
+    for (const r of Object.values(runs(two)).flat()) expect(r).toBeGreaterThanOrEqual(60), expect(r).toBeLessThanOrEqual(180);
+    // 1人だけなら 3時間ごとに 30分空ける
+    const one = timeline(oneRole("レジ", all("10:00", "19:00", "A"), (m) => setAutoRule(m, "availPercent", 0)), "レジ");
+    expect(runs(one).A).toEqual([180, 180, 180 - 60]);
+    expect(one.filter((n) => !n)).toHaveLength(2);
+    // 上限なし（0）なら続けて全部
+    const free = timeline(
+      oneRole("レジ", all("10:00", "19:00", "A"), (m) => {
+        setAutoRule(m, "availPercent", 0);
+        setAutoRule(m, "maxRunHours", 0);
+      }),
+      "レジ",
+    );
+    expect(runs(free).A).toEqual([540]);
+  });
+
+  it("1日の勤務時間は勤務可能時間の 80% くらいまで（ほかにいれば交代）", () => {
+    // A は 10:00〜15:00（5時間 → 4時間まで）、B は 14:00〜19:00。レジは 10:00〜19:00
+    const m = oneRole("レジ", { A: ["10:00", "15:00"], B: ["14:00", "19:00"] }, (m) => setAutoRule(m, "maxRunHours", 0));
+    const t = timeline(m, "レジ");
+    const hoursOf = (n: string) => t.filter((x) => x === n).length / 2;
+    expect(hoursOf("A")).toBe(4);
+    // B は A の分も入る（目安を超えてもほかにいない）
+    expect(hoursOf("B")).toBe(5);
+    expect(t.every(Boolean)).toBe(true);
   });
 });

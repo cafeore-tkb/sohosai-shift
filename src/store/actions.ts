@@ -21,6 +21,9 @@ import {
   addedMemberMessage,
   applyAvailability,
   autoAssign,
+  autoRules,
+  setAutoRule,
+  type AutoRuleKey,
   clearAll,
   clearAssignment,
   dayName,
@@ -121,9 +124,18 @@ export function loadSample(): void {
 
 export function runAutoAssign(): void {
   if (hasAssignments(M()) && !ask("いまの割当を置き換えて、自動割当をやり直しますか？")) return;
-  autoAssign(M());
+  const { runBlocked } = autoAssign(M());
   store.commit();
-  store.showToast("自動割当しました。空いている枠はオレンジ色で表示されます");
+  store.showToast(
+    "自動割当しました。空いている枠はオレンジ色で表示されます" +
+      (runBlocked ? `（連続 ${autoRules(M()).maxRunHours} 時間までの決まりで空けた枠 ${runBlocked}。役職ルールで変えられます）` : ""),
+  );
+}
+
+/** 自動割当の決まり（役職ルールの画面）。値が読めなければ何もしない（入力欄は元の値に戻る） */
+export function changeAutoRule(key: AutoRuleKey, value: number): void {
+  setAutoRule(M(), key, value);
+  store.commit();
 }
 
 export function clearAssignments(): void {

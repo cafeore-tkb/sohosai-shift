@@ -2,11 +2,11 @@
 // デスクトップは表（見出しはアプリバーの下に固定）、スマホ（≤640px）は同じ DOM を役職ごとのカードに並べる
 
 import type { ChangeEvent } from "react";
-import { carRoles, eventDayRoles, eventDays, liveRoles, posKey, posLabel, roleStore, ruleKey, shortDay, statusNames } from "../../../domain";
-import type { Model, RolesByStore } from "../../../domain";
-import { actions, useModel } from "../../../store";
-import { Disclosure, Page, Select, ShopTag, cx } from "../../components";
-import { StatusOptions, releaseFocus } from "../../components/inputs";
+import { AUTO_RULE_DEFAULTS, autoRules, carRoles, eventDayRoles, eventDays, liveRoles, posKey, posLabel, roleStore, ruleKey, shortDay, statusNames } from "../../../domain";
+import type { AutoRuleKey, Model, RolesByStore } from "../../../domain";
+import { actions, store, useModel } from "../../../store";
+import { Disclosure, Page, Select, ShopTag, cx, inputClassName } from "../../components";
+import { ChangeInput, StatusOptions, releaseFocus } from "../../components/inputs";
 import styles from "./Rules.module.css";
 
 const LADDER = ["未合格", "1年目合格", "2年目合格", "上級生"];
@@ -60,6 +60,7 @@ export function RulesView({ hidden }: { hidden: boolean }) {
           {"ステータスが未合格の人はアイスが自動で ×、上級生の人は自動で ○ になります。"}
         </div>
       </Disclosure>
+      <AutoRulesCard m={m} />
       <div className={styles.card}>
         <table className={styles.rt}>
           <thead>
@@ -173,4 +174,96 @@ function PosRules({ m, store, role, def }: { m: Model; store: string; role: stri
       })}
     </div>
   );
+}
+
+interface AutoRuleRow {
+  key: AutoRuleKey;
+  label: string;
+  before: string;
+  unit: string;
+  step: number;
+  max?: number;
+  note: string;
+}
+const AUTO_RULE_ROWS: readonly AutoRuleRow[] = [
+  {
+    key: "masterHours",
+    label: "マスター",
+    before: "1人",
+    unit: "時間まで",
+    step: 0.5,
+    note: "その日のマスターを全員この時間までで埋めきれないときだけ、この時間ずつ増やして全員に同じくらい割り振ります。",
+  },
+  {
+    key: "availPercent",
+    label: "1日の勤務時間",
+    before: "勤務可能時間の",
+    unit: "%くらいまで",
+    step: 5,
+    max: 100,
+    note: "目安です（ほかに入れる人がいなければ超えます）。働ける量（少し・5時間程度）の目安があれば、少ないほうを使います。",
+  },
+  {
+    key: "maxRunHours",
+    label: "連続勤務",
+    before: "最長",
+    unit: "時間まで",
+    step: 0.5,
+    note: "できるだけ続けて入れ、この時間を超えて続けては入れません（入れる人がいなければ空けます）。",
+  },
+];
+
+// 自動割当の決まり（settings。共同編集で共有する）。0 か空欄で制限なし
+function AutoRulesCard({ m }: { m: Model }) {
+  const rules = autoRules(m);
+  return (
+    <section className={styles.auto} aria-labelledby="autoRulesTitle">
+      <h2 id="autoRulesTitle" className={styles.autoTitle}>
+        自動割当の決まり
+        <span className={styles.autoSub}>0 か空欄で制限なし</span>
+      </h2>
+      <dl className={styles.autoList}>
+        {AUTO_RULE_ROWS.map((r) => {
+          const v = rules[r.key],
+            changed = v !== AUTO_RULE_DEFAULTS[r.key];
+          return (
+            <div key={r.key} className={styles.autoRow}>
+              <dt>{r.label}</dt>
+              <dd className={styles.autoValue}>
+                <label className={cx(styles.autoField, changed && styles.isSet)}>
+                  <span>{r.before}</span>
+                  <ChangeInput
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={r.max}
+                    step={r.step}
+                    data-auto-rule={r.key}
+                    aria-label={`${r.label}（${r.before}〇${r.unit}）`}
+                    className={inputClassName({ size: "sm" }, styles.autoInput)}
+                    value={v ? String(v) : ""}
+                    placeholder="なし"
+                    onCommit={onAutoRuleCommit}
+                  />
+                  <span>{r.unit}</span>
+                </label>
+                {changed ? <span className={styles.autoDefault}>{`標準 ${AUTO_RULE_DEFAULTS[r.key]}`}</span> : null}
+              </dd>
+              <dd className={styles.autoNote}>{r.note}</dd>
+            </div>
+          );
+        })}
+      </dl>
+    </section>
+  );
+}
+
+function onAutoRuleCommit(el: HTMLInputElement) {
+  const key = el.dataset.autoRule as AutoRuleKey,
+    text = el.value.trim();
+  actions.changeAutoRule(key, text === "" ? 0 : Number(text));
+  // 読めない値・丸めた値は、いまの決まりに戻して見せる
+  const v = autoRules(store.model)[key];
+  el.value = v ? String(v) : "";
+  releaseFocus(el);
 }

@@ -59,6 +59,98 @@
   color: var(--ink-secondary);
 }
 
+/* 自動割当の決まり */
+.auto {
+  margin-bottom: var(--sp-6);
+  padding: 14px 18px 6px;
+  background: var(--surface-paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs);
+}
+.autoTitle {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}
+.autoSub {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-muted);
+}
+.autoList {
+  margin: 0;
+}
+.autoRow {
+  display: grid;
+  grid-template-columns: 120px auto 1fr;
+  align-items: center;
+  column-gap: var(--sp-6);
+  padding: 8px 0;
+  border-top: 1px solid var(--line-grid);
+}
+.autoRow:first-child {
+  border-top: 0;
+}
+.autoRow dt {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  color: var(--ink);
+}
+.autoRow dd {
+  margin: 0;
+}
+.autoValue {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  white-space: nowrap;
+}
+.autoField {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-md);
+  color: var(--ink-secondary);
+}
+.autoInput {
+  width: 64px;
+  text-align: right;
+  font-variant-numeric: var(--numeric);
+}
+.autoField.isSet .autoInput {
+  background: var(--accent-bg);
+  color: var(--accent-strong);
+  font-weight: var(--fw-bold);
+}
+.autoDefault {
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+}
+.autoNote {
+  font-size: var(--fs-sm);
+  line-height: var(--lh-body);
+  color: var(--ink-muted);
+}
+@media (max-width: 640px) {
+  .auto {
+    padding: 12px 14px 4px;
+  }
+  .autoRow {
+    grid-template-columns: 1fr;
+    row-gap: var(--sp-3);
+    padding: 10px 0;
+  }
+  .autoInput {
+    width: 72px;
+  }
+}
+
 /* Table card. overflow: clip keeps the rounded corners without creating a
    scroll container, so the header can stick under the app bar. */
 .card {

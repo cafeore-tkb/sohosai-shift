@@ -58,7 +58,7 @@ describe("store actions", () => {
     actions.loadSample();
     actions.runAutoAssign();
     expect(confirm).not.toHaveBeenCalled();
-    expect(store.ui.toast?.message).toBe("自動割当しました。空いている枠はオレンジ色で表示されます");
+    expect(store.ui.toast?.message).toMatch(/^自動割当しました。空いている枠はオレンジ色で表示されます（連続 3 時間までの決まりで空けた枠 \d+。役職ルールで変えられます）$/);
     actions.runAutoAssign();
     expect(confirm).toHaveBeenCalledWith("いまの割当を置き換えて、自動割当をやり直しますか？");
   });

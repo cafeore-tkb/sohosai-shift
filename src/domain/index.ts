@@ -10,6 +10,7 @@ export * from "./slots";
 export * from "./labels";
 export * from "./audit";
 export * from "./autoAssign";
+export * from "./autoRules";
 export * from "./assign";
 export * from "./availability";
 export * from "./names";

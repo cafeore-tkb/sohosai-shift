@@ -66,7 +66,7 @@ public/firebase-config.js   共同編集の設定（ビルドせずに差し替�
   - 必要人数 `data-count-slot`（number input、change で確定）、`data-count-all`、`data-count-date`
   - 勤務可能表 `data-avail-date`、セル `data-av-name` + `data-av-h`（pointerdown → ドラッグで塗る）
   - メンバー：行 `data-member-row`（氏名）、並び順のつまみ `data-member-handle`（button。ポインタでドラッグ・Alt+↑↓）、並べ替え `data-member-sort="grade|kana|status|store"`、`data-member-kana`（ふりがな text input、ネイティブの change で確定）、`data-member-grade`（学年 select）、`data-member`（ステータス select）、`data-member-store`（checkbox, value=店舗）、`data-member-ice`（select）、`data-member-car`（checkbox）、`data-member-want` / `data-member-dislike`（text input、ネイティブの change で確定）、`data-member-filter`
-  - 役職ルール `data-rule`（select）
+  - 役職ルール `data-rule`（select）、自動割当の決まり `data-auto-rule="masterHours|availPercent|maxRunHours"`（number input、ネイティブの change で確定。空欄は 0＝制限なし）
   - 読み込み結果の「シフト調整へ進む」`data-goto="shift"`、ドロップ領域 `data-dropzone`、ダイアログを閉じる `data-close`
 - `#toast`：常に DOM にあり、非表示は `hidden` 属性。表示のたびに中身を作り直す（`key` を変える）。
   `textContent` は「メッセージ＋アクションのボタン文言」だけ（アイコンは aria-hidden の SVG、閉じるボタンは aria-label のみ）。アクションは `<button>`。
@@ -138,7 +138,12 @@ node oracle.mjs diff ref.json new.json                               # 旧版（
 
 **auditIssues.ts** — `auditIssues(m, audit)`→{conflicts, offs, unfits, dislikes}：勤務状況チェックの「直したほうがよい枠」を人・日ごとにまとめる（`AuditIssue`＝name・date・keys・first（「表で見る」の枠）・where（「本番1日目 14:00–15:00 本店・ホール 1 ／ 2号店・レジ」））。`groupIssues(m, items)`
 
-**autoAssign.ts** — `autoAssign(m)` … 割当を捨てて自動割当（このあと refreshDerived）。条件に合う人だけを、1時間のまとまりで入れる（手動の移動の決まりとは別）
+**autoAssign.ts** — `autoAssign(m)`→{runBlocked} … 割当を捨てて自動割当（このあと refreshDerived）。条件に合う人だけを、1時間のまとまりで入れる（手動の移動の決まりとは別）。
+自動割当の決まり（autoRules）に従う：続けて入るのは maxRunHours まで（超える割当はしない。それで空けた枠の数が runBlocked）、ほかは目安で、
+マスター（`isMasterSlot`）は1人 masterHours まで（その日を埋めきれないときだけ masterHours ずつ上げる）→ その日の勤務時間は勤務可能時間の availPercent % まで（働ける量の目安と少ないほう）→ 直前の30分に入っている人を続けて入れる（連続の上限の最後の1時間は、空いている人がいれば交代＝休憩をずらす）→ 2枠まとめて入れる、の順に優先する
+
+**autoRules.ts** — `autoRules(m)`（`AutoRules`＝masterHours・availPercent・maxRunHours。0＝制限なし）`AUTO_RULE_DEFAULTS`（1・80・3）`setAutoRule(m, key, value)`（標準と同じなら消す）`normalizeAutoRule`。
+settings の `autoMasterHours` `autoAvailPercent` `autoMaxRunHours` に入る（共同編集で共有。旧版は知らないキーを読まない）。役職ルールの画面の「自動割当の決まり」で変える
 
 **assign.ts**（手動編集。結果は `EditResult {ok, message, changes}`：ok なら changes が空でないときだけ「元に戻す」付きトースト、ok でなければ message をそのままトースト。null は何もしない）
 - 手動の移動の決まり（assign.ts の「移動・入れ替え」の節の先頭にも書いてある）：
