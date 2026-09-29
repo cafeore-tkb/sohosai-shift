@@ -140,7 +140,7 @@ node oracle.mjs diff ref.json new.json                               # 旧版（
 
 **autoAssign.ts** — `autoAssign(m)`→{runBlocked} … 割当を捨てて自動割当（このあと refreshDerived）。条件に合う人だけを、1時間のまとまりで入れる（手動の移動の決まりとは別）。
 自動割当の決まり（autoRules）に従う：続けて入るのは maxRunHours まで（超える割当はしない。それで空けた枠の数が runBlocked）、ほかは目安で、
-マスター（`isMasterSlot`）は1人 masterHours まで（その日を埋めきれないときだけ masterHours ずつ上げる）→ その日の勤務時間は勤務可能時間の availPercent % まで（働ける量の目安と少ないほう）→ 直前の30分に入っている人を続けて入れる（連続の上限の最後の1時間は、空いている人がいれば交代＝休憩をずらす）→ 2枠まとめて入れる、の順に優先する
+マスター（`isMasterSlot`）は1人 全日程の合計で masterHours まで（埋めきれないときだけ masterHours ずつ上げる）→ その日の勤務時間は勤務可能時間の availPercent % まで（働ける量の目安と少ないほう。超えて入れるのは上級生から）→ 直前の30分に入っている人を続けて入れる（連続の上限の最後の1時間は、空いている人がいれば交代＝休憩をずらす）→ 2枠まとめて入れる、の順に優先する
 
 **autoRules.ts** — `autoRules(m)`（`AutoRules`＝masterHours・availPercent・maxRunHours。0＝制限なし）`AUTO_RULE_DEFAULTS`（1・80・3）`setAutoRule(m, key, value)`（標準と同じなら消す）`normalizeAutoRule`。
 settings の `autoMasterHours` `autoAvailPercent` `autoMaxRunHours` に入る（共同編集で共有。旧版は知らないキーを読まない）。役職ルールの画面の「自動割当の決まり」で変える

@@ -34,8 +34,9 @@ export interface AutoAssignResult {
  * 時間順に、条件の厳しい番目から埋める。決まり（autoRules）：
  * - 続けて入るのは maxRunHours まで（超える割当はしない＝入れる人がいなければ空ける）
  * - 以下は目安（ほかに入れる人がいなければ超えても入れる）。優先の順に：
- *   1. マスターは1人 masterHours まで。その日のマスターを全員その時間までで埋めきれないときだけ masterHours ずつ上げる（全員が同じくらいになる）
- *   2. その日の勤務時間は、勤務可能時間の availPercent % まで（働ける量＝memberWorkload の目安があれば、それとの少ないほう）
+ *   1. マスターは1人 全日程の合計で masterHours まで。全員その時間までで埋めきれないときだけ masterHours ずつ上げる（全員が同じくらいになる）
+ *   2. その日の勤務時間は、勤務可能時間の availPercent % まで（働ける量＝memberWorkload の目安があれば、それとの少ないほう）。
+ *      超えて入れるときは、ステータスの高い人（上級生）から
  *   3. 直前の30分に入っている人を続けて入れる（同じ役職なら なお優先）。連続の上限の最後の1時間は、空いている人がいれば交代
  *   4. 同じ人を次の30分にも続けて入れられるなら2枠まとめて入れる
  */
@@ -46,7 +47,7 @@ export function autoAssign(m: Model): AutoAssignResult {
     workload: Record<string, number> = {},
     /** "氏名|日付" → その日に入れた枠の数（昼食・休憩を除く。30分＝1） */
     daily: Record<string, number> = {},
-    /** "氏名|日付" → その日に入れたマスターの枠の数 */
+    /** 氏名 → 入れたマスターの枠の数（全日程） */
     masterUsed: Record<string, number> = {},
     booked: Record<string, Item[]> = {};
   const dk = (name: string, date: string) => `${name}|${date}`;
@@ -86,8 +87,9 @@ export function autoAssign(m: Model): AutoAssignResult {
   const dailyCap = (name: string, date: string) => {
     const t = workloadTarget(m, name);
     let cap = t === null ? Infinity : t * 2;
-    // 1時間（2枠）より短くはしない
-    if (rules.availPercent) cap = Math.min(cap, Math.max(2, Math.floor(((availSlots[dk(name, date)] || 0) * rules.availPercent) / 100)));
+    // 1時間単位で切り捨て（2枠まとめて入れるので、30分の端数を作らない）。1時間より短くはしない
+    if (rules.availPercent)
+      cap = Math.min(cap, Math.max(2, 2 * Math.floor(((availSlots[dk(name, date)] || 0) * rules.availPercent) / 200)));
     return cap;
   };
 
@@ -98,22 +100,19 @@ export function autoAssign(m: Model): AutoAssignResult {
       .filter((x) => !openRoles.includes(x.role))
       .sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start) || lv(b) - lv(a));
 
-  // マスターの1人あたりの上限（日ごと・枠の数）：masterHours で埋めきれるならそのまま、足りなければ masterHours ずつ上げる
-  const masterCap: Record<string, number> = {};
-  if (rules.masterHours) {
-    const step = rules.masterHours * 2;
-    for (const [date, its] of groupBy(items.filter(isMasterSlot), (x) => x.date)) {
-      const reach: Record<string, Set<string>> = {};
-      for (const x of its) for (const a of available(m, x)) (reach[a.name] ??= new Set()).add(x.start);
-      const can = Object.values(reach).map((s) => s.size),
-        most = Math.max(0, ...can);
-      let cap = step;
-      while (cap < most && can.reduce((sum, n) => sum + Math.min(n, cap), 0) < its.length) cap += step;
-      masterCap[date] = cap;
-    }
+  // マスターの1人あたりの上限（全日程の合計・枠の数）：masterHours で埋めきれるならそのまま、足りなければ masterHours ずつ上げる
+  let masterCap = Infinity;
+  const masters = items.filter(isMasterSlot);
+  if (rules.masterHours && masters.length) {
+    const step = rules.masterHours * 2,
+      reach: Record<string, Set<string>> = {};
+    for (const x of masters) for (const a of available(m, x)) (reach[a.name] ??= new Set()).add(`${x.date} ${x.start}`);
+    const can = Object.values(reach).map((s) => s.size),
+      most = Math.max(0, ...can);
+    masterCap = step;
+    while (masterCap < most && can.reduce((sum, n) => sum + Math.min(n, masterCap), 0) < masters.length) masterCap += step;
   }
-  const masterFull = (name: string, x: Item) =>
-    isMasterSlot(x) && masterCap[x.date] !== undefined && (masterUsed[dk(name, x.date)] || 0) >= masterCap[x.date];
+  const masterFull = (name: string, x: Item) => isMasterSlot(x) && (masterUsed[name] || 0) >= masterCap;
 
   // 次の枠（同じ役職・同じ番目を優先）にも続けて入れられるか
   const pairOf = (x: Item, name: string) => {
@@ -132,7 +131,7 @@ export function autoAssign(m: Model): AutoAssignResult {
     (booked[name] ??= []).push(t);
     workload[name] = (workload[name] || 0) + 1;
     if (!breakRoles.includes(t.role)) daily[dk(name, t.date)] = (daily[dk(name, t.date)] || 0) + 1;
-    if (isMasterSlot(t)) masterUsed[dk(name, t.date)] = (masterUsed[dk(name, t.date)] || 0) + 1;
+    if (isMasterSlot(t)) masterUsed[name] = (masterUsed[name] || 0) + 1;
   };
 
   for (const x of items) {
@@ -156,6 +155,8 @@ export function autoAssign(m: Model): AutoAssignResult {
         spare(a) - spare(b) ||
         Number(masterFull(a.name, x)) - Number(masterFull(b.name, x)) ||
         over(a) - over(b) ||
+        // 目安を超えて入れるなら上級生から
+        (over(a) ? levelOf(m, b.name) - levelOf(m, a.name) : 0) ||
         cont(b) - cont(a) ||
         Number(!!pairs.get(b.name)) - Number(!!pairs.get(a.name)) ||
         Number(dislikes(m, a.name, x.role)) - Number(dislikes(m, b.name, x.role)) ||
@@ -167,9 +168,9 @@ export function autoAssign(m: Model): AutoAssignResult {
       continue;
     }
     book(x, c.name);
-    // マスターの上限に届いたら、続きは次の人へ
+    // マスターの上限・その日の目安に届いたら、続きは次の枠で選び直す（目安を超えるなら上級生から）
     const y = pairs.get(c.name);
-    if (y && !decided(m, y.key) && runOk(c.name, y) && !masterFull(c.name, y)) book(y, c.name);
+    if (y && !decided(m, y.key) && runOk(c.name, y) && !masterFull(c.name, y) && !over(c)) book(y, c.name);
   }
   return { runBlocked };
 }

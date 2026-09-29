@@ -189,10 +189,10 @@ const AUTO_RULE_ROWS: readonly AutoRuleRow[] = [
   {
     key: "masterHours",
     label: "マスター",
-    before: "1人",
+    before: "1人 全日程で",
     unit: "時間まで",
     step: 0.5,
-    note: "その日のマスターを全員この時間までで埋めきれないときだけ、この時間ずつ増やして全員に同じくらい割り振ります。",
+    note: "本番の全日程の合計です。全員この時間までで埋めきれないときだけ、この時間ずつ増やして全員に同じくらい割り振ります。",
   },
   {
     key: "availPercent",
@@ -201,7 +201,7 @@ const AUTO_RULE_ROWS: readonly AutoRuleRow[] = [
     unit: "%くらいまで",
     step: 5,
     max: 100,
-    note: "目安です（ほかに入れる人がいなければ超えます）。働ける量（少し・5時間程度）の目安があれば、少ないほうを使います。",
+    note: "目安です。ほかに入れる人がいなければ超え、超えるのは上級生からです。働ける量（少し・5時間程度）の目安があれば、少ないほうを使います。",
   },
   {
     key: "maxRunHours",

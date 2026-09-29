@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { assignmentAudit } from "./audit";
-import { autoAssign } from "./autoAssign";
+import { autoAssign, isMasterSlot } from "./autoAssign";
 import { autoRules, setAutoRule } from "./autoRules";
 import { createModel } from "./model";
 import type { Model } from "./types";
@@ -128,6 +128,45 @@ describe("autoAssign（自動割当の決まり）", () => {
     const hours = Object.values(runs(timeline(m, "マスター"))).map((l) => l.reduce((a, b) => a + b, 0) / 60);
     expect(hours.sort()).toEqual([1, 2, 2, 2, 2]);
     expect(timeline(m, "マスター").every(Boolean)).toBe(true);
+  });
+
+  it("マスターは本番の全日程の合計で数える（2日とも来られても合計1時間。足りなければ全員同じだけ増やす）", () => {
+    // マスターは本番1日目 9時間＋2日目 6時間＝15時間
+    const master = (names: string) => {
+      const m = createModel();
+      for (const name of names)
+        for (const date of [D, "2026-11-01"]) {
+          m.availability.push({ name, date, start: "10:00", end: "19:00" });
+          m.memberStatuses[name] = "上級生";
+          m.memberStores[name] = ["本店"];
+        }
+      refreshDerived(m);
+      for (const s of m.slots) s.count = isMasterSlot(s) ? s.count : 0;
+      autoAssign(m);
+      const hours: Record<string, number> = {};
+      for (const x of flattened(m).filter(isMasterSlot)) {
+        const n = m.assignments[x.key];
+        expect(n).toBeTruthy();
+        hours[n] = (hours[n] || 0) + 0.5;
+      }
+      return Object.values(hours);
+    };
+    expect(master("ABCDEFGHIJKLMNO")).toEqual(Array(15).fill(1));
+    // 5人なら 1時間ずつ・2時間ずつでは足りず、3時間ずつ
+    expect(master("ABCDE")).toEqual(Array(5).fill(3));
+  });
+
+  it("1日の勤務時間の目安を超えて入れるのは上級生から", () => {
+    // レジ 9時間を2人（どちらも 9時間いられる）。40% ＝ 3.5時間までなので、足りない分は上級生の A が入る
+    const m = oneRole("レジ", all("10:00", "19:00", "A", "B"), (m) => {
+      m.memberStatuses.B = "1年目合格";
+      setAutoRule(m, "availPercent", 40);
+      setAutoRule(m, "maxRunHours", 0);
+    });
+    const t = timeline(m, "レジ");
+    expect(t.every(Boolean)).toBe(true);
+    expect(t.filter((n) => n === "B").length / 2).toBeLessThanOrEqual(4);
+    expect(t.filter((n) => n === "A").length / 2).toBeGreaterThanOrEqual(5);
   });
 
   it("できるだけ続けて入れ、連続は上限まで（超えるなら空ける）", () => {
