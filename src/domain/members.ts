@@ -7,10 +7,11 @@ import { dripsForIce, parseKana, parseRoles } from "./parse";
 import { pruneAssignments } from "./prune";
 import type { Model } from "./types";
 
-/** ステータスを変える（未合格ならアイス × に） */
+/** ステータスを変える（未合格ならアイス ×、上級生ならアイス ○ に） */
 export function setMemberStatus(m: Model, name: string, status: string): number {
   m.memberStatuses[name] = status;
   if (status === "未合格") m.memberDrips[name] = dripsForIce("×");
+  if (status === "上級生") m.memberDrips[name] = dripsForIce("○");
   return pruneAssignments(m);
 }
 

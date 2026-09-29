@@ -173,8 +173,9 @@ export function importSurvey(m: Model, text: string): ImportResult {
         if (ice === undefined) badIce.push(`${name}（${p.drips}）`);
       }
     }
-    /* 未合格はアイス不可 */
+    /* 未合格はアイス不可、上級生はアイス ○ */
     if (m.memberStatuses[name] === "未合格") m.memberDrips[name] = dripsForIce("×");
+    if (m.memberStatuses[name] === "上級生") m.memberDrips[name] = dripsForIce("○");
     if (p.hasCar) {
       const car = parseCar(p.car);
       m.memberCars[name] = car === true;

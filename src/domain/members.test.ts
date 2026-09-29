@@ -54,12 +54,14 @@ describe("メンバー・ルールの編集と pruneAssignments", () => {
     expect(pruneAssignments(m)).toBe(1);
     expect(two.key in m.assignments).toBe(false);
   });
-  it("未合格にするとアイス ×、アイス未設定は削除。filterMembers", () => {
+  it("未合格にするとアイス ×、上級生にすると ○、アイス未設定は削除。filterMembers", () => {
     const m = tinyModel();
     setMemberIce(m, "A", "○");
     expect(m.memberDrips.A.length).toBe(4);
     setMemberStatus(m, "A", "未合格");
     expect(m.memberDrips.A).toEqual(["1杯ホット", "2杯ホット"]);
+    setMemberStatus(m, "A", "上級生");
+    expect(m.memberDrips.A.length).toBe(4);
     setMemberIce(m, "A", "");
     expect("A" in m.memberDrips).toBe(false);
     setMemberCar(m, "A", true);

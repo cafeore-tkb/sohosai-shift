@@ -57,7 +57,7 @@ export function RulesView({ hidden }: { hidden: boolean }) {
         <div className={styles.explain}>
           {"2人以上の役職は、1人目・2人目…の番目ごとに最低ステータスを設定できます（役職の条件と厳しいほうが使われます）。ドリッパーは 1st〜6th で、初期値は 1st・6th が上級生です。シフト表・印刷の列はこの番目どおりなので、そのまま当日の配置表として使えます。"}
           <br />
-          {"ステータスが未合格の人は、アイスが自動で × になります。"}
+          {"ステータスが未合格の人はアイスが自動で ×、上級生の人は自動で ○ になります。"}
         </div>
       </Disclosure>
       <div className={styles.card}>

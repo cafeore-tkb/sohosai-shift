@@ -45,6 +45,7 @@ describe("importSurvey", () => {
     ]);
     expect(m.memberCars).toEqual({ A: false, B: false });
     expect("A" in m.memberDrips).toBe(false);
+    expect(m.memberDrips.B.length).toBe(4); // 上級生はアイス欄が空でも ○
     // ステータス・店舗の列がないとき
     const r2 = importSurvey(createModel(), "name,date,start,end\nA,2026-10-31,10:00,12:00");
     expect(r2.messages[1]).toBe("CSVにステータス・所属店舗の列がないため、「メンバーのステータス」で設定してください。");
