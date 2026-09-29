@@ -171,7 +171,7 @@ export function ShiftToolbar({ m, dates, minimap }: ShiftToolbarProps) {
         </Pill>
       </Button>
 
-      <Button id="autoBtn" variant="primary" icon="sparkle" title="自動割当（いまの割当は確認のうえ置き換え）" className={s.auto} onClick={actions.runAutoAssign}>
+      <Button id="autoBtn" variant="primary" icon="sparkle" title="自動割当（手で入れた枠はそのまま、ほかの割当は確認のうえ置き換え）" className={s.auto} onClick={actions.runAutoAssign}>
         自動割当
       </Button>
 

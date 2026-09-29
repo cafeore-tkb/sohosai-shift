@@ -140,14 +140,14 @@ node oracle.mjs diff ref.json new.json                               # 旧版（
 
 **auditIssues.ts** — `auditIssues(m, audit)`→{conflicts, offs, unfits, dislikes, carless}（carless＝車ありの人がいない買い出しの時間帯 `CarlessIssue`・`carlessIssues(m)`）：勤務状況チェックの「直したほうがよい枠」を人・日ごとにまとめる（`AuditIssue`＝name・date・keys・first（「表で見る」の枠）・where（「本番1日目 14:00–15:00 本店・ホール 1 ／ 2号店・レジ」））。`groupIssues(m, items)`
 
-**autoAssign.ts** — `autoAssign(m)`→{runBlocked} … 割当を捨てて自動割当（このあと refreshDerived）。条件に合う人だけを、1時間のまとまりで入れる（手動の移動の決まりとは別）。
+**autoAssign.ts** — `autoAssign(m)`→{runBlocked, kept} … 手で入れた枠（`isManual`）は残し、ほかの割当を捨てて自動割当（このあと refreshDerived）。手で入れた枠も決まりの数（連続・その日の目安・マスター・記号・車）に入れる。条件に合う人だけを、1時間のまとまりで入れる（手動の移動の決まりとは別）。
 自動割当の決まり（autoRules）に従う：続けて入るのは maxRunHours まで（超える割当はしない。それで空けた枠の数が runBlocked）、ほかは目安で、
 マスター（`isMasterSlot`）は1人 全日程の合計で masterHours まで（埋めきれないときだけ masterHours ずつ上げる）→ ドリッパーの記号（H・1・2＝アイスが ○ でない）のある人は各時間 dripMarked 人まで（できなければ1人ずつ増やす）→ その日の勤務時間は勤務可能時間の availPercent % まで（働ける量の目安と少ないほう。超えて入れるのは上級生から）→ 直前の30分に入っている人を続けて入れる（連続の上限の最後の1時間は、空いている人がいれば交代＝休憩をずらす）→ 2枠まとめて入れる、の順に優先する
 
 **autoRules.ts** — `autoRules(m)`（`AutoRules`＝masterHours・availPercent・maxRunHours・dripMarked。0＝制限なし）`AUTO_RULE_DEFAULTS`（1・80・3・1）`setAutoRule(m, key, value)`（標準と同じなら消す）`normalizeAutoRule`。
 settings の `autoMasterHours` `autoAvailPercent` `autoMaxRunHours` `autoDripMarked` に入る（共同編集で共有。旧版は知らないキーを読まない）。役職ルールの画面の「自動割当の決まり」で変える
 
-**assign.ts**（手動編集。結果は `EditResult {ok, message, changes}`：ok なら changes が空でないときだけ「元に戻す」付きトースト、ok でなければ message をそのままトースト。null は何もしない）
+**assign.ts**（手動編集。変えた枠には「手で入れた印」`manualSlots[key] = 氏名`（外した枠は印を消す。元に戻すの対象＝`undoMaps` に入る）。`isManual(m, key)`＝印の名前といまの割当が同じ、`manualCount` `clearManual`（自動割当のトーストの「すべてやり直す」）。`clearAll`・CSV の読み込みで印も消える。結果は `EditResult {ok, message, changes}`：ok なら changes が空でないときだけ「元に戻す」付きトースト、ok でなければ message をそのままトースト。null は何もしない）
 - 手動の移動の決まり（assign.ts の「移動・入れ替え」の節の先頭にも書いてある）：
   - 単位は30分のセル1つ。どの枠からどの枠へも（日・時間・店舗・役職・番目を問わず、勤務可能時間・所属・ステータス・同じ時間の別の枠も見ずに）移せる。移動元以外のすべての枠が移動先。
   - 移動先に人がいれば入れ替え（その人は移動元へ。条件に合わなくても入る）。人が消えることはない。1時間のまとまりを自動でまとめて動かすことはしない。

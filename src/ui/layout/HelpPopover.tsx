@@ -92,6 +92,14 @@ export function HelpPopover() {
         </div>
         <div className={styles.row}>
           <dt>
+            <span className={styles.manualDot} aria-hidden="true" />
+          </dt>
+          <dd>
+            <b>手で入れた枠</b>（右上の青い点）・自動割当で変えません。「割当をクリア」か、自動割当のあとの「すべてやり直す」で解除
+          </dd>
+        </div>
+        <div className={styles.row}>
+          <dt>
             <Swatch kind="stint" />
           </dt>
           <dd>

@@ -214,6 +214,7 @@ export function importSurvey(m: Model, text: string): ImportResult {
   m.availability = data;
   m.assignments = {};
   m.slotBlanks = {};
+  m.manualSlots = {};
   const all = Object.values(profiles);
   const messages = [
       `${format}${new Set(data.map((x) => x.name)).size}名・${data.length}件の勤務可能時間を読み込みました。`,

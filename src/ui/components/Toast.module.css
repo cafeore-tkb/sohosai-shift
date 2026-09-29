@@ -8,6 +8,8 @@
   display: flex;
   align-items: center;
   gap: var(--sp-4);
+  /* left: 50% だと幅が画面の半分に縮むので、中身の幅（長い文は画面の幅まで広げてから折り返す） */
+  width: max-content;
   max-width: calc(100vw - 32px);
   pointer-events: none;
 }
@@ -46,6 +48,9 @@
 }
 .msg {
   min-width: 0;
+  /* 長い文（自動割当の結果など）はボタンの下に潜らず折り返す */
+  white-space: normal;
+  max-width: 640px;
 }
 .action {
   display: inline-flex;

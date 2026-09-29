@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { assignmentAudit, carlessItems } from "./audit";
 import { carlessIssues } from "./auditIssues";
 import { autoAssign, isMasterSlot } from "./autoAssign";
+import { clearAssignment, clearManual, isManual, manualCount, pickName, undoChanges } from "./assign";
 import { autoRules, setAutoRule } from "./autoRules";
 import { createModel } from "./model";
 import type { Model } from "./types";
@@ -268,5 +269,37 @@ describe("autoAssign（自動割当の決まり）", () => {
     expect(drip({ A: "×", B: "1杯のみ", C: "2杯のみ", D: "○", E: "○" }).every(([n, k]) => n === 3 && k === 1)).toBe(true);
     // ○ が1人なら2人まで（空けはしない）
     expect(drip({ A: "×", B: "1杯のみ", C: "2杯のみ", D: "○" }).every(([n, k]) => n === 3 && k === 2)).toBe(true);
+  });
+
+  it("手で入れた枠はそのままにして、ほかをやり直す（外した・元に戻した・印を消した枠はやり直す）", () => {
+    const m = oneRole("レジ", all("10:00", "19:00", "A", "B", "C"));
+    const x = item(m, "レジ", "12:00"),
+      y = item(m, "レジ", "15:00");
+    const other = ["A", "B", "C"].find((n) => n !== m.assignments[x.key])!;
+    pickName(m, x.key, other, 1);
+    expect(isManual(m, x.key)).toBe(true);
+    expect(manualCount(m)).toBe(1);
+    autoAssign(m);
+    expect(m.assignments[x.key]).toBe(other);
+    // 手で入れた人も連続・その日の目安に数える（同じ人が前後に続けて入っても連続の上限を超えない）
+    for (const r of Object.values(runs(timeline(m, "レジ"))).flat()) expect(r).toBeLessThanOrEqual(180);
+    // 手で外した枠は印が消え、自動割当で埋まる
+    clearAssignment(m, y.key);
+    expect(isManual(m, y.key)).toBe(false);
+    autoAssign(m);
+    expect(m.assignments[y.key]).toBeTruthy();
+    // 元に戻すと印も戻る
+    const before = m.assignments[x.key];
+    const r2 = pickName(m, x.key, ["A", "B", "C"].find((n) => n !== before)!, 1)!;
+    undoChanges(m, r2.changes);
+    expect(m.assignments[x.key]).toBe(before);
+    expect(isManual(m, x.key)).toBe(true);
+    // 自動割当が変えた枠の古い印は効かない
+    m.assignments[x.key] = "Z";
+    expect(isManual(m, x.key)).toBe(false);
+    m.assignments[x.key] = before;
+    // 印を消すと、すべてやり直す
+    clearManual(m);
+    expect(autoAssign(m).kept).toBe(0);
   });
 });

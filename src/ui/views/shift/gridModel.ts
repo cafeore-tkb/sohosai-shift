@@ -8,6 +8,7 @@ import {
   flattened,
   fmt,
   gridCell,
+  isManual,
   openRoles,
   personMatrix,
   plusSlot,
@@ -63,6 +64,8 @@ export type RoleCell =
       stint: RunPos;
       box: RunPos;
       drip: DripBadge | null;
+      /** 手で入れた枠（自動割当で変えない。右上の点） */
+      manual: boolean;
       title: string;
       aria: string;
       sig: string;
@@ -187,6 +190,7 @@ export function roleRows(m: Model, date: string, grid: DayGrid, audit: Audit, sh
       const mark: CellMark = flag ?? (want && !cont ? "want" : null);
       const place = where(item.store, item.role, Number(item.count) > 1 ? item.occ : null, item.start);
       const hours = audit.hours[cell.chosen]?.[item.date] || 0;
+      const manual = isManual(m, item.key);
       let title: string, aria: string;
       if (cell.chosen) {
         const unfitText = cell.unfit.length ? `条件外（${cell.unfit.join("・")}）` : "";
@@ -202,16 +206,16 @@ export function roleRows(m: Model, date: string, grid: DayGrid, audit: Audit, sh
                   : want
                     ? "（やりたい役職）"
                     : "";
-        aria = `${place}：${cell.chosen}${extra}`;
-        title = `${cell.chosen}・この日 ${fmt(hours).replace(/h$/, "時間")}${flag === "off" ? "：勤務可能表では × の時間です" : ""}${unfitText ? `：${unfitText}` : ""}`;
+        aria = `${place}：${cell.chosen}${extra}${manual ? "（手で入れた枠）" : ""}`;
+        title = `${cell.chosen}・この日 ${fmt(hours).replace(/h$/, "時間")}${flag === "off" ? "：勤務可能表では × の時間です" : ""}${unfitText ? `：${unfitText}` : ""}${manual ? "\n手で入れた枠（自動割当で変えません）" : ""}`;
       } else {
         aria = `${place}：${cell.label}`;
         title = cell.tip;
       }
       const drip = cont ? null : cell.drip;
       const label = state !== "filled" && cont ? "" : cell.label;
-      const sig = [state, flag, mark, label, cont, stint, box, drip?.text, drip?.cls, title, aria, edge, item.key].join("|");
-      return { kind: "item", edge, key: item.key, state, flag, mark, label, cont, stint, box, drip, title, aria, sig };
+      const sig = [state, flag, mark, label, cont, stint, box, drip?.text, drip?.cls, manual, title, aria, edge, item.key].join("|");
+      return { kind: "item", edge, key: item.key, state, flag, mark, label, cont, stint, box, drip, manual, title, aria, sig };
     });
   });
   return hours.map((hour, r) => {

@@ -22,6 +22,7 @@ export function createModel(): Model {
     slotTypes: {},
     slotCounts: {},
     slotBlanks: {},
+    manualSlots: {},
     settings: {},
     roleRequirements: {},
     gridDate: "",

@@ -35,6 +35,8 @@ describe("moveAssignment（30分のセル単位・どの枠へも）", () => {
       changes: [
         ["assignments", key("レジ", "10:00"), "A", ""],
         ["assignments", key("ホール", "10:00"), "", "A"],
+        // 手で入れた印（自動割当でそのままにする）
+        ["manualSlots", key("ホール", "10:00"), "", "A"],
       ],
     });
     // 移動元は "" で残る

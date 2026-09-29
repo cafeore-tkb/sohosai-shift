@@ -156,6 +156,7 @@ function ItemCell({ cell }: { cell: Extract<RoleCell, { kind: "item" }> }) {
         data-state={cell.state}
         data-flag={cell.flag ?? undefined}
         data-cont={cell.cont ? "" : undefined}
+        data-manual={cell.manual ? "" : undefined}
         data-pick-slot={cell.key}
         data-cell=""
         tabIndex={-1}

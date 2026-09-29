@@ -43,6 +43,11 @@ export interface Model {
   slots: Slot[];
   /** item.key → 氏名。"" は「外した」（キーは残る） */
   assignments: Record<string, string>;
+  /**
+   * item.key → 手で入れた人の氏名（担当者の選択・移動・入れ替え・昼食へ など）。いまの割当と同じ名前のあいだだけ有効（isManual）。
+   * 自動割当はこの枠を変えない。旧版は知らないので無視する
+   */
+  manualSlots: Record<string, string>;
   memberStatuses: Record<string, string>;
   memberStores: Record<string, string[]>;
   memberWants: Record<string, string[]>;
@@ -81,6 +86,7 @@ export interface Model {
 /** 共同編集で共有するマップ */
 export const SHARED_MAPS = [
   "assignments",
+  "manualSlots",
   "slotTypes",
   "slotCounts",
   "slotBlanks",

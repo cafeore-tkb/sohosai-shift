@@ -118,7 +118,7 @@ describe("handleKeyDown", () => {
     expect(z.preventDefault).toHaveBeenCalled();
     expect(store.lastChange).toBe(null);
     // 元に戻した枠を光らせ、FLASH_MS のあと消える
-    expect([...store.ui.flash!.keys]).toEqual(changed!.map((c) => c[1]));
+    expect([...store.ui.flash!.keys]).toEqual(changed!.filter((c) => c[0] === "assignments").map((c) => c[1]));
     vi.advanceTimersByTime(900);
     expect(store.ui.flash).toBe(null);
   });

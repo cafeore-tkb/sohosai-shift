@@ -26,6 +26,8 @@ import {
   type AutoRuleKey,
   clearAll,
   clearAssignment,
+  clearManual,
+  manualCount,
   dayName,
   decodeCsvBytes,
   eventDates,
@@ -63,7 +65,7 @@ import {
   templateCsv,
   undoChanges,
 } from "../domain";
-import type { AvailabilityChanges, EditResult, GridMode, MemberSort, SortDir, View } from "../domain";
+import type { AvailabilityChanges, Change, EditResult, GridMode, MemberSort, SortDir, View } from "../domain";
 import { printShiftHtml } from "../print/printHtml";
 import { ask, download, openHtmlWindow, scrollToTop, tell } from "./browser";
 import { movingRange, store } from "./store";
@@ -123,13 +125,33 @@ export function loadSample(): void {
 // ---- 割当 ----
 
 export function runAutoAssign(): void {
-  if (hasAssignments(M()) && !ask("いまの割当を置き換えて、自動割当をやり直しますか？")) return;
-  const { runBlocked } = autoAssign(M());
+  const kept = manualCount(M());
+  if (
+    hasAssignments(M()) &&
+    !ask(kept ? `手で入れた ${kept} 枠はそのままにして、ほかの割当を自動割当でやり直しますか？` : "いまの割当を置き換えて、自動割当をやり直しますか？")
+  )
+    return;
+  autoAssignWithToast();
+}
+
+/** 自動割当して結果を出す。手で入れた枠を残したときは「すべてやり直す」を付ける */
+function autoAssignWithToast(): void {
+  const { runBlocked, kept } = autoAssign(M());
   store.commit();
   store.showToast(
-    "自動割当しました。空いている枠はオレンジ色で表示されます" +
+    (kept ? `自動割当しました（手で入れた ${kept} 枠はそのまま）。` : "自動割当しました。") +
+      "空いている枠はオレンジ色で表示されます" +
       (runBlocked ? `（連続 ${autoRules(M()).maxRunHours} 時間までの決まりで空けた枠 ${runBlocked}。役職ルールで変えられます）` : ""),
+    false,
+    kept ? { label: "すべてやり直す", run: redoAllAutoAssign } : undefined,
   );
+}
+
+/** 手で入れた枠も含めて、すべて自動割当でやり直す */
+export function redoAllAutoAssign(): void {
+  if (!ask("手で入れた枠も含めて、すべての割当を自動割当でやり直しますか？")) return;
+  clearManual(M());
+  autoAssignWithToast();
 }
 
 /** 自動割当の決まり（役職ルールの画面）。値が読めなければ何もしない（入力欄は元の値に戻る） */
@@ -152,8 +174,11 @@ function finish(r: EditResult | null): void {
   if (!r.changes.length) return;
   store.lastChange = r.changes;
   store.showToast(r.message, false, { label: "元に戻す", run: undoLastChange });
-  store.flashKeys(r.changes.map((c) => c[1]));
+  store.flashKeys(changedSlots(r.changes));
 }
+
+/** 光らせる枠（割当が変わった枠。手で入れた印の変更は数えない） */
+const changedSlots = (changes: readonly Change[]) => changes.filter((c) => c[0] === "assignments").map((c) => c[1]);
 
 /** 直前の割当の変更を元に戻す */
 export function undoLastChange(): void {
@@ -163,7 +188,7 @@ export function undoLastChange(): void {
   const message = undoChanges(M(), c);
   store.commit();
   store.showToast(message);
-  store.flashKeys(c.map((x) => x[1]));
+  store.flashKeys(changedSlots(c));
 }
 
 /** ⌘Z／Ctrl+Z（入力中でなく、戻せる変更があるときだけ呼ぶ） */

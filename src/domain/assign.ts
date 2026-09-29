@@ -10,8 +10,8 @@ import type { Item, Model, Slot } from "./types";
 
 // ---- 元に戻す ----
 
-/** 元に戻す対象のマップ（旧版の undoMaps） */
-export const undoMaps = ["assignments"] as const;
+/** 元に戻す対象のマップ（旧版の undoMaps＋手で入れた印） */
+export const undoMaps = ["assignments", "manualSlots"] as const;
 export type UndoMap = (typeof undoMaps)[number];
 export type Snapshot = Record<UndoMap, Record<string, string>>;
 /** [マップ, キー, 変更前, 変更後]（"" と未設定は同じ扱い） */
@@ -34,10 +34,11 @@ export function undoChanges(m: Model, changes: readonly Change[]): string {
   let skipped = 0;
   for (const [k, key, prev, next] of changes) {
     if ((m[k][key] || "") !== next) {
-      skipped++;
+      if (k === "assignments") skipped++;
       continue;
     }
-    m[k][key] = prev;
+    if (k === "manualSlots" && !prev) delete m[k][key];
+    else m[k][key] = prev;
   }
   return skipped ? `元に戻しました（その後に変更された ${skipped} 枠はそのままです）` : "元に戻しました";
 }
@@ -52,11 +53,26 @@ export interface EditResult {
   changes: Change[];
 }
 
-const done = (before: Snapshot, m: Model, message: string): EditResult => ({
-  ok: true,
-  message,
-  changes: diffChanges(before, m),
-});
+/** 手で変えた枠に印を付けてから（入れた枠は その人の名前、外した枠は印を消す）、変わった項目を返す */
+function done(before: Snapshot, m: Model, message: string): EditResult {
+  for (const [k, key, , next] of diffChanges(before, m))
+    if (k === "assignments") {
+      if (next) m.manualSlots[key] = next;
+      else delete m.manualSlots[key];
+    }
+  return { ok: true, message, changes: diffChanges(before, m) };
+}
+
+/** 手で入れた枠か（印の名前といまの割当が同じ） */
+export const isManual = (m: Model, key: string): boolean => !!m.assignments[key] && m.manualSlots[key] === m.assignments[key];
+
+/** 手で入れた枠の数 */
+export const manualCount = (m: Model): number => Object.keys(m.manualSlots).filter((k) => isManual(m, k)).length;
+
+/** 手で入れた印をすべて消す（割当はそのまま。次の自動割当ですべてやり直す） */
+export function clearManual(m: Model): void {
+  m.manualSlots = {};
+}
 
 // ---- 重なり・入れるかどうか ----
 
@@ -482,5 +498,6 @@ export function sendToBreak(m: Model, key: string, role: string, length: number)
 /** すべての割当をクリア（旧 clearBtn） */
 export function clearAll(m: Model): void {
   m.assignments = {};
+  m.manualSlots = {};
   m.slotBlanks = {};
 }

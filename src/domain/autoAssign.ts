@@ -1,6 +1,7 @@
 // 自動割当
 
 import { breakRoles, carRoles, openRoles, statusLevels } from "./config";
+import { isManual } from "./assign";
 import { autoRules } from "./autoRules";
 import { available, decided, dislikes, levelOf, memberIce, requiredFor, wants, type SlotLike } from "./rules";
 import { ensureAllSlots, flattened, slotAtOffset } from "./slots";
@@ -29,10 +30,13 @@ const isDripSlot = (x: SlotLike): boolean => x.store === "本店" && x.role === 
 export interface AutoAssignResult {
   /** 入れる人はいたが、続けて入るのが上限（maxRunHours）を超えるので空けた枠の数 */
   runBlocked: number;
+  /** そのままにした、手で入れた枠の数 */
+  kept: number;
 }
 
 /**
- * いまの割当を捨てて、すべての枠を自動で割り当てる（Model を書き換える）。
+ * 手で入れた枠（isManual）はそのままにして、ほかの割当を捨てて自動で割り当てる（Model を書き換える）。
+ * 手で入れた枠も、決まり（連続・その日の目安・マスターの時間など）の数には入れる。
  * 時間順に、条件の厳しい番目から埋める。決まり（autoRules）：
  * - 続けて入るのは maxRunHours まで（超える割当はしない＝入れる人がいなければ空ける）
  * - 以下は目安（ほかに入れる人がいなければ超えても入れる）。優先の順に：
@@ -59,7 +63,9 @@ export function autoAssign(m: Model): AutoAssignResult {
     carAt: Record<string, number> = {},
     booked: Record<string, Item[]> = {};
   const dk = (name: string, date: string) => `${name}|${date}`;
+  const kept = Object.entries(m.assignments).filter(([k]) => isManual(m, k));
   m.assignments = {};
+  m.manualSlots = Object.fromEntries(kept);
   ensureAllSlots(m);
   const free = (name: string, x: Item) =>
     !(booked[name] || []).some((b) => b.date === x.date && x.start < b.end && b.start < x.end);
@@ -156,6 +162,14 @@ export function autoAssign(m: Model): AutoAssignResult {
     if (carRoles.includes(t.role) && m.memberCars[name]) carAt[ck(t)] = (carAt[ck(t)] || 0) + 1;
   };
 
+  // 手で入れた枠を先に入れる（枠がなくなっていれば印も消す）
+  const byKey = new Map(flattened(m).map((x) => [x.key, x] as const));
+  for (const [k, name] of kept) {
+    const x = byKey.get(k);
+    if (x) book(x, name);
+    else delete m.manualSlots[k];
+  }
+
   for (const x of items) {
     if (decided(m, x.key)) continue;
     const open = available(m, x).filter((a) => free(a.name, x)),
@@ -201,5 +215,5 @@ export function autoAssign(m: Model): AutoAssignResult {
     if (y && !decided(m, y.key) && runOk(c.name, y) && !masterFull(c.name, y) && !over(c) && dripOver(c.name, y) <= drip)
       book(y, c.name);
   }
-  return { runBlocked };
+  return { runBlocked, kept: Object.keys(m.manualSlots).length };
 }

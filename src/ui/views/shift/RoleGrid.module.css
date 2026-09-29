@@ -273,6 +273,17 @@ td[data-box="end"] > .cell {
 .mk {
   flex: none;
 }
+/* 手で入れた枠（自動割当で変えない）：右上の小さな点 */
+.cell[data-manual]::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--primary);
+}
 .cell[data-cont] {
   font-weight: var(--fw-regular);
   color: var(--ink-secondary);
