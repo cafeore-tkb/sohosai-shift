@@ -7,7 +7,7 @@ import { autoRules, setAutoRule } from "./autoRules";
 import { createModel } from "./model";
 import type { Model } from "./types";
 import { refreshDerived } from "./model";
-import { canWorkAt, fitsSlot, levelOf, posKey, ruleKey, unfitReasons } from "./rules";
+import { available, canWorkAt, fitsSlot, levelOf, posKey, ruleKey, unfitReasons } from "./rules";
 import { setRoleRequirement } from "./members";
 import { dripsForIce, iceOf } from "./parse";
 import { flattened } from "./slots";
@@ -40,6 +40,14 @@ describe("autoAssign（サンプル）", () => {
       if (x.role === "ドリッパー" && iceOf(m.memberDrips[m.assignments[x.key]]) !== "○")
         byTime[`${x.date} ${x.start}`] = (byTime[`${x.date} ${x.start}`] || 0) + 1;
     expect(Math.max(...Object.values(byTime))).toBe(1);
+  });
+  it("ドリッパーに入れる人は全員、全日程で1時間以上ドリッパーに入る", () => {
+    const drips = items.filter((x) => x.store === "本店" && x.role === "ドリッパー");
+    const can = new Set(drips.flatMap((x) => available(m, x).map((a) => a.name)));
+    const hours: Record<string, number> = {};
+    for (const x of drips) if (m.assignments[x.key]) hours[m.assignments[x.key]] = (hours[m.assignments[x.key]] || 0) + 0.5;
+    expect(can.size).toBeGreaterThan(30);
+    expect([...can].filter((n) => (hours[n] || 0) < 1)).toEqual([]);
   });
   it("同じ入力なら同じ結果・既存の割当は捨てる", () => {
     const again = sampleModel();
@@ -247,6 +255,18 @@ describe("autoAssign（自動割当の決まり）", () => {
     const x = flattened(m).find((y) => y.role === "ドリッパー")!;
     expect(unfitReasons(m, "A", x)).toEqual(["ステータス"]);
     expect(fitsSlot(m, "A", { ...x, role: "レジ" })).toBe(true);
+  });
+  it("ドリッパーは、まだ1時間入っていない人から（続けて入れるより先）", () => {
+    // ドリッパー1人の枠に A・B（10:00〜12:00）。続けて入れる・目安なしでも、2人とも1時間ずつ
+    const m = oneRole("ドリッパー", all("10:00", "12:00", "A", "B"), (m) => {
+      setAutoRule(m, "availPercent", 0);
+      setAutoRule(m, "maxRunHours", 0);
+    });
+    const r = runs(timeline(m, "ドリッパー"));
+    expect(r).toEqual({ A: [60], B: [60] });
+    // B は 11:30 まで（あとがない）：先に B を入れて、A はあとから
+    const m2 = oneRole("ドリッパー", { A: ["10:00", "12:00"], B: ["10:00", "11:30"] }, (m) => setAutoRule(m, "availPercent", 0));
+    expect(timeline(m2, "ドリッパー").slice(0, 4)).toEqual(["B", "B", "A", "A"]);
   });
   it("ドリッパーの記号（H・1・2）のある人は各時間1人まで、できなければ2人まで", () => {
     // ドリッパー3人の枠。ice：氏名 → アイス（○／×／1杯のみ／2杯のみ）

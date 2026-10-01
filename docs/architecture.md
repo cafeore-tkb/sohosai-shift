@@ -147,7 +147,7 @@ node oracle.mjs diff ref.json new.json                               # 旧版（
 
 **autoAssign.ts** — `autoAssign(m)`→{runBlocked, kept} … 固定したコマ（`isPinned`）は残し、ほかの割当を捨てて自動割当（このあと refreshDerived）。固定したコマも決まりの数（連続・その日の目安・マスター・記号・車）に入れる。条件に合う人だけを、1時間のまとまりで入れる（手動の移動の決まりとは別）。
 自動割当の決まり（autoRules）に従う：続けて入るのは maxRunHours まで（超える割当はしない。それで空けた枠の数が runBlocked）、ほかは目安で、
-マスター（`isMasterSlot`）は1人 全日程の合計で masterHours まで（埋めきれないときだけ masterHours ずつ上げる）→ ドリッパーの記号（H・1・2＝アイスが ○ でない）のある人は各時間 dripMarked 人まで（できなければ1人ずつ増やす）→ その日の勤務時間は勤務可能時間の availPercent % まで（働ける量の目安と少ないほう。超えて入れるのは上級生から）→ 直前の30分に入っている人を続けて入れる（連続の上限の最後の1時間は、空いている人がいれば交代＝休憩をずらす）→ 2枠まとめて入れる、の順に優先する
+マスター（`isMasterSlot`）は1人 全日程の合計で masterHours まで（埋めきれないときだけ masterHours ずつ上げる）→ ドリッパーに入れる人（勤務可能時間にドリッパーの時間が1時間以上ある）は全日程で1時間（DRIP_MIN 枠）入るまで先にドリッパーへ（あとがない人から。同じ時間ならドリッパーの枠を先に埋める）→ ドリッパーの記号（H・1・2＝アイスが ○ でない）のある人は各時間 dripMarked 人まで（できなければ1人ずつ増やす）→ その日の勤務時間は勤務可能時間の availPercent % まで（働ける量の目安と少ないほう。超えて入れるのは上級生から）→ 直前の30分に入っている人を続けて入れる（連続の上限の最後の1時間は、空いている人がいれば交代＝休憩をずらす）→ 2枠まとめて入れる、の順に優先する
 
 **autoRules.ts** — `autoRules(m)`（`AutoRules`＝masterHours・availPercent・maxRunHours・dripMarked。0＝制限なし）`AUTO_RULE_DEFAULTS`（1・80・3・1）`setAutoRule(m, key, value)`（標準と同じなら消す）`normalizeAutoRule`。
 settings の `autoMasterHours` `autoAvailPercent` `autoMaxRunHours` `autoDripMarked` に入る（共同編集で共有。旧版は知らないキーを読まない）。役職ルールの画面の「自動割当の決まり」で変える
@@ -186,6 +186,8 @@ settings の `autoMasterHours` `autoAvailPercent` `autoMaxRunHours` `autoDripMar
 **importSurvey.ts** — `importSurvey(m, text)`→{messages, warns}（失敗は Model を変えずに Error。view="shift" にする）`attendarAvailability` と文言 `importFailedMessage` `IMPORT_ADMIN_ONLY` `IMPORT_WARN_NOTE`
 
 **mockSurvey.ts** — `mockSurveyCsv()` `mockSurveyNames` `MOCK_SURVEY_HEADERS`（アンケート CSV の列。ひな形と共通）：雙峰祭2025 の構成（人数・勤務可能時間・ステータス・所属・働ける量）を写した架空の50名（`.migration/mock-data-notes.md`）。実名は入れない
+
+**drip.ts**（ドリップの時間）— `isDripSlot(x)`（本店のドリッパー）`DRIP_MIN`（2枠＝1時間）`dripReach(m)`（氏名 → ドリッパーに入れる時間）`canDrip(reach, name)` `dripRows(m, names)`→氏名 → `{hours, can, short}`（勤務状況チェックの勤務時間の表の「ドリップ」列と「ドリップ1時間未満」。UI は `useDripRows()`＝データの版ごとに1回）。
 
 **workload.ts**（働ける量の目安）— `workloadTarget(m, name)`（時間／日。目安なしは null）`isOverTarget(m, name, hours)` `overTargets(m, audit)`→`OverTarget[]`（勤務状況チェックの「目安超え」）`overTargetIfPicked(m, audit, name, date)` `OVER_TARGET_LABEL`。
 自動割当（autoAssign）は、その日の目安に届いた人を候補の後ろに回す（spare の次の順位。ほかにいなければ超えても入れる）。

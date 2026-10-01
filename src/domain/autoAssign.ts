@@ -3,6 +3,7 @@
 import { breakRoles, isCarRole, openRoles, statusLevels } from "./config";
 import { isPinned } from "./assign";
 import { autoRules } from "./autoRules";
+import { DRIP_MIN, canDrip, dripReach as reachOf, isDripSlot } from "./drip";
 import { available, decided, dislikes, levelOf, memberIce, requiredFor, wants, type SlotLike } from "./rules";
 import { ensureAllSlots, flattened, slotAtOffset } from "./slots";
 import { SLOT, toMin } from "./time";
@@ -24,8 +25,6 @@ const HANDOFF = 60;
 
 /** 1人あたりの時間に上限がある役職（autoRules の masterHours） */
 export const isMasterSlot = (x: SlotLike): boolean => x.store === "本店" && x.role === "マスター";
-/** 同じ時間に記号（H・1・2）のある人を入れる数に目安がある役職（autoRules の dripMarked） */
-const isDripSlot = (x: SlotLike): boolean => x.store === "本店" && x.role === "ドリッパー";
 
 export interface AutoAssignResult {
   /** 入れる人はいたが、続けて入るのが上限（maxRunHours）を超えるので空けた枠の数 */
@@ -43,6 +42,8 @@ export interface AutoAssignResult {
  *   0. 買い出し（isCarRole。行き先ごと）は、その時間に車ありの人がまだいなければ車ありの人から
  *   1. マスターは1人 全日程の合計で masterHours まで。全員その時間までで埋めきれないときだけ masterHours ずつ上げる（全員が同じくらいになる）
  *   2. ドリッパーの記号（H・1・2）のある人は、各時間 dripMarked 人まで。できなければ1人ずつ増やす（どこかの時間に固まらないように）
+ *   2'. ドリッパーに入れる人は、全日程で1時間（DRIP_MIN 枠）入るまでドリッパーに先に入れる（あとがない人から）。
+ *      同じ時間ならドリッパーの枠を先に埋める
  *   3. その日の勤務時間は、勤務可能時間の availPercent % まで（働ける量＝memberWorkload の目安があれば、それとの少ないほう）。
  *      超えて入れるときは、ステータスの高い人（上級生）から
  *   4. 直前の30分に入っている人を続けて入れる（同じ役職なら なお優先）。連続の上限の最後の1時間は、空いている人がいれば交代
@@ -59,6 +60,8 @@ export function autoAssign(m: Model): AutoAssignResult {
     masterUsed: Record<string, number> = {},
     /** "日付 開始" → そのドリッパーに入れた、記号のある人の数 */
     dripMarkedAt: Record<string, number> = {},
+    /** 氏名 → 入れたドリッパーの枠の数（全日程） */
+    dripUsed: Record<string, number> = {},
     /** "日付 開始 係" → その時間の買い出し（行き先ごと）に入れた車ありの人の数 */
     carAt: Record<string, number> = {},
     booked: Record<string, Item[]> = {};
@@ -112,7 +115,14 @@ export function autoAssign(m: Model): AutoAssignResult {
     items = flattened(m)
       // 人数の上限がない係（昼食・休憩など）は手で入れる
       .filter((x) => !openRoles.includes(x.role))
-      .sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start) || lv(b) - lv(a));
+      // 同じ時間ならドリッパーを先に（まだ1時間ドリップしていない人を、ほかの役職より先にドリッパーへ）
+      .sort(
+        (a, b) =>
+          a.date.localeCompare(b.date) ||
+          a.start.localeCompare(b.start) ||
+          lv(b) - lv(a) ||
+          Number(isDripSlot(b)) - Number(isDripSlot(a)),
+      );
 
   // マスターの1人あたりの上限（全日程の合計・枠の数）：masterHours で埋めきれるならそのまま、足りなければ masterHours ずつ上げる
   let masterCap = Infinity;
@@ -140,6 +150,12 @@ export function autoAssign(m: Model): AutoAssignResult {
       ? Math.max(0, (dripMarkedAt[tk(x)] || 0) + 1 - rules.dripMarked)
       : 0;
 
+  // ドリップの時間：ドリッパーに入れる時間が1時間以上ある人は、全日程で1時間（DRIP_MIN 枠）は入れる
+  const dripReach = reachOf(m);
+  const needsDrip = (name: string) => canDrip(dripReach, name) && (dripUsed[name] || 0) < DRIP_MIN;
+  /** この時間から先で、まだドリッパーに入れる時間の数（少ない人＝あとがない人から入れる） */
+  const dripLeft = (name: string, x: Item) => (dripReach[name] || []).filter((t) => t >= tk(x)).length;
+
   // 次の枠（同じ役職・同じ番目を優先）にも続けて入れられるか
   const pairOf = (x: Item, name: string) => {
     const occs = slotAtOffset(m, x, 1);
@@ -158,6 +174,7 @@ export function autoAssign(m: Model): AutoAssignResult {
     workload[name] = (workload[name] || 0) + 1;
     if (!breakRoles.includes(t.role)) daily[dk(name, t.date)] = (daily[dk(name, t.date)] || 0) + 1;
     if (isMasterSlot(t)) masterUsed[name] = (masterUsed[name] || 0) + 1;
+    if (isDripSlot(t)) dripUsed[name] = (dripUsed[name] || 0) + 1;
     if (isDripSlot(t) && marked(name)) dripMarkedAt[tk(t)] = (dripMarkedAt[tk(t)] || 0) + 1;
     if (isCarRole(t.role) && m.memberCars[name]) carAt[ck(t)] = (carAt[ck(t)] || 0) + 1;
   };
@@ -186,6 +203,9 @@ export function autoAssign(m: Model): AutoAssignResult {
       return prev.store === x.store && prev.role === x.role ? 2 : 1;
     };
     const score = (a: Availability) => (workload[a.name] || 0) - (wants(m, a.name, x.role) ? 1 : 0);
+    // ドリッパーには、まだ1時間ドリップしていない人から（あとがない人から）
+    const needDrip = (a: Availability) => (isDripSlot(x) && needsDrip(a.name) ? 0 : 1),
+      leftDrip = (a: Availability) => (isDripSlot(x) && needsDrip(a.name) ? dripLeft(a.name, x) : 0);
     // 買い出しにその時間の車ありの人がまだいなければ、車ありの人から
     const noCar = (a: Availability) => Number(isCarRole(x.role) && !carAt[ck(x)] && !m.memberCars[a.name]);
     candidates.sort(
@@ -194,6 +214,8 @@ export function autoAssign(m: Model): AutoAssignResult {
         dripOver(a.name, x) - dripOver(b.name, x) ||
         spare(a) - spare(b) ||
         Number(masterFull(a.name, x)) - Number(masterFull(b.name, x)) ||
+        needDrip(a) - needDrip(b) ||
+        leftDrip(a) - leftDrip(b) ||
         over(a) - over(b) ||
         // 目安を超えて入れるなら上級生から
         (over(a) ? levelOf(m, b.name) - levelOf(m, a.name) : 0) ||
@@ -207,12 +229,21 @@ export function autoAssign(m: Model): AutoAssignResult {
       if (open.length) runBlocked++;
       continue;
     }
-    const drip = dripOver(c.name, x);
+    const drip = dripOver(c.name, x),
+      firstDrip = isDripSlot(x) && needsDrip(c.name);
     book(x, c.name);
     // マスターの上限・その日の目安に届いたら、続きは次の枠で選び直す（目安を超えるなら上級生から）。
     // 記号のある人は、次の時間で ここより多く超えるなら選び直す
     const y = pairs.get(c.name);
-    if (y && !decided(m, y.key) && runOk(c.name, y) && !masterFull(c.name, y) && !over(c) && dripOver(c.name, y) <= drip)
+    // まだ1時間ドリップしていない人は、目安に届いていても続きのドリッパーまで入れる
+    if (
+      y &&
+      !decided(m, y.key) &&
+      runOk(c.name, y) &&
+      !masterFull(c.name, y) &&
+      (!over(c) || (firstDrip && isDripSlot(y))) &&
+      dripOver(c.name, y) <= drip
+    )
       book(y, c.name);
   }
   return { runBlocked, kept: Object.keys(m.pinnedSlots).length };

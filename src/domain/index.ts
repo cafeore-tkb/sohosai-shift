@@ -11,6 +11,7 @@ export * from "./buyShops";
 export * from "./labels";
 export * from "./audit";
 export * from "./autoAssign";
+export * from "./drip";
 export * from "./autoRules";
 export * from "./assign";
 export * from "./availability";
