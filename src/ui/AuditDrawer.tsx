@@ -1,16 +1,16 @@
 // 勤務状況チェック（右のドロワー。#auditDrawer / #auditClose / #assignmentAudit）
 // バッジ → 直したほうがよい枠（重複・勤務できない時間・条件外・苦手な役職。「表で見る ›」で表のその枠へ）
-// → やりたい役職が1つも入っていない人（「個人別で見る ›」）→ 1人ずつの勤務時間
+// → やりたい役職が1つも入っていない人（「個人別で見る ›」）→ ドリップが1時間未満の人 → 1人ずつの勤務時間（日ごと・合計・ドリップ）
 
 import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { allNames, auditIssues, auditRow, dayName, eventDates, fmt, surname } from "../domain";
-import type { AuditIssue, CarlessIssue } from "../domain";
+import type { AuditIssue, CarlessIssue, DripRow } from "../domain";
 import { actions, useModel, useUi } from "../store";
-import { Drawer, Icon, Pill, Swatch } from "./components";
+import { Drawer, Icon, Pill, Swatch, cx } from "./components";
 import type { SwatchKind } from "./components";
 import styles from "./AuditDrawer.module.css";
-import { useAudit, useAuditSummary } from "./useDerived";
+import { useAudit, useAuditSummary, useDripRows } from "./useDerived";
 import { WorkloadOverBadge, WorkloadOverSection, overTargetList } from "./WorkloadOver";
 
 /** これより狭いと表の枠をドロワーの左に空けられない（Shift.module.css と同じ）。高さ 560px 以下はドロワーが画面いっぱい（Drawer） */
@@ -126,12 +126,15 @@ function AuditContent() {
   const issues = useMemo(() => auditIssues(m, audit), [m, audit]);
   // 働ける量の目安超え（WorkloadOver.tsx）
   const overs = useMemo(() => overTargetList(m, audit), [m, audit]);
+  // ドリップの時間（ドリッパーに入れる人は全日程で1時間以上）
+  const drips = useDripRows();
   if (!m.availability.length) return <p className={styles.note}>アンケート回答CSVを読み込むと表示されます。</p>;
   const { conflicts } = audit,
     dates = eventDates(m),
     names = allNames(m),
     rows = names.map((name) => ({ name, ...auditRow(m, audit, name, dates) })),
     maxTotal = Math.max(1, ...rows.map((r) => r.total)),
+    dripShort = names.filter((n) => drips[n]?.short),
     anyIssue = issues.conflicts.length || issues.offs.length || issues.unfits.length || issues.dislikes.length || issues.carless.length;
   return (
     <>
@@ -149,6 +152,7 @@ function AuditContent() {
         {disliked ? <Pill tone="dislike" size="lg">{`苦手な役職への割当 ${disliked}枠`}</Pill> : null}
         {issues.carless.length ? <Pill tone="open" size="lg">{`車ありがいない買い出し ${issues.carless.length}件`}</Pill> : null}
         {missing.length ? <Pill tone="open" size="lg">{`やりたい役職に入っていない ${missing.length}名`}</Pill> : null}
+        {dripShort.length ? <Pill tone="warn" size="lg">{`ドリップ1時間未満 ${dripShort.length}名`}</Pill> : null}
         <WorkloadOverBadge list={overs} />
       </div>
 
@@ -214,6 +218,32 @@ function AuditContent() {
         </section>
       ) : null}
 
+      {dripShort.length ? (
+        <section className={styles.sec} aria-labelledby="auditDrip">
+          <h3 id="auditDrip" className={styles.h3}>
+            ドリップが1時間未満の人
+            <Pill tone="neutral">{`${dripShort.length}名`}</Pill>
+          </h3>
+          <ul className={styles.wants}>
+            {dripShort.map((name) => (
+              <li key={name}>
+                <b>{name}</b>
+                <span className={styles.wantText}>{`ドリッパーに入れるのに ${fmt(drips[name].hours)}`}</span>
+                <LinkButton
+                  label={`${name}を個人別で見る`}
+                  onClick={() => {
+                    actions.revealPerson(name);
+                    closeOnPhone();
+                  }}
+                >
+                  個人別で見る
+                </LinkButton>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <WorkloadOverSection
         list={overs}
         classes={{ sec: styles.sec, h3: styles.h3, list: styles.wants, text: styles.wantText }}
@@ -239,11 +269,14 @@ function AuditContent() {
             <tr>
               <th scope="col">スタッフ</th>
               {dates.map((date, i) => (
-                <th scope="col" key={date}>
-                  {dayName(date, i)}
+                <th scope="col" key={date} className={styles.dayHead}>
+                  {dayName(date, i).replace(/^(本番|前日)/, "$1\n")}
                 </th>
               ))}
               <th scope="col">合計</th>
+              <th scope="col" title="本店のドリッパーに入っている時間（全日程）">
+                ドリップ
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -262,15 +295,37 @@ function AuditContent() {
                   ),
                 )}
                 <td className={styles.total}>
-                  <span className={styles.bar} style={{ width: `${Math.round((total / maxTotal) * 48)}px` }} aria-hidden="true" />
+                  <span className={styles.bar} style={{ width: `${Math.round((total / maxTotal) * 28)}px` }} aria-hidden="true" />
                   {fmt(total)}
                 </td>
+                <DripCell row={drips[name]} />
               </tr>
             ))}
           </tbody>
         </table>
-        <p className={styles.note}>勤務時間に昼食・休憩は含みません。「—」はその日に参加不可。</p>
+        <p className={styles.note}>
+          勤務時間に昼食・休憩は含みません。「—」はその日に参加不可。ドリップは本店のドリッパーの時間（全日程）で、合計に含まれます。ドリッパーに入れない人（未合格など）は「—」、入れるのに1時間未満の人はオレンジです。
+        </p>
       </section>
     </>
+  );
+}
+
+/** ドリップの時間（全日程）。入れない人は —、入れるのに1時間未満ならオレンジ */
+function DripCell({ row }: { row: DripRow | undefined }) {
+  if (!row?.can && !row?.hours)
+    return (
+      <td className={cx(styles.drip, styles.dash)} title="ドリッパーに入れない（ステータス・所属・勤務可能時間）">
+        —
+      </td>
+    );
+  return (
+    <td
+      className={cx(styles.drip, row.short && styles.dripShort, !row.hours && !row.short && styles.zero)}
+      title={row.short ? "ドリッパーに入れるのに1時間未満" : undefined}
+      data-drip-short={row.short ? "" : undefined}
+    >
+      {fmt(row.hours)}
+    </td>
   );
 }

@@ -115,7 +115,7 @@
   /* the drawer body has 18px top padding */
   top: -18px;
   z-index: 1;
-  padding: 7px 10px;
+  padding: 7px 6px;
   background: var(--surface-subtle);
   border-bottom: 1px solid var(--line);
   font-size: var(--fs-sm);
@@ -123,10 +123,16 @@
   color: var(--ink-muted);
   text-align: right;
   white-space: nowrap;
+  vertical-align: bottom;
+}
+/* 日付は「本番／1日目」の2行（ドリップの列までドロワーの幅に収める） */
+.dayHead {
+  white-space: pre-line !important;
+  line-height: 1.25;
 }
 .hours td,
 .hours tbody th {
-  padding: var(--sp-3) 10px;
+  padding: var(--sp-3) 6px;
   border-bottom: 1px solid var(--line-grid);
   text-align: right;
   white-space: nowrap;
@@ -152,6 +158,14 @@
   font-weight: var(--fw-bold);
   color: var(--ink);
 }
+.drip {
+  border-left: 1px solid var(--line-grid);
+}
+.dripShort {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  font-weight: var(--fw-bold);
+}
 .bar {
   display: inline-block;
   height: 4px;
@@ -169,6 +183,10 @@
 @media (max-width: 640px) {
   .hours thead th {
     top: calc(-1 * var(--sp-6));
+  }
+  /* ドリップの列まで画面の幅に収める */
+  .bar {
+    display: none;
   }
   .wants li {
     grid-template-columns: minmax(0, 1fr) auto;

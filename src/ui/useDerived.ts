@@ -1,8 +1,8 @@
 // 共有データが変わったときだけ1回計算する派生データ（勤務状況チェック・短い名前・サマリー・移動先）
 // store.dataVersion ごとに作り直す（表示だけの commit では作り直さない）
 
-import { assignmentAudit, buildShortNames, dislikedCount, fitTargets, offAssignments, summaryStats, unfitAssignments, wantsMissing } from "../domain";
-import type { Audit, Item } from "../domain";
+import { allNames, assignmentAudit, buildShortNames, dislikedCount, dripRows, fitTargets, offAssignments, summaryStats, unfitAssignments, wantsMissing } from "../domain";
+import type { Audit, DripRow, Item } from "../domain";
 import { store, useModelVersion } from "../store";
 
 function perVersion<T>(compute: () => T): () => T {
@@ -29,6 +29,7 @@ export interface AuditSummary {
 }
 
 const auditOf = perVersion<Audit>(() => assignmentAudit(store.model));
+const dripsOf = perVersion<Record<string, DripRow>>(() => dripRows(store.model, allNames(store.model)));
 const shortNamesOf = perVersion<Record<string, string>>(() => buildShortNames(store.model));
 const statsOf = perVersion(() => summaryStats(store.model, auditOf()));
 const summaryOf = perVersion<AuditSummary>(() => {
@@ -45,6 +46,12 @@ const summaryOf = perVersion<AuditSummary>(() => {
 export function useAudit(): Audit {
   useModelVersion();
   return auditOf();
+}
+
+/** 1人ずつのドリップの時間（全日程・ドリッパーに入れる人は1時間以上） */
+export function useDripRows(): Record<string, DripRow> {
+  useModelVersion();
+  return dripsOf();
 }
 
 /** シフト表に出す短い名前 */
